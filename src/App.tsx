@@ -11,8 +11,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Equipements from "./pages/Equipements";
+import EquipementForm from "./pages/EquipementForm";
 import Controles from "./pages/Controles";
 import Personnel from "./pages/Personnel";
+import PersonnelForm from "./pages/PersonnelForm";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import ControleDetail from "./pages/ControleDetail";
@@ -67,10 +69,12 @@ const App = () => {
             {/* Routes protégées */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/equipements" element={<ProtectedRoute><Equipements /></ProtectedRoute>} />
+            <Route path="/equipements/nouveau" element={<ProtectedRoute><EquipementForm /></ProtectedRoute>} />
             <Route path="/controles" element={<ProtectedRoute><Controles /></ProtectedRoute>} />
             <Route path="/controles/:id" element={<ProtectedRoute><ControleDetail /></ProtectedRoute>} />
             <Route path="/controle/:id" element={<ProtectedRoute><ControleForm /></ProtectedRoute>} />
             <Route path="/personnel" element={<ProtectedRoute><Personnel /></ProtectedRoute>} />
+            <Route path="/personnel/nouveau" element={<ProtectedRoute><PersonnelForm /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             
