@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Menu, X, LogOut, User } from 'lucide-react';
+import { Bell, Menu, X, LogOut, User, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -55,6 +55,9 @@ export default function Header() {
                   <Link to="/personnel" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
                     Personnel
                   </Link>
+                  <Link to="/reports" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
+                    Rapports
+                  </Link>
                   <Link to="/notifications" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
                     Notifications
                   </Link>
@@ -75,6 +78,10 @@ export default function Header() {
               <Link to="/controles" className="hover:text-gray-200">Contrôles</Link>
               <Link to="/equipements" className="hover:text-gray-200">Équipements</Link>
               <Link to="/personnel" className="hover:text-gray-200">Personnel</Link>
+              <Link to="/reports" className="hover:text-gray-200 flex items-center">
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Rapports
+              </Link>
             </nav>
             
             <Link to="/notifications" className="relative">

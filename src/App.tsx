@@ -15,8 +15,10 @@ import EquipementForm from "./pages/EquipementForm";
 import Controles from "./pages/Controles";
 import Personnel from "./pages/Personnel";
 import PersonnelForm from "./pages/PersonnelForm";
+import PersonnelDetail from "./pages/PersonnelDetail";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import Reports from "./pages/Reports";
 import ControleDetail from "./pages/ControleDetail";
 import ControleForm from "./pages/ControleForm";
 import NotFound from "./pages/NotFound";
@@ -75,8 +77,10 @@ const App = () => {
             <Route path="/controle/:id" element={<ProtectedRoute><ControleForm /></ProtectedRoute>} />
             <Route path="/personnel" element={<ProtectedRoute><Personnel /></ProtectedRoute>} />
             <Route path="/personnel/nouveau" element={<ProtectedRoute><PersonnelForm /></ProtectedRoute>} />
+            <Route path="/personnel/:id" element={<ProtectedRoute><PersonnelDetail /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             
             {/* Route 404 */}
             <Route path="*" element={<NotFound />} />
