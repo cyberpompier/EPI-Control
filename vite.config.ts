@@ -15,9 +15,9 @@ export default defineConfig(() => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
-      },
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       manifest: {
         name: 'EPI Control',
         short_name: 'EPI Control',
