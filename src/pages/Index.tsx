@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { supabase } from '@/lib/supabase';
-import { Helmet, Shield, CheckCircle, Clock, FileText } from 'lucide-react';
+import { Shield, CheckCircle, Clock, FileText } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 
 const Index = () => {
   const navigate = useNavigate();

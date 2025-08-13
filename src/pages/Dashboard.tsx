@@ -4,10 +4,11 @@ import Layout from '@/components/layout/Layout';
 import StatCard from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Helmet, Shield, AlertTriangle, Clock, Users, CheckCircle, Plus, FileText } from 'lucide-react';
+import { Bell, Shield, AlertTriangle, Clock, Users, CheckCircle, Plus, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Helmet } from 'react-helmet';
 
 export default function Dashboard() {
   const navigate = useNavigate();
