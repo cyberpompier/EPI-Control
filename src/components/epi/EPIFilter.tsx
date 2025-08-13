@@ -94,7 +94,7 @@ export default function EPIFilter({ onFilterChange }: EPIFilterProps) {
                 <SelectValue placeholder="Tous les types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les types</SelectItem>
+                <SelectItem value="all">Tous les types</SelectItem>
                 <SelectItem value="casque">Casque</SelectItem>
                 <SelectItem value="veste">Veste</SelectItem>
                 <SelectItem value="surpantalon">Surpantalon</SelectItem>
@@ -111,7 +111,7 @@ export default function EPIFilter({ onFilterChange }: EPIFilterProps) {
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les statuts</SelectItem>
+                <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="conforme">Conforme</SelectItem>
                 <SelectItem value="non_conforme">Non conforme</SelectItem>
                 <SelectItem value="en_attente">En attente</SelectItem>

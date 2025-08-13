@@ -125,12 +125,12 @@ export default function Equipements() {
     }
     
     // Filtre par type
-    if (filters.type) {
+    if (filters.type && filters.type !== 'all') {
       filtered = filtered.filter(epi => epi.type === filters.type);
     }
     
     // Filtre par statut
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(epi => epi.statut === filters.status);
     }
     

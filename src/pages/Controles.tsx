@@ -125,7 +125,7 @@ export default function Controles() {
     }
     
     // Filtre par date
-    if (date) {
+    if (date && date !== 'all') {
       const today = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
       
@@ -220,7 +220,7 @@ export default function Controles() {
             <SelectValue placeholder="Période" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toutes les périodes</SelectItem>
+            <SelectItem value="all">Toutes les périodes</SelectItem>
             <SelectItem value="today">Aujourd'hui</SelectItem>
             <SelectItem value="week">Cette semaine</SelectItem>
             <SelectItem value="month">Ce mois</SelectItem>

@@ -140,12 +140,12 @@ export default function Personnel() {
     }
     
     // Filtre par grade
-    if (grade) {
+    if (grade && grade !== 'all') {
       filtered = filtered.filter(pompier => pompier.grade === grade);
     }
     
     // Filtre par caserne
-    if (caserne) {
+    if (caserne && caserne !== 'all') {
       filtered = filtered.filter(pompier => pompier.caserne === caserne);
     }
     
@@ -192,7 +192,7 @@ export default function Personnel() {
               <SelectValue placeholder="Grade" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les grades</SelectItem>
+              <SelectItem value="all">Tous les grades</SelectItem>
               {grades.map(grade => (
                 <SelectItem key={grade} value={grade}>{grade}</SelectItem>
               ))}
@@ -204,7 +204,7 @@ export default function Personnel() {
               <SelectValue placeholder="Caserne" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toutes les casernes</SelectItem>
+              <SelectItem value="all">Toutes les casernes</SelectItem>
               {casernes.map(caserne => (
                 <SelectItem key={caserne} value={caserne}>{caserne}</SelectItem>
               ))}
