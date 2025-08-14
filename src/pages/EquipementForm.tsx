@@ -205,7 +205,7 @@ export default function EquipementForm() {
                             </FormControl>
                             <SelectContent>
                               {loadingPompiers ? (
-                                <SelectItem value="" disabled>Chargement...</SelectItem>
+                                <SelectItem value="__loading__" disabled>Chargement...</SelectItem>
                               ) : pompiers.length > 0 ? (
                                 pompiers.map((pompier) => (
                                   <SelectItem key={pompier.id} value={String(pompier.id)}>
@@ -213,7 +213,7 @@ export default function EquipementForm() {
                                   </SelectItem>
                                 ))
                               ) : (
-                                <SelectItem value="" disabled>Aucun pompier trouvé</SelectItem>
+                                <SelectItem value="__none__" disabled>Aucun pompier trouvé</SelectItem>
                               )}
                             </SelectContent>
                           </Select>
