@@ -49,7 +49,7 @@ export default function Profile() {
         
         const { data: personnelData } = await supabase
           .from('personnel')
-          .select('caserne, grade, photo')
+          .select('caserne, grade')
           .eq('email', authUser.email)
           .single();
           
@@ -143,7 +143,7 @@ export default function Profile() {
             <CardContent className="pt-6 text-center">
               <div className="relative w-24 h-24 mx-auto mb-4">
                 <Avatar className="w-full h-full">
-                  <AvatarImage src={profile?.photo || undefined} />
+                  <AvatarImage src={profile?.avatar_url} />
                   <AvatarFallback className="text-2xl">
                     {getInitials(formData.nom, formData.prenom)}
                   </AvatarFallback>
