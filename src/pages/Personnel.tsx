@@ -34,7 +34,7 @@ export default function Personnel() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: pompiersData, error: pompiersError } = await supabase.from('personnel').select('*');
+        const { data: pompiersData, error: pompiersError } = await supabase.from('personnel').select('*').order('nom', { ascending: true });
         if (pompiersError) throw pompiersError;
         
         const pompiersList = pompiersData || [];
