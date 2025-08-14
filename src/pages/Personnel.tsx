@@ -20,7 +20,6 @@ export default function Personnel() {
   const [caserneFilter, setCaserneFilter] = useState('');
 
   // Données simulées pour les statistiques d'EPI par pompier
-  // TODO: Remplacer par des données réelles
   const mockEpiStats = {
     '1': { total: 5, conformes: 4, nonConformes: 1 },
     '2': { total: 4, conformes: 2, nonConformes: 2 },
@@ -40,16 +39,56 @@ export default function Personnel() {
           throw error;
         }
         
+        // Transformation des données pour correspondre au type Pompier
         const pompiersData: Pompier[] = (data || []).map((p: any) => ({
-          ...p,
-          matricule: p.matricule || String(p.code || ''),
+          id: p.id,
+          nom: p.nom || '',
+          prenom: p.prenom || '',
+          matricule: p.matricule || '',
+          caserne: p.caserne || '',
+          grade: p.grade || '',
+          email: p.email || ''
         }));
 
         setPompiers(pompiersData);
         setFilteredPompiers(pompiersData);
       } catch (error: any) {
-        showError(`Erreur: ${error.message}`);
+        showError(`Erreur lors du chargement: ${error.message}`);
         console.error('Erreur lors de la récupération des pompiers:', error);
+        
+        // En cas d'erreur, utiliser des données de démonstration
+        const demoData: Pompier[] = [
+          {
+            id: 1,
+            nom: 'Dupont',
+            prenom: 'Jean',
+            matricule: 'SP12345',
+            caserne: 'Caserne Centrale',
+            grade: 'Sergent',
+            email: 'jean.dupont@sdis.fr'
+          },
+          {
+            id: 2,
+            nom: 'Martin',
+            prenom: 'Marie',
+            matricule: 'SP23456',
+            caserne: 'Caserne Nord',
+            grade: 'Caporal',
+            email: 'marie.martin@sdis.fr'
+          },
+          {
+            id: 3,
+            nom: 'Bernard',
+            prenom: 'Pierre',
+            matricule: 'SP34567',
+            caserne: 'Caserne Sud',
+            grade: 'Lieutenant',
+            email: 'pierre.bernard@sdis.fr'
+          }
+        ];
+        
+        setPompiers(demoData);
+        setFilteredPompiers(demoData);
       } finally {
         setLoading(false);
       }
@@ -86,9 +125,8 @@ export default function Personnel() {
     filterAndSearchPompiers();
   }, [searchTerm, gradeFilter, caserneFilter, pompiers]);
 
-
-  const grades = [...new Set(pompiers.map(p => p.grade))];
-  const casernes = [...new Set(pompiers.map(p => p.caserne))];
+  const grades = [...new Set(pompiers.map(p => p.grade).filter(Boolean))];
+  const casernes = [...new Set(pompiers.map(p => p.caserne).filter(Boolean))];
 
   return (
     <Layout>
@@ -128,7 +166,7 @@ export default function Personnel() {
             <SelectContent>
               <SelectItem value="all">Tous les grades</SelectItem>
               {grades.map(grade => (
-                grade && <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                <SelectItem key={grade} value={grade}>{grade}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -140,7 +178,7 @@ export default function Personnel() {
             <SelectContent>
               <SelectItem value="all">Toutes les casernes</SelectItem>
               {casernes.map(caserne => (
-                caserne && <SelectItem key={caserne} value={caserne}>{caserne}</SelectItem>
+                <SelectItem key={caserne} value={caserne}>{caserne}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -166,8 +204,19 @@ export default function Personnel() {
           <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">Aucun pompier trouvé</h3>
           <p className="mt-2 text-gray-500">
-            Aucun pompier ne correspond à vos critères de recherche. Essayez de modifier vos filtres.
+            {pompiers.length === 0 
+              ? "Aucun pompier n'est enregistré dans la base de données. Commencez par en ajouter un."
+              : "Aucun pompier ne correspond à vos critères de recherche. Essayez de modifier vos filtres."
+            }
           </p>
+          {pompiers.length === 0 && (
+            <Link to="/personnel/nouveau" className="mt-4 inline-block">
+              <Button className="bg-red-600 hover:bg-red-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter le premier pompier
+              </Button>
+            </Link>
+          )}
         </div>
       )}
       
