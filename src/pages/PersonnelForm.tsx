@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, User, Camera } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { Helmet } from 'react-helmet';
+import { supabase } from '@/lib/supabase';
 
 const formSchema = z.object({
   nom: z.string().min(2, {
@@ -62,17 +63,18 @@ export default function PersonnelForm() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      // Dans une vraie application, vous enverriez les données à Supabase
-      console.log('Données du pompier:', values);
+      const { error } = await supabase.from('personnel').insert([values]);
+
+      if (error) {
+        throw error;
+      }
       
-      // Simulation d'envoi
-      setTimeout(() => {
-        showSuccess('Pompier ajouté avec succès');
-        navigate('/personnel');
-      }, 1500);
-    } catch (error) {
+      showSuccess('Pompier ajouté avec succès');
+      navigate('/personnel');
+    } catch (error: any) {
       console.error('Erreur lors de l\'ajout du pompier:', error);
-      showError('Erreur lors de l\'ajout du pompier');
+      showError(`Erreur: ${error.message}`);
+    } finally {
       setIsLoading(false);
     }
   };

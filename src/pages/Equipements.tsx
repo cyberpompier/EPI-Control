@@ -27,7 +27,7 @@ export default function Equipements() {
       numero_serie: 'C12345',
       date_mise_en_service: '2022-01-15',
       date_fin_vie: '2032-01-15',
-      pompier_id: '1',
+      pompier_id: 1,
       statut: 'conforme'
     },
     {
@@ -38,7 +38,7 @@ export default function Equipements() {
       numero_serie: 'V54321',
       date_mise_en_service: '2021-06-10',
       date_fin_vie: '2026-06-10',
-      pompier_id: '2',
+      pompier_id: 2,
       statut: 'non_conforme'
     },
     {
@@ -49,7 +49,7 @@ export default function Equipements() {
       numero_serie: 'P98765',
       date_mise_en_service: '2022-03-20',
       date_fin_vie: '2027-03-20',
-      pompier_id: '1',
+      pompier_id: 1,
       statut: 'conforme'
     },
     {
@@ -60,7 +60,7 @@ export default function Equipements() {
       numero_serie: 'G45678',
       date_mise_en_service: '2023-01-05',
       date_fin_vie: '2025-01-05',
-      pompier_id: '3',
+      pompier_id: 3,
       statut: 'en_attente'
     },
     {
@@ -71,7 +71,7 @@ export default function Equipements() {
       numero_serie: 'R87654',
       date_mise_en_service: '2022-11-12',
       date_fin_vie: '2025-11-12',
-      pompier_id: '2',
+      pompier_id: 2,
       statut: 'conforme'
     },
     {
@@ -82,7 +82,7 @@ export default function Equipements() {
       numero_serie: 'C67890',
       date_mise_en_service: '2021-09-18',
       date_fin_vie: '2023-10-30',
-      pompier_id: '3',
+      pompier_id: 3,
       statut: 'non_conforme'
     }
   ];

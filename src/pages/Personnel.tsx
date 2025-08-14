@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { Pompier } from '@/types';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Users } from 'lucide-react';
+import { showError } from '@/utils/toast';
 
 export default function Personnel() {
   const [pompiers, setPompiers] = useState<Pompier[]>([]);
@@ -18,65 +19,8 @@ export default function Personnel() {
   const [gradeFilter, setGradeFilter] = useState('');
   const [caserneFilter, setCaserneFilter] = useState('');
 
-  // Données simulées pour les pompiers
-  const mockPompiers: Pompier[] = [
-    {
-      id: '1',
-      nom: 'Dupont',
-      prenom: 'Jean',
-      matricule: 'SP12345',
-      caserne: 'Caserne Centrale',
-      grade: 'Sergent',
-      email: 'jean.dupont@sdis.fr'
-    },
-    {
-      id: '2',
-      nom: 'Martin',
-      prenom: 'Marie',
-      matricule: 'SP23456',
-      caserne: 'Caserne Nord',
-      grade: 'Caporal',
-      email: 'marie.martin@sdis.fr'
-    },
-    {
-      id: '3',
-      nom: 'Bernard',
-      prenom: 'Thomas',
-      matricule: 'SP34567',
-      caserne: 'Caserne Sud',
-      grade: 'Caporal-chef',
-      email: 'thomas.bernard@sdis.fr'
-    },
-    {
-      id: '4',
-      nom: 'Dubois',
-      prenom: 'Pierre',
-      matricule: 'SP45678',
-      caserne: 'Caserne Centrale',
-      grade: 'Adjudant',
-      email: 'pierre.dubois@sdis.fr'
-    },
-    {
-      id: '5',
-      nom: 'Leroy',
-      prenom: 'Sophie',
-      matricule: 'SP56789',
-      caserne: 'Caserne Est',
-      grade: 'Lieutenant',
-      email: 'sophie.leroy@sdis.fr'
-    },
-    {
-      id: '6',
-      nom: 'Moreau',
-      prenom: 'Lucas',
-      matricule: 'SP67890',
-      caserne: 'Caserne Ouest',
-      grade: 'Capitaine',
-      email: 'lucas.moreau@sdis.fr'
-    }
-  ];
-
   // Données simulées pour les statistiques d'EPI par pompier
+  // TODO: Remplacer par des données réelles
   const mockEpiStats = {
     '1': { total: 5, conformes: 4, nonConformes: 1 },
     '2': { total: 4, conformes: 2, nonConformes: 2 },
@@ -88,20 +32,25 @@ export default function Personnel() {
 
   useEffect(() => {
     const fetchPompiers = async () => {
+      setLoading(true);
       try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data, error } = await supabase.from('pompiers').select('*');
-        // if (error) throw error;
-        // setPompiers(data);
+        const { data, error } = await supabase.from('personnel').select('*');
         
-        // Simulation de chargement
-        setTimeout(() => {
-          setPompiers(mockPompiers);
-          setFilteredPompiers(mockPompiers);
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
+        if (error) {
+          throw error;
+        }
+        
+        const pompiersData: Pompier[] = (data || []).map((p: any) => ({
+          ...p,
+          matricule: p.matricule || String(p.code || ''),
+        }));
+
+        setPompiers(pompiersData);
+        setFilteredPompiers(pompiersData);
+      } catch (error: any) {
+        showError(`Erreur: ${error.message}`);
         console.error('Erreur lors de la récupération des pompiers:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -109,50 +58,35 @@ export default function Personnel() {
     fetchPompiers();
   }, []);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    filterPompiers(value, gradeFilter, caserneFilter);
-  };
-
-  const handleGradeFilterChange = (value: string) => {
-    setGradeFilter(value);
-    filterPompiers(searchTerm, value, caserneFilter);
-  };
-
-  const handleCaserneFilterChange = (value: string) => {
-    setCaserneFilter(value);
-    filterPompiers(searchTerm, gradeFilter, value);
-  };
-
-  const filterPompiers = (search: string, grade: string, caserne: string) => {
+  const filterAndSearchPompiers = () => {
     let filtered = [...pompiers];
     
-    // Filtre par recherche
-    if (search) {
-      const searchLower = search.toLowerCase();
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(pompier => 
         pompier.nom.toLowerCase().includes(searchLower) ||
         pompier.prenom.toLowerCase().includes(searchLower) ||
-        pompier.matricule.toLowerCase().includes(searchLower) ||
+        (pompier.matricule && pompier.matricule.toLowerCase().includes(searchLower)) ||
         pompier.email.toLowerCase().includes(searchLower)
       );
     }
     
-    // Filtre par grade
-    if (grade && grade !== 'all') {
-      filtered = filtered.filter(pompier => pompier.grade === grade);
+    if (gradeFilter && gradeFilter !== 'all') {
+      filtered = filtered.filter(pompier => pompier.grade === gradeFilter);
     }
     
-    // Filtre par caserne
-    if (caserne && caserne !== 'all') {
-      filtered = filtered.filter(pompier => pompier.caserne === caserne);
+    if (caserneFilter && caserneFilter !== 'all') {
+      filtered = filtered.filter(pompier => pompier.caserne === caserneFilter);
     }
     
     setFilteredPompiers(filtered);
   };
 
-  // Extraire les grades et casernes uniques pour les filtres
+  useEffect(() => {
+    filterAndSearchPompiers();
+  }, [searchTerm, gradeFilter, caserneFilter, pompiers]);
+
+
   const grades = [...new Set(pompiers.map(p => p.grade))];
   const casernes = [...new Set(pompiers.map(p => p.caserne))];
 
@@ -182,31 +116,31 @@ export default function Personnel() {
             placeholder="Rechercher un pompier..."
             className="pl-8"
             value={searchTerm}
-            onChange={handleSearch}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
         <div className="grid grid-cols-2 gap-2">
-          <Select value={gradeFilter} onValueChange={handleGradeFilterChange}>
+          <Select value={gradeFilter} onValueChange={setGradeFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Grade" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les grades</SelectItem>
               {grades.map(grade => (
-                <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                grade && <SelectItem key={grade} value={grade}>{grade}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Select value={caserneFilter} onValueChange={handleCaserneFilterChange}>
+          <Select value={caserneFilter} onValueChange={setCaserneFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Caserne" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les casernes</SelectItem>
               {casernes.map(caserne => (
-                <SelectItem key={caserne} value={caserne}>{caserne}</SelectItem>
+                caserne && <SelectItem key={caserne} value={caserne}>{caserne}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -223,7 +157,7 @@ export default function Personnel() {
             <PompierCard 
               key={pompier.id} 
               pompier={pompier} 
-              epiCount={mockEpiStats[pompier.id as keyof typeof mockEpiStats]}
+              epiCount={mockEpiStats[String(pompier.id) as keyof typeof mockEpiStats]}
             />
           ))}
         </div>
@@ -232,7 +166,7 @@ export default function Personnel() {
           <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">Aucun pompier trouvé</h3>
           <p className="mt-2 text-gray-500">
-            Aucun pompier ne correspond à vos critères de recherche.
+            Aucun pompier ne correspond à vos critères de recherche. Essayez de modifier vos filtres.
           </p>
         </div>
       )}
