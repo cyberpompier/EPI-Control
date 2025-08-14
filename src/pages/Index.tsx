@@ -22,7 +22,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <title>EPI Control | Gestion des équipements de protection</title>
+        <title>{`EPI Control | Gestion des équipements de protection`}</title>
       </Helmet>
       
       <header className="bg-red-700 text-white shadow-md">
