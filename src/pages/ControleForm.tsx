@@ -224,7 +224,7 @@ export default function ControleFormPage() {
               </div>
               
               <div className="mt-4 pt-4 border-t">
-                <Link to={`/personnel/${pompier.id}/equipements`}>
+                <Link to={`/personnel/${pompier.id}`}>
                   <Button variant="outline" className="w-full text-sm">
                     Voir tous les équipements
                   </Button>
