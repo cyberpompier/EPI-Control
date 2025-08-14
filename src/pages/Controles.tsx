@@ -15,12 +15,12 @@ interface Controle {
   date_controle: string;
   resultat: 'conforme' | 'non_conforme' | 'en_attente';
   date_prochaine_verification: string;
-  equipement: {
+  equipements: {
     type: string;
     marque: string;
     modele: string;
   } | null;
-  controleur: {
+  profiles: {
     nom: string;
     prenom: string;
   } | null;
@@ -41,12 +41,12 @@ export default function ControlesPage() {
             date_controle,
             resultat,
             date_prochaine_verification,
-            equipement:equipements (
+            equipements (
               type,
               marque,
               modele
             ),
-            controleur:profiles (
+            profiles (
               nom,
               prenom
             )
@@ -134,10 +134,10 @@ export default function ControlesPage() {
                 controles.map((controle) => (
                   <TableRow key={controle.id}>
                     <TableCell className="font-medium">
-                      {controle.equipement ? `${controle.equipement.marque} ${controle.equipement.modele}` : 'Équipement non trouvé'}
+                      {controle.equipements ? `${controle.equipements.marque} ${controle.equipements.modele}` : 'Équipement non trouvé'}
                     </TableCell>
                     <TableCell>
-                      {controle.controleur ? `${controle.controleur.prenom} ${controle.controleur.nom}` : 'Contrôleur inconnu'}
+                      {controle.profiles ? `${controle.profiles.prenom} ${controle.profiles.nom}` : 'Contrôleur inconnu'}
                     </TableCell>
                     <TableCell>{formatDate(controle.date_controle)}</TableCell>
                     <TableCell>{getResultBadge(controle.resultat)}</TableCell>
