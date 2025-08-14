@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Pompier } from '@/types';
+import { Pompier } from '@/types/index';
 
 const formSchema = z.object({
   type: z.enum(['casque', 'veste', 'surpantalon', 'gants', 'rangers', 'autre'], {

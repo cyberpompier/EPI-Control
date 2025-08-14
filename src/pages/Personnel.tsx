@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Pompier } from '@/types';
+import { Pompier } from '@/types/index';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Users } from 'lucide-react';
 import { showError } from '@/utils/toast';

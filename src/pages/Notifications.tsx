@@ -22,75 +22,11 @@ export default function Notifications() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
-  // Données simulées pour les notifications
-  const mockNotifications: Notification[] = [
-    {
-      id: '1',
-      title: 'EPI expiré',
-      message: 'Le casque F1 XF de Jean Dupont a dépassé sa date de fin de vie. Un remplacement est nécessaire.',
-      date: '2023-10-22T09:30:00',
-      type: 'alert',
-      read: false
-    },
-    {
-      id: '2',
-      title: 'Contrôle à planifier',
-      message: 'La veste d\'intervention de Marie Martin doit être contrôlée avant le 30/10/2023.',
-      date: '2023-10-21T14:15:00',
-      type: 'reminder',
-      read: false
-    },
-    {
-      id: '3',
-      title: 'EPI non conforme',
-      message: 'Les gants d\'intervention de Thomas Bernard ont été déclarés non conformes lors du dernier contrôle. Des actions correctives sont requises.',
-      date: '2023-10-20T11:45:00',
-      type: 'alert',
-      read: true
-    },
-    {
-      id: '4',
-      title: 'Nouveau contrôle enregistré',
-      message: 'Le contrôle du surpantalon de Lucie Petit a été enregistré avec succès. Résultat: Conforme.',
-      date: '2023-10-19T16:20:00',
-      type: 'success',
-      read: true
-    },
-    {
-      id: '5',
-      title: 'Rappel de maintenance',
-      message: 'Une maintenance préventive est recommandée pour les casques MSA F1 XF mis en service avant janvier 2022.',
-      date: '2023-10-18T10:00:00',
-      type: 'info',
-      read: true
-    },
-    {
-      id: '6',
-      title: 'Nouvel équipement ajouté',
-      message: 'De nouveaux rangers Haix Fire Eagle ont été ajoutés à l\'inventaire et sont disponibles pour attribution.',
-      date: '2023-10-17T09:10:00',
-      type: 'info',
-      read: true
-    }
-  ];
-
   useEffect(() => {
     const fetchNotifications = async () => {
-      try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data, error } = await supabase.from('notifications').select('*');
-        // if (error) throw error;
-        // setNotifications(data);
-        
-        // Simulation de chargement
-        setTimeout(() => {
-          setNotifications(mockNotifications);
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des notifications:', error);
-        setLoading(false);
-      }
+      // NOTE: La table 'notifications' n'existe pas dans le schéma actuel.
+      // Cette fonction est un placeholder pour une future implémentation.
+      setLoading(false);
     };
     
     fetchNotifications();

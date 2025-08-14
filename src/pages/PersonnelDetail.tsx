@@ -8,97 +8,30 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Pompier, EPI } from '@/types';
-import { ArrowLeft, Mail, Phone, MapPin, Shield, Plus, FileText, Calendar } from 'lucide-react';
+import { Pompier, EPI } from '@/types/index';
+import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText } from 'lucide-react';
 
 export default function PersonnelDetail() {
   const { id } = useParams<{ id: string }>();
-  const [pompier, setPompier] = useState<any | null>(null);
+  const [pompier, setPompier] = useState<Pompier | null>(null);
   const [equipements, setEquipements] = useState<EPI[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Données simulées pour le pompier
-  const mockPompier = {
-    id: '2',
-    nom: 'Martin',
-    prenom: 'Marie',
-    matricule: 'SP23456',
-    caserne: 'Caserne Nord',
-    grade: 'Caporal',
-    email: 'marie.martin@sdis.fr',
-    telephone: '06 12 34 56 78',
-    date_entree: '2019-03-15',
-    specialites: ['Secours routier', 'Feux de forêt']
-  };
-
-  // Données simulées pour les équipements du pompier
-  const mockEquipements: EPI[] = [
-    {
-      id: '2',
-      type: 'veste',
-      marque: 'Bristol',
-      modele: 'ErgoTech Action',
-      numero_serie: 'V54321',
-      date_mise_en_service: '2021-06-10',
-      date_fin_vie: '2026-06-10',
-      personnel_id: 2,
-      statut: 'non_conforme'
-    },
-    {
-      id: '5',
-      type: 'rangers',
-      marque: 'Haix',
-      modele: 'Fire Eagle',
-      numero_serie: 'R87654',
-      date_mise_en_service: '2022-11-12',
-      date_fin_vie: '2025-11-12',
-      personnel_id: 2,
-      statut: 'conforme'
-    },
-    {
-      id: '7',
-      type: 'casque',
-      marque: 'MSA',
-      modele: 'F1 XF',
-      numero_serie: 'C11111',
-      date_mise_en_service: '2020-01-15',
-      date_fin_vie: '2030-01-15',
-      personnel_id: 2,
-      statut: 'conforme'
-    },
-    {
-      id: '8',
-      type: 'gants',
-      marque: 'Rostaing',
-      modele: 'FirePro',
-      numero_serie: 'G22222',
-      date_mise_en_service: '2023-05-20',
-      date_fin_vie: '2025-05-20',
-      personnel_id: 2,
-      statut: 'en_attente'
-    }
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) return;
       try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data: pompierData, error: pompierError } = await supabase.from('pompiers').select('*').eq('id', id).single();
-        // if (pompierError) throw pompierError;
-        // setPompier(pompierData);
+        const { data: pompierData, error: pompierError } = await supabase.from('personnel').select('*').eq('id', id).single();
+        if (pompierError) throw pompierError;
+        setPompier(pompierData);
         
-        // const { data: equipementsData, error: equipementsError } = await supabase.from('equipements').select('*').eq('pompier_id', id);
-        // if (equipementsError) throw equipementsError;
-        // setEquipements(equipementsData);
+        const { data: equipementsData, error: equipementsError } = await supabase.from('equipements').select('*').eq('personnel_id', id);
+        if (equipementsError) throw equipementsError;
+        setEquipements(equipementsData || []);
         
-        // Simulation de chargement
-        setTimeout(() => {
-          setPompier(mockPompier);
-          setEquipements(mockEquipements);
-          setLoading(false);
-        }, 1000);
       } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -131,24 +64,17 @@ export default function PersonnelDetail() {
   }
 
   const getInitials = (nom: string, prenom: string) => {
-    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+    return `${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase();
   };
 
   const getGradeColor = (grade: string) => {
     switch (grade.toLowerCase()) {
-      case 'capitaine':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'lieutenant':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'adjudant':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'sergent':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'caporal':
-      case 'caporal-chef':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'capitaine': return 'bg-red-100 text-red-800 border-red-200';
+      case 'lieutenant': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'adjudant': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'sergent': return 'bg-green-100 text-green-800 border-green-200';
+      case 'caporal': case 'caporal-chef': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -194,11 +120,11 @@ export default function PersonnelDetail() {
             <div className="text-center">
               <Avatar className="h-24 w-24 mx-auto mb-4">
                 <AvatarImage src={`https://i.pravatar.cc/150?u=${pompier.id}`} alt={`${pompier.prenom} ${pompier.nom}`} />
-                <AvatarFallback className="text-xl">{getInitials(pompier.nom, pompier.prenom)}</AvatarFallback>
+                <AvatarFallback className="text-xl">{getInitials(pompier.nom || '', pompier.prenom || '')}</AvatarFallback>
               </Avatar>
               
               <h2 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h2>
-              <Badge className={`${getGradeColor(pompier.grade)} mt-2`} variant="outline">
+              <Badge className={`${getGradeColor(pompier.grade || '')} mt-2`} variant="outline">
                 {pompier.grade}
               </Badge>
               
@@ -212,37 +138,12 @@ export default function PersonnelDetail() {
                   <Mail className="h-4 w-4 mr-2 text-gray-500" />
                   <span className="text-xs">{pompier.email}</span>
                 </div>
-                
-                {pompier.telephone && (
-                  <div className="flex items-center justify-center">
-                    <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                    <span>{pompier.telephone}</span>
-                  </div>
-                )}
-                
+                                
                 <div className="flex items-center justify-center">
                   <MapPin className="h-4 w-4 mr-2 text-gray-500" />
                   <span>{pompier.caserne}</span>
                 </div>
-                
-                <div className="flex items-center justify-center">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>Depuis {new Date(pompier.date_entree).toLocaleDateString('fr-FR')}</span>
-                </div>
               </div>
-              
-              {pompier.specialites && pompier.specialites.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Spécialités</h3>
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {pompier.specialites.map((specialite: string, index: number) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {specialite}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

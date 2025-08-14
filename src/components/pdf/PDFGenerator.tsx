@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { Controle, EPI, Pompier } from '@/types';
+import { Controle, EPI, Pompier } from '@/types/index';
 
 interface PDFGeneratorProps {
   controle: Controle;

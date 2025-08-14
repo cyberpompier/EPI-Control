@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Controle, EPI, Pompier } from '@/types';
+import { Controle, EPI, Pompier } from '@/types/index';
 import { ArrowLeft, CheckCircle, AlertTriangle, Calendar, Clock, User, FileText, Camera } from 'lucide-react';
 
 export default function ControleDetail() {
@@ -15,61 +15,21 @@ export default function ControleDetail() {
   const [controle, setControle] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Données simulées pour le contrôle
-  const mockControle = {
-    id: '2',
-    epi: { 
-      id: '2', 
-      type: 'veste', 
-      marque: 'Bristol', 
-      modele: 'ErgoTech Action',
-      numero_serie: 'V54321',
-      date_mise_en_service: '2021-06-10',
-      date_fin_vie: '2026-06-10'
-    },
-    pompier: { 
-      id: '2', 
-      nom: 'Martin', 
-      prenom: 'Marie', 
-      grade: 'Caporal',
-      matricule: 'SP23456',
-      caserne: 'Caserne Nord',
-      email: 'marie.martin@sdis.fr'
-    },
-    controleur: { 
-      id: '3', 
-      nom: 'Leroy', 
-      prenom: 'Sophie', 
-      grade: 'Lieutenant' 
-    },
-    date_controle: '2023-10-21',
-    resultat: 'non_conforme',
-    observations: 'Usure importante au niveau des coudes et des poignets. Fermeture éclair défectueuse. Les bandes réfléchissantes montrent des signes d\'usure et une diminution de leur efficacité. Plusieurs coutures sont également fragilisées.',
-    actions_correctives: 'Remplacement de la fermeture éclair et renforcement des zones usées. Prévoir un remplacement complet dans les 6 mois.',
-    date_prochaine_verification: '2023-11-21',
-    photos: [
-      'https://source.unsplash.com/random/300x300?firefighter+jacket&1',
-      'https://source.unsplash.com/random/300x300?firefighter+jacket&2',
-      'https://source.unsplash.com/random/300x300?firefighter+jacket&3'
-    ]
-  };
-
   useEffect(() => {
     const fetchControle = async () => {
+      if (!id) return;
       try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data, error } = await supabase.from('controles').select('*').eq('id', id).single();
-        // if (error) throw error;
-        // setControle(data);
-        
-        // Simulation de chargement
-        setTimeout(() => {
-          setControle(mockControle);
-          setLoading(false);
-        }, 1000);
+        const { data, error } = await supabase
+          .from('controles')
+          .select('*, epi:equipements(*, pompier:personnel(*)), controleur:profiles(id, nom, prenom, grade)')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        setControle(data);
       } catch (error) {
-        
         console.error('Erreur lors de la récupération du contrôle:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -103,18 +63,12 @@ export default function ControleDetail() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'casque':
-        return '🪖';
-      case 'veste':
-        return '🧥';
-      case 'surpantalon':
-        return '👖';
-      case 'gants':
-        return '🧤';
-      case 'rangers':
-        return '👢';
-      default:
-        return '🛡️';
+      case 'casque': return '🪖';
+      case 'veste': return '🧥';
+      case 'surpantalon': return '👖';
+      case 'gants': return '🧤';
+      case 'rangers': return '👢';
+      default: return '🛡️';
     }
   };
 
@@ -141,7 +95,7 @@ export default function ControleDetail() {
           <PDFGenerator 
             controle={controle}
             epi={controle.epi}
-            pompier={controle.pompier}
+            pompier={controle.epi.pompier}
             controleur={controle.controleur}
           />
         </div>
@@ -276,19 +230,19 @@ export default function ControleDetail() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Nom</span>
-                    <span className="font-medium">{controle.pompier.nom}</span>
+                    <span className="font-medium">{controle.epi.pompier.nom}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Prénom</span>
-                    <span className="font-medium">{controle.pompier.prenom}</span>
+                    <span className="font-medium">{controle.epi.pompier.prenom}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Grade</span>
-                    <span className="font-medium">{controle.pompier.grade}</span>
+                    <span className="font-medium">{controle.epi.pompier.grade}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Matricule</span>
-                    <span className="font-medium font-mono">{controle.pompier.matricule}</span>
+                    <span className="font-medium font-mono">{controle.epi.pompier.matricule}</span>
                   </div>
                 </div>
               </div>
@@ -298,17 +252,17 @@ export default function ControleDetail() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Caserne</span>
-                    <span className="font-medium">{controle.pompier.caserne}</span>
+                    <span className="font-medium">{controle.epi.pompier.caserne}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Email</span>
-                    <span className="font-medium">{controle.pompier.email}</span>
+                    <span className="font-medium">{controle.epi.pompier.email}</span>
                   </div>
                 </div>
               </div>
               
               <div className="pt-4 border-t">
-                <Link to={`/personnel/${controle.pompier.id}/equipements`}>
+                <Link to={`/personnel/${controle.epi.pompier.id}/equipements`}>
                   <Button variant="outline" className="w-full">
                     <FileText className="h-4 w-4 mr-2" />
                     Voir tous les équipements
@@ -325,72 +279,6 @@ export default function ControleDetail() {
                   </Link>
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="h-5 w-5 mr-2" />
-              Historique des contrôles
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-              
-              <div className="space-y-6">
-                <div className="relative pl-10">
-                  <div className="absolute left-0 top-1 h-8 w-8 rounded-full bg-red-100 border border-red-200 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-red-600" />
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-md border">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-medium">Contrôle actuel</h4>
-                      <span className="text-xs text-gray-500">{new Date(controle.date_controle).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                    <p className="text-sm">{controle.resultat === 'conforme' ? 'Équipement conforme' : 'Équipement non conforme'}</p>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Par {controle.controleur.grade} {controle.controleur.prenom} {controle.controleur.nom}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="relative pl-10">
-                  <div className="absolute left-0 top-1 h-8 w-8 rounded-full bg-green-100 border border-green-200 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-md border">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-medium">Contrôle précédent</h4>
-                      <span className="text-xs text-gray-500">15/04/2023</span>
-                    </div>
-                    <p className="text-sm">Équipement conforme</p>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Par Adjudant Pierre Dubois
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="relative pl-10">
-                  <div className="absolute left-0 top-1 h-8 w-8 rounded-full bg-green-100 border border-green-200 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-md border">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-medium">Contrôle initial</h4>
-                      <span className="text-xs text-gray-500">10/06/2021</span>
-                    </div>
-                    <p className="text-sm">Mise en service de l'équipement</p>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Par Capitaine Lucas Moreau
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Filter, AlertTriangle, Search } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { EPI } from '@/types';
+import { EPI } from '@/types/index';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

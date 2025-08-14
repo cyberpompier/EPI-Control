@@ -6,63 +6,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { EPI, Pompier } from '@/types';
+import { EPI, Pompier } from '@/types/index';
 import { ArrowLeft, User, Shield } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 export default function ControleFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [epi, setEpi] = useState<any | null>(null);
-  const [pompier, setPompier] = useState<any | null>(null);
+  const [epi, setEpi] = useState<EPI | null>(null);
+  const [pompier, setPompier] = useState<Pompier | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Données simulées pour l'EPI
-  const mockEPI = {
-    id: '2',
-    type: 'veste',
-    marque: 'Bristol',
-    modele: 'ErgoTech Action',
-    numero_serie: 'V54321',
-    date_mise_en_service: '2021-06-10',
-    date_fin_vie: '2026-06-10',
-    pompier_id: '2',
-    statut: 'en_attente'
-  };
-
-  // Données simulées pour le pompier
-  const mockPompier = {
-    id: '2',
-    nom: 'Martin',
-    prenom: 'Marie',
-    matricule: 'SP23456',
-    caserne: 'Caserne Nord',
-    grade: 'Caporal',
-    email: 'marie.martin@sdis.fr'
-  };
-
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) return;
       try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data: epiData, error: epiError } = await supabase.from('equipements').select('*').eq('id', id).single();
-        // if (epiError) throw epiError;
-        // setEpi(epiData);
+        const { data: epiData, error: epiError } = await supabase
+          .from('equipements')
+          .select('*, personnel(*)')
+          .eq('id', id)
+          .single();
         
-        // const { data: pompierData, error: pompierError } = await supabase.from('pompiers').select('*').eq('id', epiData.pompier_id).single();
-        // if (pompierError) throw pompierError;
-        // setPompier(pompierData);
+        if (epiError) throw epiError;
         
-        // Simulation de chargement
-        setTimeout(() => {
-          setEpi(mockEPI);
-          setPompier(mockPompier);
-          setLoading(false);
-        }, 1000);
+        setEpi(epiData);
+        setPompier(epiData.personnel);
       } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
         showError('Impossible de charger les informations de l\'équipement');
+      } finally {
         setLoading(false);
       }
     };
@@ -73,23 +46,30 @@ export default function ControleFormPage() {
   const handleSubmit = async (data: any) => {
     setSubmitting(true);
     try {
-      // Dans une vraie application, vous enverriez les données à Supabase
-      // const { data: result, error } = await supabase.from('controles').insert([data]);
-      // if (error) throw error;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utilisateur non authentifié");
+
+      const { error: insertError } = await supabase.from('controles').insert([
+        { 
+          ...data,
+          equipement_id: epi?.id,
+          controleur_id: user.id,
+        }
+      ]);
+      if (insertError) throw insertError;
       
-      // Simulation d'envoi
-      console.log('Données du contrôle:', data);
+      const { error: updateError } = await supabase
+        .from('equipements')
+        .update({ statut: data.resultat })
+        .eq('id', epi?.id);
+      if (updateError) throw updateError;
       
-      // Mise à jour du statut de l'EPI
-      // await supabase.from('equipements').update({ statut: data.resultat }).eq('id', id);
-      
-      setTimeout(() => {
-        showSuccess('Contrôle enregistré avec succès');
-        navigate('/controles');
-      }, 1500);
-    } catch (error) {
+      showSuccess('Contrôle enregistré avec succès');
+      navigate('/controles');
+    } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement du contrôle:', error);
-      showError('Erreur lors de l\'enregistrement du contrôle');
+      showError(`Erreur lors de l'enregistrement du contrôle: ${error.message}`);
+    } finally {
       setSubmitting(false);
     }
   };
@@ -120,18 +100,12 @@ export default function ControleFormPage() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'casque':
-        return '🪖';
-      case 'veste':
-        return '🧥';
-      case 'surpantalon':
-        return '👖';
-      case 'gants':
-        return '🧤';
-      case 'rangers':
-        return '👢';
-      default:
-        return '🛡️';
+      case 'casque': return '🪖';
+      case 'veste': return '🧥';
+      case 'surpantalon': return '👖';
+      case 'gants': return '🧤';
+      case 'rangers': return '👢';
+      default: return '🛡️';
     }
   };
 
@@ -224,7 +198,7 @@ export default function ControleFormPage() {
               </div>
               
               <div className="mt-4 pt-4 border-t">
-                <Link to={`/personnel/${pompier.id}`}>
+                <Link to={`/personnel/${pompier.id}/equipements`}>
                   <Button variant="outline" className="w-full text-sm">
                     Voir tous les équipements
                   </Button>

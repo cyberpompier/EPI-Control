@@ -1,72 +1,108 @@
+import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import StatCard from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Shield, AlertTriangle, Clock, Users, CheckCircle, Plus, FileText } from 'lucide-react';
+import { Bell, Shield, AlertTriangle, Clock, CheckCircle, Plus, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Helmet } from 'react-helmet';
 import { useSession } from '@/components/auth/SessionProvider';
+import { supabase } from '@/lib/supabase';
+import { EPI, Controle } from '@/types/index';
 
 export default function Dashboard() {
-  const { user, loading } = useSession();
-  
-  // Données simulées pour les statistiques
-  const stats = {
-    totalEPI: 248,
-    epiConformes: 203,
-    epiNonConformes: 32,
-    epiEnAttente: 13,
-    controlesMois: 42,
-    alertes: 8
-  };
-  
-  // Données simulées pour les graphiques
-  const typeData = [
-    { name: 'Casques', value: 62 },
-    { name: 'Vestes', value: 58 },
-    { name: 'Surpantalons', value: 56 },
-    { name: 'Gants', value: 42 },
-    { name: 'Rangers', value: 30 }
-  ];
-  
-  const statusData = [
-    { name: 'Conformes', value: 203, color: '#22C55E' },
-    { name: 'Non conformes', value: 32, color: '#EF4444' },
-    { name: 'En attente', value: 13, color: '#F59E0B' }
-  ];
-  
-  const monthlyData = [
-    { name: 'Jan', controles: 28 },
-    { name: 'Fév', controles: 32 },
-    { name: 'Mar', controles: 36 },
-    { name: 'Avr', controles: 30 },
-    { name: 'Mai', controles: 25 },
-    { name: 'Juin', controles: 38 },
-    { name: 'Juil', controles: 42 },
-    { name: 'Août', controles: 35 },
-    { name: 'Sep', controles: 31 },
-    { name: 'Oct', controles: 42 },
-    { name: 'Nov', controles: 0 },
-    { name: 'Déc', controles: 0 }
-  ];
-  
-  // Données simulées pour les alertes récentes
-  const recentAlerts = [
-    { id: 1, type: 'EPI expiré', equipement: 'Casque F1', pompier: 'Martin Dupont', date: '2023-10-15' },
-    { id: 2, type: 'Contrôle à planifier', equipement: 'Veste F1', pompier: 'Sophie Durand', date: '2023-10-18' },
-    { id: 3, type: 'EPI non conforme', equipement: 'Gants d\'intervention', pompier: 'Thomas Bernard', date: '2023-10-20' }
-  ];
-  
-  // Données simulées pour les contrôles récents
-  const recentControles = [
-    { id: 1, equipement: 'Casque F1', pompier: 'Jean Dupont', resultat: 'conforme', date: '2023-10-22' },
-    { id: 2, equipement: 'Veste d\'intervention', pompier: 'Marie Martin', resultat: 'non_conforme', date: '2023-10-21' },
-    { id: 3, equipement: 'Rangers', pompier: 'Pierre Dubois', resultat: 'conforme', date: '2023-10-20' },
-    { id: 4, equipement: 'Surpantalon', pompier: 'Lucie Petit', resultat: 'conforme', date: '2023-10-19' }
-  ];
+  const { user, loading: userLoading } = useSession();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>({});
+  const [typeData, setTypeData] = useState<any[]>([]);
+  const [statusData, setStatusData] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
+  const [recentControles, setRecentControles] = useState<Controle[]>([]);
 
-  if (loading) {
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const { data: equipements, error: epiError } = await supabase.from('equipements').select('*');
+        if (epiError) throw epiError;
+
+        const { data: controles, error: controlesError } = await supabase.from('controles').select('*, controleur:profiles(prenom, nom), equipement:equipements(marque, modele), pompier:personnel(prenom, nom)');
+        if (controlesError) throw controlesError;
+
+        // Calculate stats
+        const totalEPI = equipements.length;
+        const epiConformes = equipements.filter(e => e.statut === 'conforme').length;
+        const epiNonConformes = equipements.filter(e => e.statut === 'non_conforme').length;
+        const epiEnAttente = equipements.filter(e => e.statut === 'en_attente').length;
+        
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const controlesMois = controles.filter(c => new Date(c.date_controle) >= firstDayOfMonth).length;
+
+        const expiringSoon = equipements.filter(e => {
+          const finVie = new Date(e.date_fin_vie);
+          const diffTime = finVie.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays > 0 && diffDays <= 30;
+        }).length;
+        const alertes = epiNonConformes + expiringSoon;
+
+        setStats({
+          totalEPI,
+          epiConformes,
+          epiNonConformes,
+          epiEnAttente,
+          controlesMois,
+          alertes
+        });
+
+        // Type data
+        const typeCounts = equipements.reduce((acc, epi) => {
+          acc[epi.type] = (acc[epi.type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        setTypeData(Object.entries(typeCounts).map(([name, value]) => ({ name, value })));
+
+        // Status data
+        setStatusData([
+          { name: 'Conformes', value: epiConformes, color: '#22C55E' },
+          { name: 'Non conformes', value: epiNonConformes, color: '#EF4444' },
+          { name: 'En attente', value: epiEnAttente, color: '#F59E0B' }
+        ]);
+
+        // Monthly data
+        const monthlyCounts = Array(12).fill(0).map((_, i) => ({ name: new Date(0, i).toLocaleString('fr', { month: 'short' }), controles: 0 }));
+        controles.forEach(c => {
+          const month = new Date(c.date_controle).getMonth();
+          monthlyCounts[month].controles++;
+        });
+        setMonthlyData(monthlyCounts);
+
+        // Recent alerts
+        const alertsList = [];
+        const nonConformesRecents = equipements.filter(e => e.statut === 'non_conforme').slice(0, 2);
+        for (const epi of nonConformesRecents) {
+            const {data: pompier} = await supabase.from('personnel').select('nom, prenom').eq('id', epi.personnel_id).single();
+            alertsList.push({ id: epi.id, type: 'EPI non conforme', equipement: `${epi.marque} ${epi.modele}`, pompier: `${pompier?.prenom} ${pompier?.nom}`, date: epi.created_at });
+        }
+        setRecentAlerts(alertsList);
+
+        // Recent controles
+        setRecentControles(controles.slice(0, 4));
+
+      } catch (error) {
+        console.error("Erreur de chargement du tableau de bord:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (userLoading || loading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -90,39 +126,38 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard 
           title="Total des EPI" 
-          value={stats.totalEPI} 
+          value={stats.totalEPI || 0} 
           icon={<Shield size={20} />}
           color="blue"
         />
         <StatCard 
           title="EPI conformes" 
-          value={stats.epiConformes} 
+          value={stats.epiConformes || 0} 
           icon={<CheckCircle size={20} />}
-          description={`${Math.round((stats.epiConformes / stats.totalEPI) * 100)}% du total`}
+          description={stats.totalEPI > 0 ? `${Math.round((stats.epiConformes / stats.totalEPI) * 100)}% du total` : '0% du total'}
           color="green"
         />
         <StatCard 
           title="EPI non conformes" 
-          value={stats.epiNonConformes} 
+          value={stats.epiNonConformes || 0} 
           icon={<AlertTriangle size={20} />}
-          description={`${Math.round((stats.epiNonConformes / stats.totalEPI) * 100)}% du total`}
+          description={stats.totalEPI > 0 ? `${Math.round((stats.epiNonConformes / stats.totalEPI) * 100)}% du total` : '0% du total'}
           color="red"
         />
         <StatCard 
           title="EPI en attente de contrôle" 
-          value={stats.epiEnAttente} 
+          value={stats.epiEnAttente || 0} 
           icon={<Clock size={20} />}
           color="yellow"
         />
         <StatCard 
           title="Contrôles ce mois" 
-          value={stats.controlesMois} 
+          value={stats.controlesMois || 0} 
           icon={<FileText size={20} />}
-          trend={{ value: 12, isPositive: true }}
         />
         <StatCard 
           title="Alertes actives" 
-          value={stats.alertes} 
+          value={stats.alertes || 0} 
           icon={<Bell size={20} />}
           color="red"
         />
@@ -243,7 +278,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentControles.map((controle) => (
+              {recentControles.map((controle: any) => (
                 <div key={controle.id} className="flex items-start p-3 bg-gray-50 rounded-md border border-gray-200">
                   <div className={`h-5 w-5 rounded-full mr-3 mt-0.5 flex items-center justify-center ${
                     controle.resultat === 'conforme' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
@@ -254,12 +289,12 @@ export default function Dashboard() {
                     }
                   </div>
                   <div>
-                    <h4 className="font-medium">{controle.equipement}</h4>
+                    <h4 className="font-medium">{controle.equipement?.marque} {controle.equipement?.modele}</h4>
                     <p className="text-sm text-gray-600">
-                      {controle.pompier}
+                      {controle.pompier?.prenom} {controle.pompier?.nom}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(controle.date).toLocaleDateString('fr-FR')}
+                      {new Date(controle.date_controle).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                 </div>

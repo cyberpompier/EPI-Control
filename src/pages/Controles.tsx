@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Controle, EPI, Pompier } from '@/types';
+import { Controle } from '@/types/index';
 import { Link } from 'react-router-dom';
 import { Plus, Search, CheckCircle, AlertTriangle, FileText, Calendar, Download } from 'lucide-react';
 
@@ -18,79 +18,23 @@ export default function Controles() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-
-  // Données simulées pour les contrôles
-  const mockControles = [
-    {
-      id: '1',
-      epi: { id: '1', type: 'casque', marque: 'MSA', modele: 'F1 XF' },
-      pompier: { id: '1', nom: 'Dupont', prenom: 'Jean', grade: 'Sergent' },
-      controleur: { id: '3', nom: 'Martin', prenom: 'Sophie', grade: 'Lieutenant' },
-      date_controle: '2023-10-22',
-      resultat: 'conforme',
-      observations: 'Équipement en bon état général, aucune anomalie détectée.',
-      date_prochaine_verification: '2024-04-22'
-    },
-    {
-      id: '2',
-      epi: { id: '2', type: 'veste', marque: 'Bristol', modele: 'ErgoTech Action' },
-      pompier: { id: '2', nom: 'Martin', prenom: 'Marie', grade: 'Caporal' },
-      controleur: { id: '3', nom: 'Martin', prenom: 'Sophie', grade: 'Lieutenant' },
-      date_controle: '2023-10-21',
-      resultat: 'non_conforme',
-      observations: 'Usure importante au niveau des coudes et des poignets. Fermeture éclair défectueuse.',
-      actions_correctives: 'Remplacement de la fermeture éclair et renforcement des zones usées.',
-      date_prochaine_verification: '2023-11-21'
-    },
-    {
-      id: '3',
-      epi: { id: '5', type: 'rangers', marque: 'Haix', modele: 'Fire Eagle' },
-      pompier: { id: '2', nom: 'Martin', prenom: 'Marie', grade: 'Caporal' },
-      controleur: { id: '4', nom: 'Dubois', prenom: 'Pierre', grade: 'Adjudant' },
-      date_controle: '2023-10-20',
-      resultat: 'conforme',
-      observations: 'Semelles en bon état, cuir légèrement usé mais conforme aux normes.',
-      date_prochaine_verification: '2024-04-20'
-    },
-    {
-      id: '4',
-      epi: { id: '3', type: 'surpantalon', marque: 'Kermel', modele: 'FireFlex' },
-      pompier: { id: '1', nom: 'Dupont', prenom: 'Jean', grade: 'Sergent' },
-      controleur: { id: '4', nom: 'Dubois', prenom: 'Pierre', grade: 'Adjudant' },
-      date_controle: '2023-10-19',
-      resultat: 'conforme',
-      observations: 'Équipement en parfait état, aucune anomalie.',
-      date_prochaine_verification: '2024-04-19'
-    },
-    {
-      id: '5',
-      epi: { id: '6', type: 'casque', marque: 'Dräger', modele: 'HPS 7000' },
-      pompier: { id: '3', nom: 'Bernard', prenom: 'Thomas', grade: 'Caporal-chef' },
-      controleur: { id: '3', nom: 'Martin', prenom: 'Sophie', grade: 'Lieutenant' },
-      date_controle: '2023-10-18',
-      resultat: 'non_conforme',
-      observations: 'Fissure détectée sur la coque externe. Visière rayée limitant la visibilité.',
-      actions_correctives: 'Remplacement du casque nécessaire.',
-      date_prochaine_verification: '2023-10-25'
-    }
-  ];
+  const [activeTab, setActiveTab] = useState('tous');
 
   useEffect(() => {
     const fetchControles = async () => {
       try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data, error } = await supabase.from('controles').select('*');
-        // if (error) throw error;
-        // setControles(data);
+        const { data, error } = await supabase
+          .from('controles')
+          .select('*, equipements(*, personnel(*)), controleur:profiles(prenom, nom, grade)')
+          .order('date_controle', { ascending: false });
         
-        // Simulation de chargement
-        setTimeout(() => {
-          setControles(mockControles);
-          setFilteredControles(mockControles);
-          setLoading(false);
-        }, 1000);
+        if (error) throw error;
+        
+        setControles(data || []);
+        setFilteredControles(data || []);
       } catch (error) {
         console.error('Erreur lors de la récupération des contrôles:', error);
+      } finally {
         setLoading(false);
       }
     };
@@ -98,91 +42,58 @@ export default function Controles() {
     fetchControles();
   }, []);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    filterControles(value, dateFilter);
-  };
+  useEffect(() => {
+    let newFiltered = [...controles];
 
-  const handleDateFilterChange = (value: string) => {
-    setDateFilter(value);
-    filterControles(searchTerm, value);
-  };
-
-  const filterControles = (search: string, date: string) => {
-    let filtered = [...controles];
+    if (activeTab !== 'tous') {
+      newFiltered = newFiltered.filter(c => c.resultat === activeTab.slice(0, -1));
+    }
     
-    // Filtre par recherche
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(controle => 
-        controle.epi.type.toLowerCase().includes(searchLower) ||
-        controle.epi.marque.toLowerCase().includes(searchLower) ||
-        controle.epi.modele.toLowerCase().includes(searchLower) ||
-        `${controle.pompier.prenom} ${controle.pompier.nom}`.toLowerCase().includes(searchLower) ||
-        controle.pompier.grade.toLowerCase().includes(searchLower)
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      newFiltered = newFiltered.filter(c => 
+        (c.equipements?.type.toLowerCase().includes(searchLower)) ||
+        (c.equipements?.marque.toLowerCase().includes(searchLower)) ||
+        (c.equipements?.modele.toLowerCase().includes(searchLower)) ||
+        (`${c.equipements?.personnel?.prenom} ${c.equipements?.personnel?.nom}`.toLowerCase().includes(searchLower))
       );
     }
     
-    // Filtre par date
-    if (date && date !== 'all') {
+    if (dateFilter && dateFilter !== 'all') {
       const today = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
-      
-      switch (date) {
+      let startDate: Date;
+
+      switch (dateFilter) {
         case 'today':
-          filtered = filtered.filter(controle => 
-            new Date(controle.date_controle).toDateString() === today.toDateString()
-          );
+          startDate = new Date(today.setHours(0, 0, 0, 0));
           break;
         case 'week':
-          const oneWeekAgo = new Date(today.getTime() - 7 * oneDay);
-          filtered = filtered.filter(controle => 
-            new Date(controle.date_controle) >= oneWeekAgo
-          );
+          startDate = new Date(today.getTime() - 7 * oneDay);
           break;
         case 'month':
-          const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-          filtered = filtered.filter(controle => 
-            new Date(controle.date_controle) >= oneMonthAgo
-          );
+          startDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
           break;
         case 'year':
-          const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
-          filtered = filtered.filter(controle => 
-            new Date(controle.date_controle) >= oneYearAgo
-          );
+          startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
           break;
+        default:
+          startDate = new Date(0);
       }
+      newFiltered = newFiltered.filter(c => new Date(c.date_controle) >= startDate);
     }
     
-    setFilteredControles(filtered);
-  };
-
-  const handleTabChange = (value: string) => {
-    if (value === 'tous') {
-      setFilteredControles(controles);
-    } else if (value === 'conformes') {
-      setFilteredControles(controles.filter(controle => controle.resultat === 'conforme'));
-    } else if (value === 'non_conformes') {
-      setFilteredControles(controles.filter(controle => controle.resultat === 'non_conforme'));
-    }
-  };
+    setFilteredControles(newFiltered);
+  }, [searchTerm, dateFilter, activeTab, controles]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'casque':
-        return '🪖';
-      case 'veste':
-        return '🧥';
-      case 'surpantalon':
-        return '👖';
-      case 'gants':
-        return '🧤';
-      case 'rangers':
-        return '👢';
-      default:
-        return '🛡️';
+      case 'casque': return '🪖';
+      case 'veste': return '🧥';
+      case 'surpantalon': return '👖';
+      case 'gants': return '🧤';
+      case 'rangers': return '👢';
+      default: return '🛡️';
     }
   };
 
@@ -212,10 +123,10 @@ export default function Controles() {
             placeholder="Rechercher un contrôle..."
             className="pl-8"
             value={searchTerm}
-            onChange={handleSearch}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Select value={dateFilter} onValueChange={handleDateFilterChange}>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Période" />
           </SelectTrigger>
@@ -229,7 +140,7 @@ export default function Controles() {
         </Select>
       </div>
       
-      <Tabs defaultValue="tous" onValueChange={handleTabChange} className="mb-6">
+      <Tabs defaultValue="tous" onValueChange={setActiveTab} className="mb-6">
         <TabsList>
           <TabsTrigger value="tous">Tous</TabsTrigger>
           <TabsTrigger value="conformes">Conformes</TabsTrigger>
@@ -251,11 +162,11 @@ export default function Controles() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="font-semibold text-lg flex items-center">
-                          <span className="mr-2 text-xl">{getTypeIcon(controle.epi.type)}</span>
-                          {controle.epi.marque} {controle.epi.modele}
+                          <span className="mr-2 text-xl">{getTypeIcon(controle.equipements?.type || '')}</span>
+                          {controle.equipements?.marque} {controle.equipements?.modele}
                         </h3>
                         <p className="text-gray-600">
-                          {controle.pompier.grade} {controle.pompier.prenom} {controle.pompier.nom}
+                          {controle.equipements?.personnel?.grade} {controle.equipements?.personnel?.prenom} {controle.equipements?.personnel?.nom}
                         </p>
                       </div>
                       <Badge className={controle.resultat === 'conforme' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}>
@@ -286,7 +197,7 @@ export default function Controles() {
                     <div className="flex flex-wrap gap-4 text-sm">
                       <div className="flex items-center">
                         <FileText className="h-4 w-4 text-gray-500 mr-1" />
-                        <span>Contrôlé par: {controle.controleur.grade} {controle.controleur.prenom} {controle.controleur.nom}</span>
+                        <span>Contrôlé par: {controle.controleur?.grade} {controle.controleur?.prenom} {controle.controleur?.nom}</span>
                       </div>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 text-gray-500 mr-1" />
@@ -319,7 +230,7 @@ export default function Controles() {
                     
                     {controle.resultat === 'non_conforme' && (
                       <div className="mt-4 pt-4 border-t">
-                        <Link to={`/controle/${controle.epi.id}`}>
+                        <Link to={`/controle/${controle.equipements.id}`}>
                           <Button className="w-full bg-red-600 hover:bg-red-700">
                             Recontrôler
                           </Button>

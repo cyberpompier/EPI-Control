@@ -5,6 +5,8 @@ export interface User {
   prenom: string;
   role: 'admin' | 'controleur' | 'pompier';
   caserne: string;
+  grade: string;
+  telephone?: string;
 }
 
 export interface EPI {
@@ -15,13 +17,15 @@ export interface EPI {
   numero_serie: string;
   date_mise_en_service: string;
   date_fin_vie: string;
-  pompier_id: number; // Corresponds to personnel.id (bigint)
+  personnel_id: number; // Corresponds to personnel.id (bigint)
   statut: 'conforme' | 'non_conforme' | 'en_attente';
+  created_at: string;
+  personnel?: Pompier;
 }
 
 export interface Controle {
   id: string; // UUID
-  epi_id: string; // UUID
+  equipement_id: string; // UUID
   controleur_id: string; // UUID from auth.users
   date_controle: string;
   resultat: 'conforme' | 'non_conforme';
@@ -29,6 +33,9 @@ export interface Controle {
   photos: string[];
   actions_correctives: string;
   date_prochaine_verification: string;
+  equipements?: EPI;
+  pompier?: Pompier;
+  controleur?: { prenom: string; nom: string; grade?: string; role?: string };
 }
 
 export interface Pompier {
