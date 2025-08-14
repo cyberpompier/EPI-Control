@@ -82,11 +82,13 @@ export default function ControleForm() {
       const payload = {
         equipement_id: equipementId,
         controleur_id: user.id,
-        date_controle: new Date().toISOString(),
+        date_controle: format(new Date(), 'yyyy-MM-dd'),
         resultat: data.resultat,
         observations: data.observations,
         actions_correctives: data.actions_correctives,
-        date_prochaine_verification: data.date_prochaine_verification?.toISOString(),
+        date_prochaine_verification: data.date_prochaine_verification 
+          ? format(data.date_prochaine_verification, 'yyyy-MM-dd') 
+          : undefined,
       };
 
       const { error: insertError } = await supabase.from('controles').insert([payload]);
