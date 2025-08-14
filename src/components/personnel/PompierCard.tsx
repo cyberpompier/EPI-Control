@@ -53,10 +53,10 @@ export default function PompierCard({ pompier, epiCount }: PompierCardProps) {
         </div>
       </div>
       
-      <Link to={`/personnel/${pompier.id}`} className="w-full mt-4 block">
+      <Link to={`/personnel/${pompier.id}/equipements`} className="w-full mt-4 block">
         <Button variant="outline" className="w-full flex items-center justify-center">
           <ClipboardList className="h-4 w-4 mr-2" />
-          Voir le profil
+          Voir les équipements
         </Button>
       </Link>
     </div>
