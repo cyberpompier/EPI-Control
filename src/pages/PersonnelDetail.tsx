@@ -41,7 +41,7 @@ export default function PersonnelDetail() {
       numero_serie: 'V54321',
       date_mise_en_service: '2021-06-10',
       date_fin_vie: '2026-06-10',
-      pompier_id: 2,
+      personnel_id: 2,
       statut: 'non_conforme'
     },
     {
@@ -52,7 +52,7 @@ export default function PersonnelDetail() {
       numero_serie: 'R87654',
       date_mise_en_service: '2022-11-12',
       date_fin_vie: '2025-11-12',
-      pompier_id: 2,
+      personnel_id: 2,
       statut: 'conforme'
     },
     {
@@ -63,7 +63,7 @@ export default function PersonnelDetail() {
       numero_serie: 'C11111',
       date_mise_en_service: '2020-01-15',
       date_fin_vie: '2030-01-15',
-      pompier_id: 2,
+      personnel_id: 2,
       statut: 'conforme'
     },
     {
@@ -74,7 +74,7 @@ export default function PersonnelDetail() {
       numero_serie: 'G22222',
       date_mise_en_service: '2023-05-20',
       date_fin_vie: '2025-05-20',
-      pompier_id: 2,
+      personnel_id: 2,
       statut: 'en_attente'
     }
   ];
