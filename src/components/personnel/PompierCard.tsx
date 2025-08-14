@@ -1,13 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, Shield } from 'lucide-react';
-
-interface Pompier {
-  id: number;
-  nom: string;
-  prenom: string;
-  // autres propriétés éventuelles
-}
+import { Pompier } from '@/types';
 
 interface EpiCount {
   total: number;
@@ -24,7 +18,7 @@ export default function PompierCard({ pompier, epiCount }: PompierCardProps) {
   return (
     <div className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4">
-        <h2 className="text-lg font-bold">{pompier.prenom} {pompier.nom}</h2>
+        <h2 className="text-lg font-bold">{pompier.prenom || ''} {pompier.nom || ''}</h2>
       </div>
       
       <div className="grid grid-cols-3 gap-2 mt-4">

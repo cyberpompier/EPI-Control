@@ -69,16 +69,7 @@ export default function EquipementForm() {
         if (error) {
           throw error;
         }
-        const pompiersData: Pompier[] = (data || []).map((p: any) => ({
-          id: p.id,
-          nom: p.nom || '',
-          prenom: p.prenom || '',
-          matricule: p.matricule || '',
-          caserne: p.caserne || '',
-          grade: p.grade || '',
-          email: p.email || ''
-        }));
-        setPompiers(pompiersData);
+        setPompiers(data || []);
       } catch (error: any) {
         showError(`Erreur lors du chargement du personnel: ${error.message}`);
         console.error('Erreur lors de la récupération des pompiers:', error);
@@ -209,7 +200,7 @@ export default function EquipementForm() {
                               ) : pompiers.length > 0 ? (
                                 pompiers.map((pompier) => (
                                   <SelectItem key={pompier.id} value={String(pompier.id)}>
-                                    {pompier.grade} {pompier.prenom} {pompier.nom}
+                                    {`${pompier.grade || ''} ${pompier.prenom || ''} ${pompier.nom || ''}`.trim()}
                                   </SelectItem>
                                 ))
                               ) : (

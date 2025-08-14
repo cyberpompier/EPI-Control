@@ -33,10 +33,10 @@ export interface Controle {
 
 export interface Pompier {
   id: number; // bigint
-  nom: string;
-  prenom: string;
-  matricule: string;
-  caserne: string;
-  grade: string;
-  email: string;
+  nom: string | null;
+  prenom: string | null;
+  matricule: string | null;
+  caserne: string | null;
+  grade: string | null;
+  email: string | null;
 }

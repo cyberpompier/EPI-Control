@@ -39,56 +39,11 @@ export default function Personnel() {
           throw error;
         }
         
-        // Transformation des données pour correspondre au type Pompier
-        const pompiersData: Pompier[] = (data || []).map((p: any) => ({
-          id: p.id,
-          nom: p.nom || '',
-          prenom: p.prenom || '',
-          matricule: p.matricule || '',
-          caserne: p.caserne || '',
-          grade: p.grade || '',
-          email: p.email || ''
-        }));
-
-        setPompiers(pompiersData);
-        setFilteredPompiers(pompiersData);
+        setPompiers(data || []);
+        setFilteredPompiers(data || []);
       } catch (error: any) {
         showError(`Erreur lors du chargement: ${error.message}`);
         console.error('Erreur lors de la récupération des pompiers:', error);
-        
-        // En cas d'erreur, utiliser des données de démonstration
-        const demoData: Pompier[] = [
-          {
-            id: 1,
-            nom: 'Dupont',
-            prenom: 'Jean',
-            matricule: 'SP12345',
-            caserne: 'Caserne Centrale',
-            grade: 'Sergent',
-            email: 'jean.dupont@sdis.fr'
-          },
-          {
-            id: 2,
-            nom: 'Martin',
-            prenom: 'Marie',
-            matricule: 'SP23456',
-            caserne: 'Caserne Nord',
-            grade: 'Caporal',
-            email: 'marie.martin@sdis.fr'
-          },
-          {
-            id: 3,
-            nom: 'Bernard',
-            prenom: 'Pierre',
-            matricule: 'SP34567',
-            caserne: 'Caserne Sud',
-            grade: 'Lieutenant',
-            email: 'pierre.bernard@sdis.fr'
-          }
-        ];
-        
-        setPompiers(demoData);
-        setFilteredPompiers(demoData);
       } finally {
         setLoading(false);
       }
@@ -97,16 +52,16 @@ export default function Personnel() {
     fetchPompiers();
   }, []);
 
-  const filterAndSearchPompiers = () => {
+  useEffect(() => {
     let filtered = [...pompiers];
     
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(pompier => 
-        pompier.nom.toLowerCase().includes(searchLower) ||
-        pompier.prenom.toLowerCase().includes(searchLower) ||
-        (pompier.matricule && pompier.matricule.toLowerCase().includes(searchLower)) ||
-        pompier.email.toLowerCase().includes(searchLower)
+        (pompier.nom || '').toLowerCase().includes(searchLower) ||
+        (pompier.prenom || '').toLowerCase().includes(searchLower) ||
+        (pompier.matricule || '').toLowerCase().includes(searchLower) ||
+        (pompier.email || '').toLowerCase().includes(searchLower)
       );
     }
     
@@ -119,10 +74,6 @@ export default function Personnel() {
     }
     
     setFilteredPompiers(filtered);
-  };
-
-  useEffect(() => {
-    filterAndSearchPompiers();
   }, [searchTerm, gradeFilter, caserneFilter, pompiers]);
 
   const grades = [...new Set(pompiers.map(p => p.grade).filter(Boolean))];
@@ -166,7 +117,7 @@ export default function Personnel() {
             <SelectContent>
               <SelectItem value="all">Tous les grades</SelectItem>
               {grades.map(grade => (
-                <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                <SelectItem key={grade} value={grade!}>{grade}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -178,7 +129,7 @@ export default function Personnel() {
             <SelectContent>
               <SelectItem value="all">Toutes les casernes</SelectItem>
               {casernes.map(caserne => (
-                <SelectItem key={caserne} value={caserne}>{caserne}</SelectItem>
+                <SelectItem key={caserne} value={caserne!}>{caserne}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -195,7 +146,7 @@ export default function Personnel() {
             <PompierCard 
               key={pompier.id} 
               pompier={pompier} 
-              epiCount={mockEpiStats[String(pompier.id) as keyof typeof mockEpiStats]}
+              epiCount={mockEpiStats[String(pompier.id) as keyof typeof mockEpiStats] || { total: 0, conformes: 0, nonConformes: 0 }}
             />
           ))}
         </div>
