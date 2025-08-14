@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,8 @@ import { CalendarIcon, ArrowLeft, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { Helmet } from 'react-helmet';
+import { supabase } from '@/lib/supabase';
+import { Pompier } from '@/types';
 
 const formSchema = z.object({
   type: z.enum(['casque', 'veste', 'surpantalon', 'gants', 'rangers', 'autre'], {
@@ -45,15 +47,8 @@ const formSchema = z.object({
 export default function EquipementForm() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-
-  // Données simulées pour les pompiers
-  const mockPompiers = [
-    { id: '1', nom: 'Dupont', prenom: 'Jean', grade: 'Sergent' },
-    { id: '2', nom: 'Martin', prenom: 'Marie', grade: 'Caporal' },
-    { id: '3', nom: 'Bernard', prenom: 'Thomas', grade: 'Caporal-chef' },
-    { id: '4', nom: 'Dubois', prenom: 'Pierre', grade: 'Adjudant' },
-    { id: '5', nom: 'Leroy', prenom: 'Sophie', grade: 'Lieutenant' },
-  ];
+  const [pompiers, setPompiers] = useState<Pompier[]>([]);
+  const [loadingPompiers, setLoadingPompiers] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,20 +61,60 @@ export default function EquipementForm() {
     },
   });
 
+  useEffect(() => {
+    const fetchPompiers = async () => {
+      setLoadingPompiers(true);
+      try {
+        const { data, error } = await supabase.from('personnel').select('*');
+        if (error) {
+          throw error;
+        }
+        const pompiersData: Pompier[] = (data || []).map((p: any) => ({
+          id: p.id,
+          nom: p.nom || '',
+          prenom: p.prenom || '',
+          matricule: p.matricule || '',
+          caserne: p.caserne || '',
+          grade: p.grade || '',
+          email: p.email || ''
+        }));
+        setPompiers(pompiersData);
+      } catch (error: any) {
+        showError(`Erreur lors du chargement du personnel: ${error.message}`);
+        console.error('Erreur lors de la récupération des pompiers:', error);
+      } finally {
+        setLoadingPompiers(false);
+      }
+    };
+    fetchPompiers();
+  }, []);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      // Dans une vraie application, vous enverriez les données à Supabase
-      console.log('Données de l\'équipement:', values);
+      const { error } = await supabase.from('equipements').insert([
+        {
+          type: values.type,
+          marque: values.marque,
+          modele: values.modele,
+          numero_serie: values.numero_serie,
+          date_mise_en_service: values.date_mise_en_service.toISOString(),
+          date_fin_vie: values.date_fin_vie.toISOString(),
+          pompier_id: parseInt(values.pompier_id), // Convertir en nombre si l'ID est un bigint
+          statut: 'en_attente', // Statut par défaut lors de l'ajout
+        }
+      ]);
+
+      if (error) {
+        throw error;
+      }
       
-      // Simulation d'envoi
-      setTimeout(() => {
-        showSuccess('Équipement ajouté avec succès');
-        navigate('/equipements');
-      }, 1500);
-    } catch (error) {
+      showSuccess('Équipement ajouté avec succès');
+      navigate('/equipements');
+    } catch (error: any) {
       console.error('Erreur lors de l\'ajout de l\'équipement:', error);
-      showError('Erreur lors de l\'ajout de l\'équipement');
+      showError(`Erreur lors de l'ajout de l'équipement: ${error.message}`);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -165,15 +200,21 @@ export default function EquipementForm() {
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Sélectionnez un pompier" />
+                                <SelectValue placeholder={loadingPompiers ? "Chargement..." : "Sélectionnez un pompier"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {mockPompiers.map((pompier) => (
-                                <SelectItem key={pompier.id} value={pompier.id}>
-                                  {pompier.grade} {pompier.prenom} {pompier.nom}
-                                </SelectItem>
-                              ))}
+                              {loadingPompiers ? (
+                                <SelectItem value="" disabled>Chargement...</SelectItem>
+                              ) : pompiers.length > 0 ? (
+                                pompiers.map((pompier) => (
+                                  <SelectItem key={pompier.id} value={String(pompier.id)}>
+                                    {pompier.grade} {pompier.prenom} {pompier.nom}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="" disabled>Aucun pompier trouvé</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -343,8 +384,8 @@ export default function EquipementForm() {
                   <p className="text-xs text-gray-600 mb-2">Assigné à:</p>
                   <p className="font-medium">
                     {form.watch('pompier_id') ? 
-                      mockPompiers.find(p => p.id === form.watch('pompier_id'))?.prenom + ' ' +
-                      mockPompiers.find(p => p.id === form.watch('pompier_id'))?.nom
+                      pompiers.find(p => String(p.id) === form.watch('pompier_id'))?.prenom + ' ' +
+                      pompiers.find(p => String(p.id) === form.watch('pompier_id'))?.nom
                       : 'Aucun pompier sélectionné'
                     }
                   </p>
