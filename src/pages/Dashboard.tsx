@@ -9,11 +9,11 @@ import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Helmet } from 'react-helmet';
+import { useSession } from '@/components/auth/SessionProvider';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useSession();
+  const [loading, setLoading] = useState(false);
   
   // Données simulées pour les statistiques
   const stats = {
@@ -69,26 +69,6 @@ export default function Dashboard() {
     { id: 3, equipement: 'Rangers', pompier: 'Pierre Dubois', resultat: 'conforme', date: '2023-10-20' },
     { id: 4, equipement: 'Surpantalon', pompier: 'Lucie Petit', resultat: 'conforme', date: '2023-10-19' }
   ];
-
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        if (!data.user) {
-          navigate('/login');
-          return;
-        }
-        setUser(data.user);
-      } catch (error) {
-        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
-        navigate('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-    getUser();
-  }, [navigate]);
 
   if (loading) {
     return (

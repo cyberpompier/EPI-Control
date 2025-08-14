@@ -1,24 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Menu, X, LogOut, User, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { showSuccess } from '@/utils/toast';
+import { useSession } from '@/components/auth/SessionProvider';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useSession();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    getUser();
-  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
