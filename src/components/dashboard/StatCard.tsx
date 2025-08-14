@@ -1,61 +1,40 @@
-import { ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
   title: string;
   value: string | number;
-  icon: ReactNode;
-  description?: string;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-  color?: 'default' | 'red' | 'green' | 'yellow' | 'blue';
+  icon: LucideIcon;
+  color?: 'red' | 'green' | 'blue' | 'yellow' | 'gray';
 }
 
-export default function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  description, 
-  trend,
-  color = 'default'
-}: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, color = 'gray' }: StatCardProps) {
   const colorClasses = {
-    default: 'bg-white',
-    red: 'bg-red-50 border-red-200',
-    green: 'bg-green-50 border-green-200',
-    yellow: 'bg-yellow-50 border-yellow-200',
-    blue: 'bg-blue-50 border-blue-200',
+    red: 'bg-red-50 border-red-200 text-red-900',
+    green: 'bg-green-50 border-green-200 text-green-900',
+    blue: 'bg-blue-50 border-blue-200 text-blue-900',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900',
+    gray: 'bg-gray-50 border-gray-200 text-gray-800',
   };
 
   const iconColorClasses = {
-    default: 'text-gray-500',
-    red: 'text-red-500',
-    green: 'text-green-500',
-    yellow: 'text-yellow-500',
-    blue: 'text-blue-500',
+    red: 'text-red-600 bg-red-100',
+    green: 'text-green-600 bg-green-100',
+    blue: 'text-blue-600 bg-blue-100',
+    yellow: 'text-yellow-600 bg-yellow-100',
+    gray: 'text-gray-600 bg-gray-100',
   };
 
   return (
-    <Card className={`${colorClasses[color]} border shadow-sm`}>
+    <Card className={`${colorClasses[color]} border shadow-sm transition-all hover:shadow-md`}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-gray-700">{title}</CardTitle>
-        <div className={`${iconColorClasses[color]} p-2 rounded-full bg-opacity-10`}>
-          {icon}
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className={`${iconColorClasses[color]} p-2 rounded-full`}>
+          <Icon className="h-5 w-5" />
         </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-gray-500 mt-1">{description}</p>}
-        {trend && (
-          <div className="flex items-center mt-2">
-            <span className={trend.isPositive ? 'text-green-500' : 'text-red-500'}>
-              {trend.isPositive ? '↑' : '↓'} {trend.value}%
-            </span>
-            <span className="text-xs text-gray-500 ml-1">par rapport au mois dernier</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
