@@ -1,80 +1,136 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import Layout from '@/components/layout/Layout';
-import ControleForm from '@/components/controle/ControleForm';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { EPI, Pompier } from '@/types/index';
-import { ArrowLeft, User, Shield } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { EPI } from '@/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-export default function ControleFormPage() {
-  const { id } = useParams<{ id: string }>();
+const controleSchema = z.object({
+  resultat: z.enum(['conforme', 'non_conforme', 'reparation_necessaire'], {
+    required_error: "Le résultat du contrôle est requis.",
+  }),
+  observations: z.string().optional(),
+  actions_correctives: z.string().optional(),
+  date_prochaine_verification: z.date().optional(),
+});
+
+type ControleFormData = z.infer<typeof controleSchema>;
+
+export default function ControleForm() {
+  const { id: equipementId } = useParams<{ id:string }>();
   const navigate = useNavigate();
-  const [epi, setEpi] = useState<EPI | null>(null);
-  const [pompier, setPompier] = useState<Pompier | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [equipement, setEquipement] = useState<EPI | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingEquipement, setLoadingEquipement] = useState(true);
+
+  const { control, handleSubmit, formState: { errors } } = useForm<ControleFormData>({
+    resolver: zodResolver(controleSchema),
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return;
+    const fetchEquipement = async () => {
+      if (!equipementId) return;
+      setLoadingEquipement(true);
       try {
-        const { data: epiData, error: epiError } = await supabase
+        const { data, error } = await supabase
           .from('equipements')
-          .select('*, personnel(*)')
-          .eq('id', id)
+          .select('*')
+          .eq('id', equipementId)
           .single();
-        
-        if (epiError) throw epiError;
-        
-        setEpi(epiData);
-        setPompier(epiData.personnel);
+        if (error) throw error;
+        setEquipement(data);
       } catch (error) {
-        console.error('Erreur lors de la récupération des données:', error);
-        showError('Impossible de charger les informations de l\'équipement');
+        console.error("Erreur lors de la récupération de l'équipement:", error);
+        showError("Impossible de charger les informations de l'équipement.");
+        navigate('/equipements');
       } finally {
-        setLoading(false);
+        setLoadingEquipement(false);
       }
     };
-    
-    fetchData();
-  }, [id]);
+    fetchEquipement();
+  }, [equipementId, navigate]);
 
-  const handleSubmit = async (data: any) => {
-    setSubmitting(true);
+  const onSubmit = async (data: ControleFormData) => {
+    setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Utilisateur non authentifié");
+      if (!user) {
+        showError("Vous devez être connecté pour enregistrer un contrôle.");
+        navigate('/login');
+        return;
+      }
 
-      const { error: insertError } = await supabase.from('controles').insert([
-        { 
-          ...data,
-          equipement_id: epi?.id,
-          controleur_id: user.id,
-        }
-      ]);
-      if (insertError) throw insertError;
-      
+      if (!equipementId) {
+        showError("ID de l'équipement manquant.");
+        return;
+      }
+
+      const payload = {
+        equipement_id: equipementId,
+        controleur_id: user.id,
+        date_controle: new Date().toISOString(),
+        resultat: data.resultat,
+        observations: data.observations,
+        actions_correctives: data.actions_correctives,
+        date_prochaine_verification: data.date_prochaine_verification?.toISOString(),
+      };
+
+      const { error: insertError } = await supabase.from('controles').insert([payload]);
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      let newStatus = 'en_attente';
+      switch (data.resultat) {
+        case 'conforme':
+          newStatus = 'operationnel';
+          break;
+        case 'non_conforme':
+          newStatus = 'hors_service';
+          break;
+        case 'reparation_necessaire':
+          newStatus = 'en_reparation';
+          break;
+      }
+
       const { error: updateError } = await supabase
         .from('equipements')
-        .update({ statut: data.resultat })
-        .eq('id', epi?.id);
-      if (updateError) throw updateError;
+        .update({ statut: newStatus })
+        .eq('id', equipementId);
+
+      if (updateError) {
+        console.error("Erreur lors de la mise à jour du statut de l'équipement:", updateError);
+        showError("Le contrôle a été enregistré, mais le statut de l'équipement n'a pas pu être mis à jour.");
+      } else {
+        showSuccess("Le contrôle a été enregistré avec succès !");
+      }
       
-      showSuccess('Contrôle enregistré avec succès');
-      navigate('/controles');
-    } catch (error: any) {
-      console.error('Erreur lors de l\'enregistrement du contrôle:', error);
-      showError(`Erreur lors de l'enregistrement du contrôle: ${error.message}`);
+      navigate(`/equipements/${equipementId}`);
+
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement du contrôle:", error);
+      showError("Une erreur est survenue lors de l'enregistrement du contrôle.");
     } finally {
-      setSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
+  if (loadingEquipement) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -84,129 +140,111 @@ export default function ControleFormPage() {
     );
   }
 
-  if (!epi || !pompier) {
+  if (!equipement) {
     return (
       <Layout>
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold mb-2">Équipement non trouvé</h2>
-          <p className="text-gray-600 mb-6">L'équipement demandé n'existe pas ou a été supprimé.</p>
           <Link to="/equipements">
-            <Button>Retour à la liste des équipements</Button>
+            <Button>Retour aux équipements</Button>
           </Link>
         </div>
       </Layout>
     );
   }
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'casque': return '🪖';
-      case 'veste': return '🧥';
-      case 'surpantalon': return '👖';
-      case 'gants': return '🧤';
-      case 'rangers': return '👢';
-      default: return '🛡️';
-    }
-  };
-
   return (
     <Layout>
       <Helmet>
-        <title>Nouveau contrôle | EPI Control</title>
+        <title>Nouveau Contrôle | EPI Control</title>
       </Helmet>
-      
-      <div className="mb-6">
-        <Link to="/equipements" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Retour aux équipements
-        </Link>
-        
-        <h1 className="text-2xl font-bold">Nouveau contrôle</h1>
-        <p className="text-gray-600">
-          Contrôle de l'équipement: {epi.type} {epi.marque} {epi.modele}
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
-          <ControleForm 
-            epi={epi} 
-            onSubmit={handleSubmit}
-            isLoading={submitting}
-          />
-        </div>
-        
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Shield className="h-5 w-5 mr-2" />
-                Équipement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center mb-4">
-                <div className="text-4xl mr-3">{getTypeIcon(epi.type)}</div>
-                <div>
-                  <h3 className="font-medium">{epi.marque} {epi.modele}</h3>
-                  <p className="text-sm text-gray-500">N° {epi.numero_serie}</p>
-                </div>
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Enregistrer un nouveau contrôle</CardTitle>
+            <p className="text-gray-600">
+              Pour l'équipement : {equipement.type} {equipement.marque} {equipement.modele}
+            </p>
+          </CardHeader>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="resultat">Résultat du contrôle</Label>
+                <Controller
+                  name="resultat"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger id="resultat">
+                        <SelectValue placeholder="Sélectionner un résultat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="conforme">Conforme</SelectItem>
+                        <SelectItem value="non_conforme">Non Conforme</SelectItem>
+                        <SelectItem value="reparation_necessaire">Réparation nécessaire</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.resultat && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.resultat.message}</p>}
               </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Type</span>
-                  <span className="font-medium">{epi.type.charAt(0).toUpperCase() + epi.type.slice(1)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Mise en service</span>
-                  <span className="font-medium">{new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Fin de vie</span>
-                  <span className="font-medium">{new Date(epi.date_fin_vie).toLocaleDateString('fr-FR')}</span>
-                </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="observations">Observations</Label>
+                <Controller
+                  name="observations"
+                  control={control}
+                  render={({ field }) => <Textarea id="observations" placeholder="Détails sur l'état de l'équipement, anomalies constatées..." {...field} />}
+                />
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Pompier
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Nom</span>
-                  <span className="font-medium">{pompier.nom}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Prénom</span>
-                  <span className="font-medium">{pompier.prenom}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Grade</span>
-                  <span className="font-medium">{pompier.grade}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Caserne</span>
-                  <span className="font-medium">{pompier.caserne}</span>
-                </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="actions_correctives">Actions correctives</Label>
+                <Controller
+                  name="actions_correctives"
+                  control={control}
+                  render={({ field }) => <Textarea id="actions_correctives" placeholder="Mesures prises ou à prendre pour corriger les anomalies..." {...field} />}
+                />
               </div>
-              
-              <div className="mt-4 pt-4 border-t">
-                <Link to={`/personnel/${pompier.id}/equipements`}>
-                  <Button variant="outline" className="w-full text-sm">
-                    Voir tous les équipements
-                  </Button>
-                </Link>
+
+              <div className="space-y-2">
+                <Label htmlFor="date_prochaine_verification">Date de la prochaine vérification (optionnel)</Label>
+                <Controller
+                  name="date_prochaine_verification"
+                  control={control}
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? format(field.value, 'PPP', { locale: fr }) : <span>Choisir une date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                          locale={fr}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
               </div>
             </CardContent>
-          </Card>
-        </div>
+            <CardFooter className="flex justify-end gap-4">
+              <Button variant="outline" type="button" onClick={() => navigate(-1)}>Annuler</Button>
+              <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
+                {isLoading ? "Enregistrement..." : "Enregistrer le contrôle"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
       </div>
     </Layout>
   );
