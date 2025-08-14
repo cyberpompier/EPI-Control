@@ -3,143 +3,71 @@ import Layout from '@/components/layout/Layout';
 import EPICard from '@/components/epi/EPICard';
 import EPIFilter from '@/components/epi/EPIFilter';
 import { Button } from '@/components/ui/button';
-import { Plus, Filter, AlertTriangle } from 'lucide-react';
+import { Plus, Filter, AlertTriangle, Search } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { EPI } from '@/types';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { showError } from '@/utils/toast';
 
 export default function Equipements() {
   const [equipements, setEquipements] = useState<EPI[]>([]);
   const [filteredEquipements, setFilteredEquipements] = useState<EPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('tous');
-
-  // Données simulées pour les équipements
-  const mockEPI: EPI[] = [
-    {
-      id: '1',
-      type: 'casque',
-      marque: 'MSA',
-      modele: 'F1 XF',
-      numero_serie: 'C12345',
-      date_mise_en_service: '2022-01-15',
-      date_fin_vie: '2032-01-15',
-      pompier_id: 1,
-      statut: 'conforme'
-    },
-    {
-      id: '2',
-      type: 'veste',
-      marque: 'Bristol',
-      modele: 'ErgoTech Action',
-      numero_serie: 'V54321',
-      date_mise_en_service: '2021-06-10',
-      date_fin_vie: '2026-06-10',
-      pompier_id: 2,
-      statut: 'non_conforme'
-    },
-    {
-      id: '3',
-      type: 'surpantalon',
-      marque: 'Kermel',
-      modele: 'FireFlex',
-      numero_serie: 'P98765',
-      date_mise_en_service: '2022-03-20',
-      date_fin_vie: '2027-03-20',
-      pompier_id: 1,
-      statut: 'conforme'
-    },
-    {
-      id: '4',
-      type: 'gants',
-      marque: 'Rostaing',
-      modele: 'FirePro',
-      numero_serie: 'G45678',
-      date_mise_en_service: '2023-01-05',
-      date_fin_vie: '2025-01-05',
-      pompier_id: 3,
-      statut: 'en_attente'
-    },
-    {
-      id: '5',
-      type: 'rangers',
-      marque: 'Haix',
-      modele: 'Fire Eagle',
-      numero_serie: 'R87654',
-      date_mise_en_service: '2022-11-12',
-      date_fin_vie: '2025-11-12',
-      pompier_id: 2,
-      statut: 'conforme'
-    },
-    {
-      id: '6',
-      type: 'casque',
-      marque: 'Dräger',
-      modele: 'HPS 7000',
-      numero_serie: 'C67890',
-      date_mise_en_service: '2021-09-18',
-      date_fin_vie: '2023-10-30',
-      pompier_id: 3,
-      statut: 'non_conforme'
-    }
-  ];
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
     const fetchEquipements = async () => {
       try {
-        // Dans une vraie application, vous récupéreriez les données depuis Supabase
-        // const { data, error } = await supabase.from('equipements').select('*');
-        // if (error) throw error;
-        // setEquipements(data);
-        
-        // Simulation de chargement
-        setTimeout(() => {
-          setEquipements(mockEPI);
-          setFilteredEquipements(mockEPI);
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
+        const { data, error } = await supabase.from('equipements').select('*');
+        if (error) {
+          throw error;
+        }
+        const fetchedEquipements = data || [];
+        setEquipements(fetchedEquipements);
+        setFilteredEquipements(fetchedEquipements);
+      } catch (error: any) {
         console.error('Erreur lors de la récupération des équipements:', error);
+        showError(`Erreur lors de la récupération des équipements: ${error.message}`);
+      } finally {
         setLoading(false);
       }
     };
-    
+
     fetchEquipements();
   }, []);
 
   const handleFilterChange = (filters: any) => {
     let filtered = [...equipements];
-    
-    // Filtre par recherche
+
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(epi => 
+      filtered = filtered.filter(epi =>
         epi.marque.toLowerCase().includes(searchLower) ||
         epi.modele.toLowerCase().includes(searchLower) ||
         epi.numero_serie.toLowerCase().includes(searchLower) ||
         epi.type.toLowerCase().includes(searchLower)
       );
     }
-    
-    // Filtre par type
+
     if (filters.type && filters.type !== 'all') {
       filtered = filtered.filter(epi => epi.type === filters.type);
     }
-    
-    // Filtre par statut
+
     if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(epi => epi.statut === filters.status);
     }
-    
+
     setFilteredEquipements(filtered);
   };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    
     if (value === 'tous') {
       setFilteredEquipements(equipements);
     } else if (value === 'conformes') {
@@ -177,7 +105,6 @@ export default function Equipements() {
       
       {expiredEquipments.length > 0 && (
         <Alert variant="destructive" className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Attention</AlertTitle>
           <AlertDescription>
             {expiredEquipments.length} équipement(s) ont dépassé leur date de fin de vie et doivent être remplacés.
