@@ -11,7 +11,7 @@ interface LayoutProps {
 
 const Layout = ({ children, headerTitle }: LayoutProps) => {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-6">
         {headerTitle && (
@@ -22,7 +22,7 @@ const Layout = ({ children, headerTitle }: LayoutProps) => {
         {children}
       </main>
       <Footer />
-    </>
+    </div>
   );
 };
 
