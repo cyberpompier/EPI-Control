@@ -14,6 +14,7 @@ import { ArrowLeft, User, Camera } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
+import { getInitials } from '@/lib/utils';
 
 const formSchema = z.object({
   nom: z.string().min(2, {
@@ -77,10 +78,6 @@ export default function PersonnelForm() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getInitials = (nom: string, prenom: string) => {
-    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
   };
 
   const getGradeColor = (grade: string) => {

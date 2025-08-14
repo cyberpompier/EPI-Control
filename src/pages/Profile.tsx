@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { Shield, LogOut, Camera, User, Bell, KeyRound } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useSession } from '@/components/auth/SessionProvider';
+import { getInitials } from '@/lib/utils';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -110,10 +111,6 @@ export default function Profile() {
       console.error('Erreur lors de la déconnexion:', error);
       showError('Erreur lors de la déconnexion');
     }
-  };
-  
-  const getInitials = (nom: string, prenom: string) => {
-    return `${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase();
   };
 
   if (loading || authLoading) {

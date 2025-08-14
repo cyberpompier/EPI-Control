@@ -10,6 +10,7 @@ import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { Pompier, EPI } from '@/types/index';
 import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
 
 export default function PersonnelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -62,10 +63,6 @@ export default function PersonnelDetail() {
       </Layout>
     );
   }
-
-  const getInitials = (nom: string, prenom: string) => {
-    return `${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase();
-  };
 
   const getGradeColor = (grade: string) => {
     switch (grade.toLowerCase()) {
