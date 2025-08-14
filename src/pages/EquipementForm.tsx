@@ -39,8 +39,8 @@ const formSchema = z.object({
   date_fin_vie: z.date({
     required_error: "Veuillez sélectionner une date de fin de vie",
   }),
-  pompier_id: z.string().min(1, {
-    message: "Veuillez sélectionner un pompier",
+  personnel_id: z.string().min(1, {
+    message: "Veuillez sélectionner un membre du personnel",
   }),
 });
 
@@ -57,7 +57,7 @@ export default function EquipementForm() {
       marque: '',
       modele: '',
       numero_serie: '',
-      pompier_id: '',
+      personnel_id: '',
     },
   });
 
@@ -100,8 +100,8 @@ export default function EquipementForm() {
           numero_serie: values.numero_serie,
           date_mise_en_service: values.date_mise_en_service.toISOString(),
           date_fin_vie: values.date_fin_vie.toISOString(),
-          pompier_id: parseInt(values.pompier_id), // Convertir en nombre si l'ID est un bigint
-          statut: 'en_attente', // Statut par défaut lors de l'ajout
+          personnel_id: parseInt(values.personnel_id), // Conversion en nombre puisque c'est un bigint
+          statut: 'en_attente',
         }
       ]);
 
@@ -193,14 +193,14 @@ export default function EquipementForm() {
 
                     <FormField
                       control={form.control}
-                      name="pompier_id"
+                      name="personnel_id"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Pompier assigné</FormLabel>
+                          <FormLabel>Membre du personnel assigné</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={loadingPompiers ? "Chargement..." : "Sélectionnez un pompier"} />
+                                <SelectValue placeholder={loadingPompiers ? "Chargement..." : "Sélectionnez un membre"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -213,7 +213,7 @@ export default function EquipementForm() {
                                   </SelectItem>
                                 ))
                               ) : (
-                                <SelectItem value="__none__" disabled>Aucun pompier trouvé</SelectItem>
+                                <SelectItem value="__none__" disabled>Aucun membre trouvé</SelectItem>
                               )}
                             </SelectContent>
                           </Select>
@@ -381,12 +381,12 @@ export default function EquipementForm() {
                 </p>
                 
                 <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                  <p className="text-xs text-gray-600 mb-2">Assigné à:</p>
+                  <p className="text-xs text-gray-600 mb-2">Assigné à :</p>
                   <p className="font-medium">
-                    {form.watch('pompier_id') ? 
-                      pompiers.find(p => String(p.id) === form.watch('pompier_id'))?.prenom + ' ' +
-                      pompiers.find(p => String(p.id) === form.watch('pompier_id'))?.nom
-                      : 'Aucun pompier sélectionné'
+                    {form.watch('personnel_id') ? 
+                      pompiers.find(p => String(p.id) === form.watch('personnel_id'))?.prenom + ' ' +
+                      pompiers.find(p => String(p.id) === form.watch('personnel_id'))?.nom
+                      : 'Aucun membre sélectionné'
                     }
                   </p>
                 </div>
