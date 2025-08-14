@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface SessionContextType {
   session: Session | null;
@@ -32,7 +32,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     // Get initial session
@@ -40,13 +39,6 @@ export function SessionProvider({ children }: SessionProviderProps) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      // Redirect logic
-      if (session && location.pathname === '/login') {
-        navigate('/');
-      } else if (!session && location.pathname !== '/login') {
-        navigate('/login');
-      }
     });
 
     // Listen for auth changes
@@ -65,7 +57,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate, location.pathname]);
+  }, [navigate]);
 
   return (
     <SessionContext.Provider value={{ session, user, loading }}>

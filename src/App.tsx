@@ -5,7 +5,7 @@ import Equipements from './pages/Equipements';
 import Controles from './pages/Controles';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
-import AuthProvider from './context/AuthContext';
+import { SessionProvider } from '@/components/auth/SessionProvider';
 import PrivateRoute from './components/auth/PrivateRoute';
 import PersonnelDetail from './pages/PersonnelDetail';
 import PersonnelForm from './pages/PersonnelForm';
@@ -16,7 +16,7 @@ import EquipementDetail from './pages/EquipementDetail';
 function App() {
   return (
     <Router>
-      <AuthProvider>
+      <SessionProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
@@ -30,7 +30,7 @@ function App() {
           <Route path="/controles" element={<PrivateRoute><Controles /></PrivateRoute>} />
           <Route path="/parametres" element={<PrivateRoute><Settings /></PrivateRoute>} />
         </Routes>
-      </AuthProvider>
+      </SessionProvider>
     </Router>
   );
 }

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useSession } from '@/components/auth/SessionProvider';
 import Layout from '../layout/Layout';
 
 interface PrivateRouteProps {
@@ -8,7 +8,7 @@ interface PrivateRouteProps {
 }
 
 export default function PrivateRoute({ children }: PrivateRouteProps) {
-  const { user, loading } = useAuth();
+  const { session, loading } = useSession();
 
   if (loading) {
     return (
@@ -20,7 +20,7 @@ export default function PrivateRoute({ children }: PrivateRouteProps) {
     );
   }
 
-  if (!user) {
+  if (!session) {
     return <Navigate to="/login" replace />;
   }
 
