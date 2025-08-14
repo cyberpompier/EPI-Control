@@ -15,13 +15,10 @@ interface EpiCount {
 
 interface PompierCardProps {
   pompier: Pompier;
-  epiCount?: EpiCount;
+  epiCount: EpiCount;
 }
 
 const PompierCard: React.FC<PompierCardProps> = ({ pompier, epiCount }) => {
-  // Utilise une valeur par défaut si epiCount est undefined
-  const count: EpiCount = epiCount || { total: 0, conformes: 0, nonConformes: 0 };
-
   return (
     <Card className="p-4">
       <CardHeader>
@@ -32,9 +29,9 @@ const PompierCard: React.FC<PompierCardProps> = ({ pompier, epiCount }) => {
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <p className="text-sm">Équipements totaux: {count.total}</p>
-          <p className="text-sm">Conformes: {count.conformes}</p>
-          <p className="text-sm">Non conformes: {count.nonConformes}</p>
+          <p className="text-sm">Équipements totaux: {epiCount.total}</p>
+          <p className="text-sm">Conformes: {epiCount.conformes}</p>
+          <p className="text-sm">Non conformes: {epiCount.nonConformes}</p>
         </div>
         <Button asChild variant="outline" className="w-full flex items-center justify-center">
           <Link to={`/personnel/${pompier.id}/equipements`}>
