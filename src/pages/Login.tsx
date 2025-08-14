@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/components/auth/SessionProvider';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -7,9 +9,16 @@ import { Shield } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 
 export default function Login() {
-  const { loading } = useSession();
+  const { loading, session } = useSession();
+  const navigate = useNavigate();
 
-  if (loading) {
+  useEffect(() => {
+    if (session) {
+      navigate('/');
+    }
+  }, [session, navigate]);
+
+  if (loading || session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>

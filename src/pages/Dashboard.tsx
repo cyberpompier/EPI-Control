@@ -1,19 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import StatCard from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Shield, AlertTriangle, Clock, Users, CheckCircle, Plus, FileText } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Helmet } from 'react-helmet';
 import { useSession } from '@/components/auth/SessionProvider';
 
 export default function Dashboard() {
-  const { user } = useSession();
-  const [loading, setLoading] = useState(false);
+  const { user, loading } = useSession();
   
   // Données simulées pour les statistiques
   const stats = {
