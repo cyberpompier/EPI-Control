@@ -46,4 +46,5 @@ export interface Pompier {
   caserne: string | null;
   grade: string | null;
   email: string | null;
+  photo?: string | null;
 }
