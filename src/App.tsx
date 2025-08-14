@@ -15,6 +15,8 @@ import EquipementDetail from './pages/EquipementDetail';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
+import ControleForm from './pages/ControleForm';
+import ControleDetail from './pages/ControleDetail';
 
 function App() {
   return (
@@ -31,7 +33,9 @@ function App() {
           <Route path="/equipements" element={<PrivateRoute><Equipements /></PrivateRoute>} />
           <Route path="/equipements/nouveau" element={<PrivateRoute><EquipementForm /></PrivateRoute>} />
           <Route path="/equipements/:id" element={<PrivateRoute><EquipementDetail /></PrivateRoute>} />
+          <Route path="/controle/:id" element={<PrivateRoute><ControleForm /></PrivateRoute>} />
           <Route path="/controles" element={<PrivateRoute><Controles /></PrivateRoute>} />
+          <Route path="/controles/:id" element={<PrivateRoute><ControleDetail /></PrivateRoute>} />
           <Route path="/parametres" element={<PrivateRoute><Settings /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />

@@ -105,7 +105,7 @@ export default function ControlesPage() {
           <h1 className="text-2xl font-bold">Liste des Contrôles</h1>
           <p className="text-gray-600">Consultez et gérez l'historique des contrôles d'équipements.</p>
         </div>
-        <Link to="/controles/nouveau">
+        <Link to="/equipements">
           <Button className="bg-red-600 hover:bg-red-700 mt-4 sm:mt-0">
             <Plus className="h-4 w-4 mr-2" />
             Nouveau Contrôle

@@ -116,7 +116,7 @@ export default function EquipementDetail() {
           </div>
           
           <div className="flex gap-2 mt-4 sm:mt-0">
-            <Link to={`/controles/nouveau?equipement=${equipement.id}`}>
+            <Link to={`/controle/${equipement.id}`}>
               <Button className="bg-red-600 hover:bg-red-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Nouveau contrôle
@@ -232,7 +232,7 @@ export default function EquipementDetail() {
               <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium">Aucun contrôle enregistré</h3>
               <p className="mt-2 text-gray-500 mb-4">Cet équipement n'a pas encore été contrôlé.</p>
-              <Link to={`/controles/nouveau?equipement=${equipement.id}`}>
+              <Link to={`/controle/${equipement.id}`}>
                 <Button className="bg-red-600 hover:bg-red-700">
                   <Plus className="h-4 w-4 mr-2" />
                   Effectuer le premier contrôle
