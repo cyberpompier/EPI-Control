@@ -119,7 +119,7 @@ export default function PersonnelDetail() {
           <CardContent className="pt-6">
             <div className="text-center">
               <Avatar className="h-24 w-24 mx-auto mb-4">
-                <AvatarImage src={`https://i.pravatar.cc/150?u=${pompier.id}`} alt={`${pompier.prenom} ${pompier.nom}`} />
+                <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
                 <AvatarFallback className="text-xl">{getInitials(pompier.nom || '', pompier.prenom || '')}</AvatarFallback>
               </Avatar>
               
