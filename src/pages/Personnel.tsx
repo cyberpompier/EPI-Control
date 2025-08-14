@@ -11,6 +11,16 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Users } from 'lucide-react';
 import { showError } from '@/utils/toast';
 
+interface EpiStats {
+  total: number;
+  conformes: number;
+  nonConformes: number;
+}
+
+interface AllEpiStats {
+  [pompierId: number]: EpiStats;
+}
+
 export default function Personnel() {
   const [pompiers, setPompiers] = useState<Pompier[]>([]);
   const [filteredPompiers, setFilteredPompiers] = useState<Pompier[]>([]);
@@ -18,38 +28,51 @@ export default function Personnel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [gradeFilter, setGradeFilter] = useState('');
   const [caserneFilter, setCaserneFilter] = useState('');
-
-  // Données simulées pour les statistiques d'EPI par pompier
-  const mockEpiStats = {
-    '1': { total: 5, conformes: 4, nonConformes: 1 },
-    '2': { total: 4, conformes: 2, nonConformes: 2 },
-    '3': { total: 6, conformes: 5, nonConformes: 1 },
-    '4': { total: 3, conformes: 3, nonConformes: 0 },
-    '5': { total: 5, conformes: 4, nonConformes: 1 },
-    '6': { total: 4, conformes: 3, nonConformes: 1 }
-  };
+  const [epiStats, setEpiStats] = useState<AllEpiStats>({});
 
   useEffect(() => {
-    const fetchPompiers = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('personnel').select('*');
+        const { data: pompiersData, error: pompiersError } = await supabase.from('personnel').select('*');
+        if (pompiersError) throw pompiersError;
         
-        if (error) {
-          throw error;
-        }
-        
-        setPompiers(data || []);
-        setFilteredPompiers(data || []);
+        const pompiersList = pompiersData || [];
+        setPompiers(pompiersList);
+        setFilteredPompiers(pompiersList);
+
+        const { data: equipementsData, error: equipementsError } = await supabase.from('equipements').select('personnel_id, statut');
+        if (equipementsError) throw equipementsError;
+
+        const equipements = equipementsData || [];
+        const stats: AllEpiStats = {};
+
+        pompiersList.forEach(pompier => {
+          stats[pompier.id] = { total: 0, conformes: 0, nonConformes: 0 };
+        });
+
+        equipements.forEach(equipement => {
+          if (equipement.personnel_id && stats[equipement.personnel_id]) {
+            stats[equipement.personnel_id].total++;
+            if (equipement.statut === 'conforme') {
+              stats[equipement.personnel_id].conformes++;
+            } else if (equipement.statut === 'non_conforme') {
+              stats[equipement.personnel_id].nonConformes++;
+            }
+          }
+        });
+
+        setEpiStats(stats);
+
       } catch (error: any) {
-        showError(`Erreur lors du chargement: ${error.message}`);
-        console.error('Erreur lors de la récupération des pompiers:', error);
+        showError(`Erreur lors du chargement des données: ${error.message}`);
+        console.error('Erreur lors de la récupération des données:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchPompiers();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -146,7 +169,7 @@ export default function Personnel() {
             <PompierCard 
               key={pompier.id} 
               pompier={pompier} 
-              epiCount={mockEpiStats[String(pompier.id) as keyof typeof mockEpiStats] || { total: 0, conformes: 0, nonConformes: 0 }}
+              epiCount={epiStats[pompier.id] || { total: 0, conformes: 0, nonConformes: 0 }}
             />
           ))}
         </div>
