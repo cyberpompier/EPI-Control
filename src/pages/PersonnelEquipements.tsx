@@ -4,7 +4,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Shield, Calendar, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, User } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { showError } from '@/utils/toast';
@@ -74,61 +74,6 @@ export default function PersonnelEquipements() {
     fetchData();
   }, [id]);
 
-  const getStatusIcon = (statut: string) => {
-    switch (statut) {
-      case 'conforme':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'non_conforme':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'en_attente':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const getStatusBadge = (statut: string) => {
-    switch (statut) {
-      case 'conforme':
-        return <Badge className="bg-green-100 text-green-800">Conforme</Badge>;
-      case 'non_conforme':
-        return <Badge className="bg-red-100 text-red-800">Non conforme</Badge>;
-      case 'en_attente':
-        return <Badge className="bg-yellow-100 text-yellow-800">En attente</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">Inconnu</Badge>;
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'casque':
-        return '🪖';
-      case 'veste':
-        return '🧥';
-      case 'surpantalon':
-        return '👖';
-      case 'gants':
-        return '🧤';
-      case 'rangers':
-        return '👢';
-      default:
-        return '🛡️';
-    }
-  };
-
-  const isExpired = (dateFinVie: string) => {
-    return new Date(dateFinVie) < new Date();
-  };
-
-  const isExpiringSoon = (dateFinVie: string) => {
-    const today = new Date();
-    const endDate = new Date(dateFinVie);
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 30 && diffDays > 0;
-  };
-
   if (loading) {
     return (
       <Layout>
@@ -156,12 +101,12 @@ export default function PersonnelEquipements() {
   const equipementsConformes = equipements.filter(eq => eq.statut === 'conforme').length;
   const equipementsNonConformes = equipements.filter(eq => eq.statut === 'non_conforme').length;
   const equipementsEnAttente = equipements.filter(eq => eq.statut === 'en_attente').length;
-  const equipementsExpires = equipements.filter(eq => isExpired(eq.date_fin_vie)).length;
+  const equipementsExpires = equipements.filter(eq => new Date(eq.date_fin_vie) < new Date()).length;
 
   return (
     <Layout>
       <Helmet>
-        <title>{personnel.prenom} {personnel.nom} - Équipements | EPI Control</title>
+        <title>{`${personnel.prenom} ${personnel.nom} - Équipements | EPI Control`}</title>
       </Helmet>
       
       <div className="mb-6">
@@ -210,7 +155,9 @@ export default function PersonnelEquipements() {
       {equipements.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <div className="flex justify-center">
+              <Badge className="bg-red-100 text-red-800">Expiré</Badge>
+            </div>
             <h3 className="text-lg font-medium text-gray-900">Aucun équipement assigné</h3>
             <p className="text-gray-600 mt-2">
               Ce membre du personnel n'a aucun équipement assigné pour le moment.
@@ -225,38 +172,17 @@ export default function PersonnelEquipements() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {equipements.map((equipement) => (
-            <Card key={equipement.id} className="relative">
-              {isExpired(equipement.date_fin_vie) && (
-                <div className="absolute top-2 right-2">
-                  <Badge className="bg-red-100 text-red-800">Expiré</Badge>
-                </div>
-              )}
-              {isExpiringSoon(equipement.date_fin_vie) && !isExpired(equipement.date_fin_vie) && (
-                <div className="absolute top-2 right-2">
-                  <Badge className="bg-orange-100 text-orange-800">Expire bientôt</Badge>
-                </div>
-              )}
-              
+            // Assuming EPICard is used here or similar component.
+            <Card key={equipement.id}>
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-2">{getTypeIcon(equipement.type)}</span>
-                    <div>
-                      <CardTitle className="text-lg capitalize">{equipement.type}</CardTitle>
-                      <p className="text-sm text-gray-600">{equipement.marque} {equipement.modele}</p>
-                    </div>
-                  </div>
-                  {getStatusIcon(equipement.statut)}
-                </div>
+                <CardTitle className="text-lg capitalize">{equipement.type}</CardTitle>
               </CardHeader>
-              
               <CardContent>
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm font-medium text-gray-700">Numéro de série</p>
                     <p className="text-sm text-gray-600">{equipement.numero_serie}</p>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-sm font-medium text-gray-700">Mise en service</p>
@@ -266,14 +192,15 @@ export default function PersonnelEquipements() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-700">Fin de vie</p>
-                      <p className={`text-sm ${isExpired(equipement.date_fin_vie) ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                      <p className={`text-sm ${new Date(equipement.date_fin_vie) < new Date() ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                         {format(new Date(equipement.date_fin_vie), 'dd/MM/yyyy', { locale: fr })}
                       </p>
                     </div>
                   </div>
-                  
                   <div className="flex items-center justify-between pt-2">
-                    {getStatusBadge(equipement.statut)}
+                    <Badge>
+                      {equipement.statut === 'conforme' ? 'Conforme' : equipement.statut === 'non_conforme' ? 'Non conforme' : 'En attente'}
+                    </Badge>
                     <Link to={`/equipements/${equipement.id}`}>
                       <Button variant="outline" size="sm">
                         Détails

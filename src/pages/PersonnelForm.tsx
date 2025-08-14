@@ -104,7 +104,7 @@ export default function PersonnelForm() {
   return (
     <Layout>
       <Helmet>
-        <title>Nouveau pompier | EPI Control</title>
+        <title>{`Nouveau pompier | EPI Control`}</title>
       </Helmet>
       
       <div className="mb-6">

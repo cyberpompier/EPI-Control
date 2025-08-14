@@ -100,7 +100,7 @@ export default function EquipementDetail() {
   return (
     <Layout>
       <Helmet>
-        <title>{equipement.type} {equipement.modele} | EPI Control</title>
+        <title>{`${equipement.type} ${equipement.marque} ${equipement.modele} | EPI Control`}</title>
       </Helmet>
       
       <div className="mb-6">
