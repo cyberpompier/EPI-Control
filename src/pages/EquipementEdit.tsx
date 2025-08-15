@@ -171,7 +171,7 @@ export default function EquipementEdit() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="casque">🪖 Casque F1</SelectItem>
+                          <SelectItem value="Casque F1">🪖 Casque F1</SelectItem>
                           <SelectItem value="veste">🧥 Veste</SelectItem>
                           <SelectItem value="surpantalon">👖 Surpantalon</SelectItem>
                           <SelectItem value="gants">🧤 Gants</SelectItem>
