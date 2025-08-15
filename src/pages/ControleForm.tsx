@@ -20,12 +20,14 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const controleSchema = z.object({
-  resultat: z.enum(['conforme', 'non_conforme', 'reparation_necessaire'], {
+  resultat: z.enum(['conforme', 'non_conforme'], {
     required_error: "Le résultat du contrôle est requis.",
   }),
-  observations: z.string().optional(),
+  observations: z.string().min(1, "Les observations sont requises."),
   actions_correctives: z.string().optional(),
-  date_prochaine_verification: z.date().optional(),
+  date_prochaine_verification: z.date({
+    required_error: "La date de prochaine vérification est requise.",
+  }),
 });
 
 type ControleFormData = z.infer<typeof controleSchema>;
@@ -39,6 +41,9 @@ export default function ControleForm() {
 
   const { control, handleSubmit, formState: { errors } } = useForm<ControleFormData>({
     resolver: zodResolver(controleSchema),
+    defaultValues: {
+      date_prochaine_verification: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+    }
   });
 
   useEffect(() => {
@@ -82,12 +87,12 @@ export default function ControleForm() {
       const payload = {
         equipement_id: equipementId,
         controleur_id: user.id,
-        date_controle: format(new Date(), 'yyyy-MM-dd'),
+        date_controle: new Date().toISOString(),
         resultat: data.resultat,
         observations: data.observations,
         actions_correctives: data.actions_correctives,
         date_prochaine_verification: data.date_prochaine_verification 
-          ? format(data.date_prochaine_verification, 'yyyy-MM-dd') 
+          ? data.date_prochaine_verification.toISOString()
           : undefined,
       };
 
@@ -97,22 +102,9 @@ export default function ControleForm() {
         throw insertError;
       }
 
-      let newStatus = 'en_attente';
-      switch (data.resultat) {
-        case 'conforme':
-          newStatus = 'operationnel';
-          break;
-        case 'non_conforme':
-          newStatus = 'hors_service';
-          break;
-        case 'reparation_necessaire':
-          newStatus = 'en_reparation';
-          break;
-      }
-
       const { error: updateError } = await supabase
         .from('equipements')
-        .update({ statut: newStatus })
+        .update({ statut: data.resultat })
         .eq('id', equipementId);
 
       if (updateError) {
@@ -124,9 +116,9 @@ export default function ControleForm() {
       
       navigate(`/equipements/${equipementId}`);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de l'enregistrement du contrôle:", error);
-      showError("Une erreur est survenue lors de l'enregistrement du contrôle.");
+      showError(`Une erreur est survenue: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -183,7 +175,6 @@ export default function ControleForm() {
                       <SelectContent>
                         <SelectItem value="conforme">Conforme</SelectItem>
                         <SelectItem value="non_conforme">Non Conforme</SelectItem>
-                        <SelectItem value="reparation_necessaire">Réparation nécessaire</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -198,10 +189,11 @@ export default function ControleForm() {
                   control={control}
                   render={({ field }) => <Textarea id="observations" placeholder="Détails sur l'état de l'équipement, anomalies constatées..." {...field} />}
                 />
+                 {errors.observations && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.observations.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="actions_correctives">Actions correctives</Label>
+                <Label htmlFor="actions_correctives">Actions correctives (si non conforme)</Label>
                 <Controller
                   name="actions_correctives"
                   control={control}
@@ -210,7 +202,7 @@ export default function ControleForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_prochaine_verification">Date de la prochaine vérification (optionnel)</Label>
+                <Label htmlFor="date_prochaine_verification">Date de la prochaine vérification</Label>
                 <Controller
                   name="date_prochaine_verification"
                   control={control}
@@ -232,11 +224,13 @@ export default function ControleForm() {
                           onSelect={field.onChange}
                           initialFocus
                           locale={fr}
+                          disabled={(date) => date < new Date()}
                         />
                       </PopoverContent>
                     </Popover>
                   )}
                 />
+                 {errors.date_prochaine_verification && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.date_prochaine_verification.message}</p>}
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
