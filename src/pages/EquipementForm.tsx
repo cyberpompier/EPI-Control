@@ -6,7 +6,7 @@ import * as z from 'zod';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
@@ -89,8 +89,9 @@ export default function EquipementForm() {
           marque: values.marque,
           modele: values.modele,
           numero_serie: values.numero_serie,
-          date_mise_en_service: values.date_mise_en_service.toISOString(),
-          date_fin_vie: values.date_fin_vie.toISOString(),
+          // Conversion des dates pour avoir uniquement la date sans décalage
+          date_mise_en_service: format(values.date_mise_en_service, "yyyy-MM-dd"),
+          date_fin_vie: format(values.date_fin_vie, "yyyy-MM-dd"),
           personnel_id: parseInt(values.personnel_id), // Conversion en nombre puisque c'est un bigint
           statut: 'en_attente',
         }

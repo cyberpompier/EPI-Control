@@ -34,9 +34,12 @@ function App() {
           <Route path="/equipements" element={<PrivateRoute><Equipements /></PrivateRoute>} />
           <Route path="/equipements/nouveau" element={<PrivateRoute><EquipementForm /></PrivateRoute>} />
           <Route path="/equipements/:id" element={<PrivateRoute><EquipementDetail /></PrivateRoute>} />
-          <Route path="/controle/:id" element={<PrivateRoute><ControleForm /></PrivateRoute>} />
+          <Route path="/controle/:id" element={
+            <PrivateRoute>
+              <ControleForm epi={{} as any} onSubmit={()=>{}} />
+            </PrivateRoute>
+          } />
           <Route path="/controles" element={<PrivateRoute><Controles /></PrivateRoute>} />
-          <Route path="/controles/:id" element={<PrivateRoute><ControleDetail /></PrivateRoute>} />
           <Route path="/controles/:id/modifier" element={<PrivateRoute><ControleEdit /></PrivateRoute>} />
           <Route path="/parametres" element={<PrivateRoute><Settings /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />

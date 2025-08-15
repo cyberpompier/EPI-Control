@@ -62,7 +62,6 @@ export default function ControleEdit() {
           .eq('id', controleId)
           .single();
         if (error) throw error;
-        console.log("Données du contrôle :", data);
         if (data && data.date_prochaine_verification) {
           reset({
             resultat: data.resultat,
@@ -87,7 +86,6 @@ export default function ControleEdit() {
   }, [controleId, reset, navigate]);
 
   const onSubmit = async (data: ControleEditFormData) => {
-    console.log("Enregistrement des données :", data);
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -96,7 +94,8 @@ export default function ControleEdit() {
           resultat: data.resultat,
           observations: data.observations,
           actions_correctives: data.actions_correctives,
-          date_prochaine_verification: data.date_prochaine_verification.toISOString(),
+          // Conversion de la date sans décalage via format
+          date_prochaine_verification: format(data.date_prochaine_verification, 'yyyy-MM-dd'),
         })
         .eq('id', controleId);
 
@@ -185,20 +184,23 @@ export default function ControleEdit() {
                       <PopoverTrigger asChild>
                         <Button
                           variant={"outline"}
-                          className="w-full justify-start text-left font-normal"
+                          className="w-full pl-3 text-left font-normal"
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, 'PPP', { locale: fr }) : <span>Choisir une date</span>}
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: fr })
+                          ) : (
+                            <span>Choisir une date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
+                      <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          initialFocus
-                          locale={fr}
                           disabled={(date) => date < new Date()}
+                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
