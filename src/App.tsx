@@ -3,6 +3,9 @@ import Dashboard from './pages/Dashboard';
 import Personnel from './pages/Personnel';
 import Equipements from './pages/Equipements';
 import Controles from './pages/Controles';
+import ControleDetail from './pages/ControleDetail';
+import ControleForm from './pages/ControleForm';
+import ControleEdit from './pages/ControleEdit';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import { SessionProvider } from '@/components/auth/SessionProvider';
@@ -15,9 +18,6 @@ import EquipementDetail from './pages/EquipementDetail';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
-import ControleForm from './pages/ControleForm';
-import ControleDetail from './pages/ControleDetail';
-import ControleEdit from './pages/ControleEdit';
 
 function App() {
   return (
@@ -34,12 +34,16 @@ function App() {
           <Route path="/equipements" element={<PrivateRoute><Equipements /></PrivateRoute>} />
           <Route path="/equipements/nouveau" element={<PrivateRoute><EquipementForm /></PrivateRoute>} />
           <Route path="/equipements/:id" element={<PrivateRoute><EquipementDetail /></PrivateRoute>} />
+          {/* Route pour créer un contrôle */}
           <Route path="/controle/:id" element={
             <PrivateRoute>
               <ControleForm epi={{} as any} onSubmit={()=>{}} />
             </PrivateRoute>
           } />
+          {/* Route pour la liste des contrôles */}
           <Route path="/controles" element={<PrivateRoute><Controles /></PrivateRoute>} />
+          {/* Route ajoutée pour le détail d'un contrôle */}
+          <Route path="/controles/:id" element={<PrivateRoute><ControleDetail /></PrivateRoute>} />
           <Route path="/controles/:id/modifier" element={<PrivateRoute><ControleEdit /></PrivateRoute>} />
           <Route path="/parametres" element={<PrivateRoute><Settings /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
