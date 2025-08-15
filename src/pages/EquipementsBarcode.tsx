@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import BarcodeReader from 'react-barcode-reader';
+import { QrReader } from 'react-qr-reader';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { showSuccess, showError } from '@/utils/toast';
@@ -10,19 +10,22 @@ export default function EquipementsBarcode() {
   const [scannedCode, setScannedCode] = useState('');
   const navigate = useNavigate();
 
-  const handleScan = (data: string | null) => {
-    if (data && !scannedCode) { // Empêche les scans multiples
-      setScannedCode(data);
-      showSuccess("Code-barres scanné : " + data);
-      setTimeout(() => {
-        navigate(`/equipements/nouveau?barcode=${encodeURIComponent(data)}`);
-      }, 1500);
+  const handleResult = (result: any, error: any) => {
+    if (result && !scannedCode) {
+      const code = result.getText();
+      if (code) {
+        setScannedCode(code);
+        showSuccess("Code-barres scanné : " + code);
+        setTimeout(() => {
+          navigate(`/equipements/nouveau?barcode=${encodeURIComponent(code)}`);
+        }, 1500);
+      }
     }
-  };
 
-  const handleError = (err: any) => {
-    console.error(err);
-    showError("Erreur lors du scan. Assurez-vous d'avoir autorisé l'accès à la caméra.");
+    if (error) {
+      // Cette erreur se déclenche en continu lorsqu'aucun code-barres n'est trouvé,
+      // il n'est donc pas utile d'afficher une notification à l'utilisateur.
+    }
   };
 
   return (
@@ -47,9 +50,12 @@ export default function EquipementsBarcode() {
                   Veuillez placer le code-barres de l'équipement devant la caméra.
                 </p>
                 <div className="relative w-full aspect-video bg-gray-200 rounded-md overflow-hidden border">
-                  <BarcodeReader
-                    onError={handleError}
-                    onScan={handleScan}
+                  <QrReader
+                    onResult={handleResult}
+                    constraints={{ facingMode: 'environment' }}
+                    containerStyle={{ width: '100%', height: '100%' }}
+                    videoContainerStyle={{ width: '100%', height: '100%', paddingTop: 0 }}
+                    videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <Camera className="h-12 w-12 text-gray-400 mb-2" />
