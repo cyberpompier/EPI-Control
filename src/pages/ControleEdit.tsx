@@ -94,7 +94,6 @@ export default function ControleEdit() {
           resultat: data.resultat,
           observations: data.observations,
           actions_correctives: data.actions_correctives,
-          // Conversion de la date sans décalage via format
           date_prochaine_verification: format(data.date_prochaine_verification, 'yyyy-MM-dd'),
         })
         .eq('id', controleId);
@@ -152,7 +151,12 @@ export default function ControleEdit() {
                     </Select>
                   )}
                 />
-                {errors.resultat && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.resultat.message}</p>}
+                {errors.resultat && (
+                  <p className="text-sm text-red-500 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.resultat.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -162,7 +166,12 @@ export default function ControleEdit() {
                   control={control}
                   render={({ field }) => <Textarea id="observations" placeholder="Modifier les observations..." {...field} />}
                 />
-                {errors.observations && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.observations.message}</p>}
+                {errors.observations && (
+                  <p className="text-sm text-red-500 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.observations.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -175,22 +184,18 @@ export default function ControleEdit() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_prochaine_verification">Date de la prochaine vérification</Label>
+                <Label htmlFor="date_prochaine_verification">Date du prochain contrôle</Label>
                 <Controller
                   name="date_prochaine_verification"
                   control={control}
                   render={({ field }) => (
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className="w-full pl-3 text-left font-normal"
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: fr })
-                          ) : (
-                            <span>Choisir une date</span>
-                          )}
+                        <Button variant="outline" className="w-full pl-3 text-left font-normal">
+                          {field.value && field.value instanceof Date
+                            ? format(field.value, "PPP", { locale: fr })
+                            : <span>Choisir une date</span>
+                          }
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </PopoverTrigger>
@@ -206,16 +211,17 @@ export default function ControleEdit() {
                     </Popover>
                   )}
                 />
-                {errors.date_prochaine_verification && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.date_prochaine_verification.message}</p>}
+                {errors.date_prochaine_verification && (
+                  <p className="text-sm text-red-500 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.date_prochaine_verification.message}
+                  </p>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
               <Button variant="outline" type="button" onClick={() => navigate(-1)}>Annuler</Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="bg-red-600 hover:bg-red-700"
-              >
+              <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
                 {isLoading ? "Mise à jour..." : "Enregistrer les modifications"}
               </Button>
             </CardFooter>

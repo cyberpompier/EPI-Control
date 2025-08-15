@@ -82,7 +82,6 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
       photos,
       epi_id: epi.id,
       date_controle: new Date().toISOString(),
-      // Conversion de la date sans décalage
       date_prochaine_verification: format(values.date_prochaine_verification, 'yyyy-MM-dd'),
     });
   };
@@ -102,11 +101,7 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
             render={({ field }) => (
               <div className="space-y-3">
                 <label className="block font-medium">Résultat du contrôle</label>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="conforme" id="conforme" />
                     <label htmlFor="conforme" className="flex items-center cursor-pointer">
@@ -122,7 +117,12 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
                     </label>
                   </div>
                 </RadioGroup>
-                {errors.resultat && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.resultat.message}</p>}
+                {errors.resultat && (
+                  <p className="text-sm text-red-500 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.resultat.message}
+                  </p>
+                )}
               </div>
             )}
           />
@@ -137,7 +137,12 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
               </div>
             )}
           />
-          {errors.observations && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.observations.message}</p>}
+          {errors.observations && (
+            <p className="text-sm text-red-500 flex items-center">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              {errors.observations.message}
+            </p>
+          )}
 
           {watchResultat === 'non_conforme' && (
             <Controller
@@ -161,11 +166,10 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full pl-3 text-left font-normal">
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: fr })
-                      ) : (
-                        <span>Sélectionnez une date</span>
-                      )}
+                      {field.value && field.value instanceof Date
+                        ? format(field.value, "PPP", { locale: fr })
+                        : <span>Sélectionnez une date</span>
+                      }
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -182,7 +186,12 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
               </div>
             )}
           />
-          {errors.date_prochaine_verification && <p className="text-sm text-red-500 flex items-center"><AlertTriangle className="h-4 w-4 mr-1" />{errors.date_prochaine_verification.message}</p>}
+          {errors.date_prochaine_verification && (
+            <p className="text-sm text-red-500 flex items-center">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              {errors.date_prochaine_verification.message}
+            </p>
+          )}
 
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
