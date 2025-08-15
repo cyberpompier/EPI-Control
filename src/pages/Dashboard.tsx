@@ -1,12 +1,10 @@
 import Layout from '@/components/layout/Layout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Shield, Users, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Users, AlertTriangle, CheckCircle, Clock, HardHat, Hand, Shirt } from 'lucide-react';
 import RecentControls from '@/components/dashboard/RecentControls';
 import PersonnelList from '@/components/dashboard/PersonnelList';
 
@@ -16,6 +14,10 @@ type Stats = {
   controlesEnRetard: number;
   equipementsConformes: number;
   equipementsNonConformes: number;
+  casquesConformes: number;
+  gantsConformes: number;
+  surpantalonsConformes: number;
+  vestesProtectionConformes: number;
 };
 
 export default function Dashboard() {
@@ -26,32 +28,31 @@ export default function Dashboard() {
     const fetchStats = async () => {
       setLoading(true);
       try {
-        const { count: totalEquipements, error: equipementsError } = await supabase
-          .from('equipements')
-          .select('*', { count: 'exact', head: true });
+        const [
+          { count: totalEquipements, error: equipementsError },
+          { count: totalPersonnel, error: personnelError },
+          { count: controlesEnRetard, error: retardError },
+          { count: equipementsConformes, error: conformesError },
+          { count: equipementsNonConformes, error: nonConformesError },
+          { count: casquesConformes, error: casquesError },
+          { count: gantsConformes, error: gantsError },
+          { count: surpantalonsConformes, error: surpantalonsError },
+          { count: vestesProtectionConformes, error: vestesError }
+        ] = await Promise.all([
+          supabase.from('equipements').select('*', { count: 'exact', head: true }),
+          supabase.from('personnel').select('*', { count: 'exact', head: true }),
+          supabase.from('controles').select('*', { count: 'exact', head: true }).lt('date_prochaine_verification', new Date().toISOString()),
+          supabase.from('equipements').select('*', { count: 'exact', head: true }).eq('statut', 'conforme'),
+          supabase.from('equipements').select('*', { count: 'exact', head: true }).eq('statut', 'non_conforme'),
+          supabase.from('equipements').select('*', { count: 'exact', head: true }).eq('statut', 'conforme').in('type', ['Casque F1', 'Casque F2']),
+          supabase.from('equipements').select('*', { count: 'exact', head: true }).eq('statut', 'conforme').eq('type', 'Gant de protection'),
+          supabase.from('equipements').select('*', { count: 'exact', head: true }).eq('statut', 'conforme').eq('type', 'Surpantalon'),
+          supabase.from('equipements').select('*', { count: 'exact', head: true }).eq('statut', 'conforme').eq('type', 'Veste de protection')
+        ]);
 
-        const { count: totalPersonnel, error: personnelError } = await supabase
-          .from('personnel')
-          .select('*', { count: 'exact', head: true });
-
-        // Note: This is a simplified query. Real-world logic for late controls might be more complex.
-        const { count: controlesEnRetard, error: retardError } = await supabase
-          .from('controles')
-          .select('*', { count: 'exact', head: true })
-          .lt('date_prochaine_verification', new Date().toISOString());
-
-        const { count: equipementsConformes, error: conformesError } = await supabase
-          .from('equipements')
-          .select('*', { count: 'exact', head: true })
-          .eq('statut', 'conforme');
-        
-        const { count: equipementsNonConformes, error: nonConformesError } = await supabase
-          .from('equipements')
-          .select('*', { count: 'exact', head: true })
-          .eq('statut', 'non_conforme');
-
-        if (equipementsError || personnelError || retardError || conformesError || nonConformesError) {
-          throw equipementsError || personnelError || retardError || conformesError || nonConformesError;
+        const anyError = equipementsError || personnelError || retardError || conformesError || nonConformesError || casquesError || gantsError || surpantalonsError || vestesError;
+        if (anyError) {
+          throw anyError;
         }
 
         setStats({
@@ -60,6 +61,10 @@ export default function Dashboard() {
           controlesEnRetard: controlesEnRetard || 0,
           equipementsConformes: equipementsConformes || 0,
           equipementsNonConformes: equipementsNonConformes || 0,
+          casquesConformes: casquesConformes || 0,
+          gantsConformes: gantsConformes || 0,
+          surpantalonsConformes: surpantalonsConformes || 0,
+          vestesProtectionConformes: vestesProtectionConformes || 0,
         });
       } catch (error) {
         console.error("Erreur lors de la récupération des statistiques:", error);
@@ -96,13 +101,29 @@ export default function Dashboard() {
           ))}
         </div>
       ) : stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <StatCard title="Total Équipements" value={stats.totalEquipements} icon={Shield} color="blue" />
-          <StatCard title="Total Personnel" value={stats.totalPersonnel} icon={Users} color="gray" />
-          <StatCard title="Équipements Conformes" value={stats.equipementsConformes} icon={CheckCircle} color="green" />
-          <StatCard title="Équipements Non-Conformes" value={stats.equipementsNonConformes} icon={AlertTriangle} color="red" />
-          <StatCard title="Contrôles en Retard" value={stats.controlesEnRetard} icon={Clock} color="yellow" />
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <StatCard title="Total Équipements" value={stats.totalEquipements} icon={Shield} color="blue" />
+            <StatCard title="Total Personnel" value={stats.totalPersonnel} icon={Users} color="gray" />
+            <StatCard title="Équipements Conformes" value={stats.equipementsConformes} icon={CheckCircle} color="green" />
+            <StatCard title="Équipements Non-Conformes" value={stats.equipementsNonConformes} icon={AlertTriangle} color="red" />
+            <StatCard title="Contrôles en Retard" value={stats.controlesEnRetard} icon={Clock} color="yellow" />
+          </div>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>État des équipements conformes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard title="Casques" value={stats.casquesConformes} icon={HardHat} color="green" />
+                <StatCard title="Gants" value={stats.gantsConformes} icon={Hand} color="green" />
+                <StatCard title="Surpantalons" value={stats.surpantalonsConformes} icon={Shield} color="green" />
+                <StatCard title="Vestes de protection" value={stats.vestesProtectionConformes} icon={Shirt} color="green" />
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
