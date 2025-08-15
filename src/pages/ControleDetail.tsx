@@ -21,7 +21,7 @@ export default function ControleDetail() {
       try {
         const { data, error } = await supabase
           .from('controles')
-          .select('*, equipements(*, personnel(*)), profiles(id, nom, prenom, grade)')
+          .select('*, equipements(*, personnel(*)), profiles:controleur_id(id, nom, prenom, role)')
           .eq('id', id)
           .single();
 
@@ -166,7 +166,7 @@ export default function ControleDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Contrôleur</span>
-                    <span className="font-medium">{controle.profiles?.grade} {controle.profiles?.prenom} {controle.profiles?.nom}</span>
+                    <span className="font-medium capitalize">{controle.profiles?.role} {controle.profiles?.prenom} {controle.profiles?.nom}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Résultat</span>

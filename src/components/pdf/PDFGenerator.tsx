@@ -12,7 +12,7 @@ interface PDFGeneratorProps {
   controleur: {
     nom: string;
     prenom: string;
-    grade: string;
+    role: string;
   };
 }
 
@@ -174,7 +174,7 @@ export default function PDFGenerator({ controle, epi, pompier, controleur }: PDF
             <div className="flex justify-between">
               <div>
                 <h3 className="font-bold mb-1">Contrôleur</h3>
-                <p>{controleur.grade} {controleur.prenom} {controleur.nom}</p>
+                <p className="capitalize">{controleur.role} {controleur.prenom} {controleur.nom}</p>
               </div>
               <div className="text-right">
                 <h3 className="font-bold mb-1">Signature</h3>
