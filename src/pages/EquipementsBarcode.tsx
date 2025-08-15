@@ -1,22 +1,49 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
+import { supabase } from '@/lib/supabase';
 
 export default function EquipementsBarcode() {
   const [scannedCode, setScannedCode] = useState('');
   const navigate = useNavigate();
 
-  const handleScanSuccess = (decodedText: string) => {
-    if (!scannedCode) { // Prevent multiple navigations
-      setScannedCode(decodedText);
-      showSuccess("Code-barres scanné : " + decodedText);
-      setTimeout(() => {
-        navigate(`/equipements/nouveau?barcode=${encodeURIComponent(decodedText)}`);
-      }, 1500);
+  const handleScanSuccess = async (decodedText: string) => {
+    if (scannedCode) return; // Empêche les scans multiples
+
+    setScannedCode(decodedText);
+    showSuccess("Code-barres scanné : " + decodedText);
+
+    try {
+      const { data, error } = await supabase
+        .from('equipements')
+        .select('id')
+        .eq('numero_serie', decodedText)
+        .single();
+
+      // PGRST116 est le code d'erreur pour "aucune ligne trouvée", ce qui est normal ici.
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        showSuccess("Équipement trouvé. Redirection vers la page de modification...");
+        setTimeout(() => {
+          navigate(`/equipements/${data.id}/modifier`);
+        }, 1500);
+      } else {
+        showSuccess("Équipement non trouvé. Redirection vers la page de création...");
+        setTimeout(() => {
+          navigate(`/equipements/nouveau?barcode=${encodeURIComponent(decodedText)}`);
+        }, 1500);
+      }
+    } catch (err: any) {
+      console.error("Erreur lors de la recherche de l'équipement:", err);
+      showError(`Erreur lors de la recherche: ${err.message}`);
+      setTimeout(() => setScannedCode(''), 2000); // Réinitialiser pour permettre un nouveau scan
     }
   };
 
@@ -33,7 +60,7 @@ export default function EquipementsBarcode() {
                 <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                 <p className="text-lg font-semibold">Code-barres scanné avec succès !</p>
                 <p className="text-gray-600 font-mono text-xl my-2">{scannedCode}</p>
-                <p className="text-gray-500">Vous allez être redirigé...</p>
+                <p className="text-gray-500">Recherche de l'équipement en cours...</p>
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700 mt-4"></div>
               </div>
             ) : (
