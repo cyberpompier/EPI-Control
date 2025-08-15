@@ -66,7 +66,15 @@ export default function EPICard({ epi }: EPICardProps) {
       <CardHeader className="p-4 bg-gray-50 border-b">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-semibold flex items-center">
-            <span className="mr-2 text-xl">{getTypeIcon(epi.type)}</span>
+            {epi.image ? (
+              <img 
+                src={epi.image} 
+                alt={epi.type} 
+                className="mr-2 w-6 h-6 object-contain"
+              />
+            ) : (
+              <span className="mr-2 text-xl">{getTypeIcon(epi.type)}</span>
+            )}
             {epi.type.charAt(0).toUpperCase() + epi.type.slice(1)}
           </CardTitle>
           <Badge className={getStatusColor(epi.statut)} variant="outline">

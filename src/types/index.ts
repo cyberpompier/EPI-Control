@@ -21,6 +21,7 @@ export interface EPI {
   statut: 'conforme' | 'non_conforme' | 'en_attente';
   created_at: string;
   personnel?: Pompier;
+  image?: string; // Ajout de la propriété image
 }
 
 export interface Controle {
