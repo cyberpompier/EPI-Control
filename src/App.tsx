@@ -14,6 +14,7 @@ import ControleDetail from '@/pages/ControleDetail';
 import ControleEdit from '@/pages/ControleEdit';
 import EquipementDetail from '@/pages/EquipementDetail';
 import EquipementForm from '@/pages/EquipementForm';
+import EquipementEdit from '@/pages/EquipementEdit';
 import Personnel from '@/pages/Personnel';
 import PersonnelDetail from '@/pages/PersonnelDetail';
 import PersonnelForm from '@/pages/PersonnelForm';
@@ -53,6 +54,11 @@ export default function App() {
           <Route path="/equipements/:id" element={
             <PrivateRoute>
               <EquipementDetail />
+            </PrivateRoute>
+          } />
+          <Route path="/equipements/:id/modifier" element={
+            <PrivateRoute>
+              <EquipementEdit />
             </PrivateRoute>
           } />
           <Route path="/controle/:id" element={

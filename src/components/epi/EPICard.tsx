@@ -2,7 +2,7 @@ import { EPI } from '@/types/index';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clipboard, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface EPICardProps {
@@ -116,10 +116,17 @@ export default function EPICard({ epi }: EPICardProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="p-4 bg-gray-50 border-t flex justify-between">
-        <Button variant="outline" size="sm" className="text-gray-600">
-          <Clipboard className="h-4 w-4 mr-1" /> Historique
-        </Button>
+      <CardFooter className="p-4 bg-gray-50 border-t flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="text-gray-600">
+            <Clipboard className="h-4 w-4 mr-1" /> Historique
+          </Button>
+          <Link to={`/equipements/${epi.id}/modifier`}>
+            <Button variant="outline" size="icon" aria-label="Modifier l'équipement">
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         <Link to={`/controle/${epi.id}`}>
           <Button size="sm" className="bg-red-600 hover:bg-red-700">
             Contrôler
