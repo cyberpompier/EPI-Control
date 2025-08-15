@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,6 +19,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { Pompier } from '@/types/index';
+import Barcode from 'react-barcode';
 
 const formSchema = z.object({
   type: z.enum([
@@ -57,6 +58,8 @@ const formSchema = z.object({
 
 export default function EquipementForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const barcode = searchParams.get("barcode") || "";
   const [isLoading, setIsLoading] = useState(false);
   const [pompiers, setPompiers] = useState<Pompier[]>([]);
   const [loadingPompiers, setLoadingPompiers] = useState(true);
@@ -67,7 +70,7 @@ export default function EquipementForm() {
       type: 'Casque F1',
       marque: '',
       modele: '',
-      numero_serie: '',
+      numero_serie: barcode,
       personnel_id: '',
     },
   });
@@ -168,12 +171,10 @@ export default function EquipementForm() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Type d'équipement</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionnez un type" />
-                              </SelectTrigger>
-                            </FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez un type" />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Casque F1">Casque F1</SelectItem>
                               <SelectItem value="Casque F2">Casque F2</SelectItem>
@@ -191,7 +192,6 @@ export default function EquipementForm() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="personnel_id"
@@ -199,11 +199,9 @@ export default function EquipementForm() {
                         <FormItem>
                           <FormLabel>Membre du personnel assigné</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={loadingPompiers ? "Chargement..." : "Sélectionnez un membre"} />
-                              </SelectTrigger>
-                            </FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={loadingPompiers ? "Chargement..." : "Sélectionnez un membre"} />
+                            </SelectTrigger>
                             <SelectContent>
                               {loadingPompiers ? (
                                 <SelectItem value="__loading__" disabled>Chargement...</SelectItem>
@@ -223,7 +221,6 @@ export default function EquipementForm() {
                       )}
                     />
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -238,7 +235,6 @@ export default function EquipementForm() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="modele"
@@ -253,21 +249,26 @@ export default function EquipementForm() {
                       )}
                     />
                   </div>
-
                   <FormField
                     control={form.control}
                     name="numero_serie"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Numéro de série</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Numéro de série unique" {...field} />
-                        </FormControl>
+                        <div className="flex items-center space-x-2">
+                          <FormControl className="flex-1">
+                            <Input placeholder="Numéro de série unique" {...field} />
+                          </FormControl>
+                          {field.value && (
+                            <div className="w-1/3">
+                              <Barcode value={String(field.value)} />
+                            </div>
+                          )}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -308,7 +309,6 @@ export default function EquipementForm() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="date_fin_vie"
@@ -349,7 +349,6 @@ export default function EquipementForm() {
                       )}
                     />
                   </div>
-
                   <div className="flex justify-end space-x-2 pt-6">
                     <Button variant="outline" type="button" onClick={() => navigate('/equipements')}>
                       Annuler
