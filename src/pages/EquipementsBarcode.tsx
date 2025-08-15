@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 
 export default function EquipementsBarcode() {
   const [scannedCode, setScannedCode] = useState('');
+  const [scanning, setScanning] = useState(false);
   const navigate = useNavigate();
 
   const handleScan = (data: string | null) => {
     if (data) {
       setScannedCode(data);
       showSuccess("Code scanné: " + data);
-      // Redirection vers la page d'ajout avec le code scanné
+      setScanning(false);
       setTimeout(() => {
         navigate(`/equipements/nouveau?barcode=${encodeURIComponent(data)}`);
       }, 1500);
@@ -29,18 +30,27 @@ export default function EquipementsBarcode() {
     <Layout>
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-4">Scanner le code barre</h1>
-        <div className="mb-4">
-          <BarcodeReader 
-            onError={handleError} 
-            onScan={handleScan} 
-            style={{ 
-              width: "100%", 
-              height: "300px", 
-              minHeight: "300px", 
-              border: "1px solid #ddd" 
-            }}
-          />
-        </div>
+        {scanning ? (
+          <div className="mb-4">
+            <BarcodeReader 
+              onError={handleError} 
+              onScan={handleScan} 
+              style={{ 
+                width: "100%", 
+                height: "300px", 
+                minHeight: "300px", 
+                border: "1px solid #ddd" 
+              }}
+            />
+            <Button onClick={() => setScanning(false)} className="mt-2 bg-gray-600 hover:bg-gray-700">
+              Arrêter le scan
+            </Button>
+          </div>
+        ) : (
+          <Button onClick={() => setScanning(true)} className="bg-red-600 hover:bg-red-700 mb-4">
+            Démarrer le scan
+          </Button>
+        )}
         {scannedCode && (
           <div className="mt-4">
             <p className="text-green-600">Code scanné: {scannedCode}</p>
