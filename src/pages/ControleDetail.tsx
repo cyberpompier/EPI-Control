@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Controle, EPI, Pompier } from '@/types/index';
-import { ArrowLeft, CheckCircle, AlertTriangle, Calendar, Clock, User, FileText, Camera } from 'lucide-react';
+import { showError } from '@/utils/toast';
+import { ArrowLeft, CheckCircle, AlertTriangle, User, FileText, Camera } from 'lucide-react';
 
 export default function ControleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +21,7 @@ export default function ControleDetail() {
       try {
         const { data, error } = await supabase
           .from('controles')
-          .select('*, epi:equipements(*, pompier:personnel(*)), controleur:profiles(id, nom, prenom, grade)')
+          .select('*, equipements(*, personnel(*)), profiles(id, nom, prenom, grade)')
           .eq('id', id)
           .single();
 
@@ -29,6 +29,7 @@ export default function ControleDetail() {
         setControle(data);
       } catch (error) {
         console.error('Erreur lors de la récupération du contrôle:', error);
+        showError("Erreur lors de la récupération des détails du contrôle.");
       } finally {
         setLoading(false);
       }
@@ -47,12 +48,12 @@ export default function ControleDetail() {
     );
   }
 
-  if (!controle) {
+  if (!controle || !controle.equipements) {
     return (
       <Layout>
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold mb-2">Contrôle non trouvé</h2>
-          <p className="text-gray-600 mb-6">Le contrôle demandé n'existe pas ou a été supprimé.</p>
+          <p className="text-gray-600 mb-6">Le contrôle demandé n'existe pas ou les données associées sont manquantes.</p>
           <Link to="/controles">
             <Button>Retour à la liste des contrôles</Button>
           </Link>
@@ -88,16 +89,18 @@ export default function ControleDetail() {
           <div>
             <h1 className="text-2xl font-bold">Détail du contrôle</h1>
             <p className="text-gray-600">
-              Contrôle du {new Date(controle.date_controle).toLocaleDateString('fr-FR')} - {controle.epi.marque} {controle.epi.modele}
+              Contrôle du {new Date(controle.date_controle).toLocaleDateString('fr-FR')} - {controle.equipements.marque} {controle.equipements.modele}
             </p>
           </div>
           
-          <PDFGenerator 
-            controle={controle}
-            epi={controle.epi}
-            pompier={controle.epi.pompier}
-            controleur={controle.controleur}
-          />
+          {controle.equipements.personnel && controle.profiles && (
+            <PDFGenerator 
+              controle={controle}
+              epi={controle.equipements}
+              pompier={controle.equipements.personnel}
+              controleur={controle.profiles}
+            />
+          )}
         </div>
       </div>
       
@@ -106,7 +109,7 @@ export default function ControleDetail() {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg flex items-center">
-                <span className="mr-2 text-xl">{getTypeIcon(controle.epi.type)}</span>
+                <span className="mr-2 text-xl">{getTypeIcon(controle.equipements.type)}</span>
                 Informations sur l'équipement
               </CardTitle>
               <Badge className={controle.resultat === 'conforme' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}>
@@ -129,27 +132,27 @@ export default function ControleDetail() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Type</span>
-                    <span className="font-medium">{controle.epi.type.charAt(0).toUpperCase() + controle.epi.type.slice(1)}</span>
+                    <span className="font-medium">{controle.equipements.type.charAt(0).toUpperCase() + controle.equipements.type.slice(1)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Marque</span>
-                    <span className="font-medium">{controle.epi.marque}</span>
+                    <span className="font-medium">{controle.equipements.marque}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Modèle</span>
-                    <span className="font-medium">{controle.epi.modele}</span>
+                    <span className="font-medium">{controle.equipements.modele}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">N° Série</span>
-                    <span className="font-medium font-mono">{controle.epi.numero_serie}</span>
+                    <span className="font-medium font-mono">{controle.equipements.numero_serie}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Mise en service</span>
-                    <span className="font-medium">{new Date(controle.epi.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
+                    <span className="font-medium">{new Date(controle.equipements.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Fin de vie</span>
-                    <span className="font-medium">{new Date(controle.epi.date_fin_vie).toLocaleDateString('fr-FR')}</span>
+                    <span className="font-medium">{new Date(controle.equipements.date_fin_vie).toLocaleDateString('fr-FR')}</span>
                   </div>
                 </div>
               </div>
@@ -163,7 +166,7 @@ export default function ControleDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Contrôleur</span>
-                    <span className="font-medium">{controle.controleur.grade} {controle.controleur.prenom} {controle.controleur.nom}</span>
+                    <span className="font-medium">{controle.profiles?.grade} {controle.profiles?.prenom} {controle.profiles?.nom}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Résultat</span>
@@ -224,62 +227,66 @@ export default function ControleDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Identité</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Nom</span>
-                    <span className="font-medium">{controle.epi.pompier.nom}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Prénom</span>
-                    <span className="font-medium">{controle.epi.pompier.prenom}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Grade</span>
-                    <span className="font-medium">{controle.epi.pompier.grade}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Matricule</span>
-                    <span className="font-medium font-mono">{controle.epi.pompier.matricule}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Affectation</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Caserne</span>
-                    <span className="font-medium">{controle.epi.pompier.caserne}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Email</span>
-                    <span className="font-medium">{controle.epi.pompier.email}</span>
+            {controle.equipements.personnel ? (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">Identité</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Nom</span>
+                      <span className="font-medium">{controle.equipements.personnel.nom}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Prénom</span>
+                      <span className="font-medium">{controle.equipements.personnel.prenom}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Grade</span>
+                      <span className="font-medium">{controle.equipements.personnel.grade}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Matricule</span>
+                      <span className="font-medium font-mono">{controle.equipements.personnel.matricule}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="pt-4 border-t">
-                <Link to={`/personnel/${controle.epi.pompier.id}/equipements`}>
-                  <Button variant="outline" className="w-full">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Voir tous les équipements
-                  </Button>
-                </Link>
-              </div>
-              
-              {controle.resultat === 'non_conforme' && (
-                <div className="pt-2">
-                  <Link to={`/controle/${controle.epi.id}`}>
-                    <Button className="w-full bg-red-600 hover:bg-red-700">
-                      Recontrôler cet équipement
+                
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">Affectation</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Caserne</span>
+                      <span className="font-medium">{controle.equipements.personnel.caserne}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Email</span>
+                      <span className="font-medium">{controle.equipements.personnel.email}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t">
+                  <Link to={`/personnel/${controle.equipements.personnel.id}`}>
+                    <Button variant="outline" className="w-full">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Voir le profil du pompier
                     </Button>
                   </Link>
                 </div>
-              )}
-            </div>
+                
+                {controle.resultat === 'non_conforme' && (
+                  <div className="pt-2">
+                    <Link to={`/controle/${controle.equipements.id}`}>
+                      <Button className="w-full bg-red-600 hover:bg-red-700">
+                        Recontrôler cet équipement
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Aucun pompier n'était assigné à cet équipement au moment du contrôle.</p>
+            )}
           </CardContent>
         </Card>
       </div>
