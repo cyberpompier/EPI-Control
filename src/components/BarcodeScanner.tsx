@@ -18,7 +18,7 @@ const BarcodeScanner = ({ onScanSuccess, onScanFailure }: BarcodeScannerProps) =
 
     let isScanning = true;
 
-    const successCallback = (decodedText: string, decodedResult: any) => {
+    const successCallback = (decodedText: string) => {
         if (isScanning) {
             isScanning = false;
             html5QrcodeScanner.clear();
