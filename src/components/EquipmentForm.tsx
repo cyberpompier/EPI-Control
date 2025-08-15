@@ -96,6 +96,9 @@ export default function EquipmentForm({ equipment }: EquipmentFormProps) {
       if (!submissionData.marque) {
         submissionData.marque = submissionData.type;
       }
+      if (!submissionData.modele) {
+        submissionData.modele = submissionData.type;
+      }
 
       let error;
       if (isEditing) {
