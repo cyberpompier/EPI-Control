@@ -208,7 +208,12 @@ export default function ControleEdit() {
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
               <Button variant="outline" type="button" onClick={() => navigate(-1)}>Annuler</Button>
-              <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                onClick={handleSubmit(onSubmit)}
+                className="bg-red-600 hover:bg-red-700"
+              >
                 {isLoading ? "Mise à jour..." : "Enregistrer les modifications"}
               </Button>
             </CardFooter>
