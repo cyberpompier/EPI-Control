@@ -49,7 +49,11 @@ export default function ControleEdit() {
 
   useEffect(() => {
     const fetchControle = async () => {
-      if (!controleId) return;
+      if (!controleId) {
+        console.error("Aucun ID de contrôle fourni.");
+        navigate('/controles');
+        return;
+      }
       setLoadingControle(true);
       try {
         const { data, error } = await supabase
@@ -58,13 +62,19 @@ export default function ControleEdit() {
           .eq('id', controleId)
           .single();
         if (error) throw error;
-        // Pré-remplissage des valeurs dans le formulaire
-        reset({
-          resultat: data.resultat,
-          observations: data.observations,
-          actions_correctives: data.actions_correctives || '',
-          date_prochaine_verification: new Date(data.date_prochaine_verification),
-        });
+        console.log("Données du contrôle :", data);
+        if (data && data.date_prochaine_verification) {
+          reset({
+            resultat: data.resultat,
+            observations: data.observations,
+            actions_correctives: data.actions_correctives || '',
+            date_prochaine_verification: new Date(data.date_prochaine_verification),
+          });
+        } else {
+          console.error("Aucune donnée trouvée pour ce contrôle.");
+          showError("Aucune donnée trouvée.");
+          navigate('/controles');
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération du contrôle:", error);
         showError("Impossible de charger les informations du contrôle.");
