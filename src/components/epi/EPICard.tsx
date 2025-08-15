@@ -118,9 +118,11 @@ export default function EPICard({ epi }: EPICardProps) {
       </CardContent>
       <CardFooter className="p-4 bg-gray-50 border-t flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="text-gray-600">
-            <Clipboard className="h-4 w-4 mr-1" /> Historique
-          </Button>
+          <Link to={`/controles?equipement=${epi.id}`}>
+            <Button variant="outline" size="sm" className="text-gray-600">
+              <Clipboard className="h-4 w-4 mr-1" /> Historique
+            </Button>
+          </Link>
           <Link to={`/equipements/${epi.id}/modifier`}>
             <Button variant="outline" size="icon" aria-label="Modifier l'équipement">
               <Edit className="h-4 w-4" />
