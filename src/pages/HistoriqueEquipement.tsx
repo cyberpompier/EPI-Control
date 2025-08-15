@@ -8,16 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft } from 'lucide-react';
 
+interface Controleur {
+  nom: string;
+  prenom: string;
+}
+
 interface Controle {
   id: string;
   date_controle: string;
   resultat: string;
   observations: string | null;
   actions_correctives: string | null;
-  controleur: {
-    nom: string;
-    prenom: string;
-  } | null;
+  controleur: Controleur | null;
 }
 
 interface Equipement {
@@ -69,7 +71,6 @@ const HistoriqueEquipement = () => {
           resultat,
           observations,
           actions_correctives,
-          controleur_id,
           personnel!controles_controleur_id_fkey (nom, prenom)
         `)
         .eq('equipement_id', id)
@@ -77,9 +78,16 @@ const HistoriqueEquipement = () => {
 
       if (error) throw error;
       
-      const controlesWithControleur = data.map(controle => ({
-        ...controle,
-        controleur: controle.personnel || null
+      const controlesWithControleur: Controle[] = data.map((controle: any) => ({
+        id: controle.id,
+        date_controle: controle.date_controle,
+        resultat: controle.resultat,
+        observations: controle.observations,
+        actions_correctives: controle.actions_correctives,
+        controleur: controle.personnel && controle.personnel.length > 0 ? {
+          nom: controle.personnel[0].nom,
+          prenom: controle.personnel[0].prenom
+        } : null
       }));
       
       setControles(controlesWithControleur);
