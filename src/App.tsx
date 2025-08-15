@@ -1,58 +1,40 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Personnel from './pages/Personnel';
-import Equipements from './pages/Equipements';
-import Controles from './pages/Controles';
-import ControleDetail from './pages/ControleDetail';
-import ControleForm from './pages/ControleForm';
-import ControleEdit from './pages/ControleEdit';
-import Settings from './pages/Settings';
-import Login from './pages/Login';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SessionProvider } from '@/components/auth/SessionProvider';
-import PrivateRoute from './components/auth/PrivateRoute';
-import PersonnelDetail from './pages/PersonnelDetail';
-import PersonnelForm from './pages/PersonnelForm';
-import EquipementForm from './pages/EquipementForm';
-import PersonnelEquipements from './pages/PersonnelEquipements';
-import EquipementDetail from './pages/EquipementDetail';
-import Reports from './pages/Reports';
-import Notifications from './pages/Notifications';
-import Profile from './pages/Profile';
+import PrivateRoute from '@/components/auth/PrivateRoute';
+import Index from '@/pages/Index';
+import Login from '@/pages/Login';
+import Profile from '@/pages/Profile';
+import Equipements from '@/pages/Equipements';
+import ControleForm from '@/pages/ControleForm';
+import NotFound from '@/pages/NotFound';
+import { Toaster } from 'react-hot-toast';
 
-function App() {
+export default function App() {
   return (
-    <Router>
-      <SessionProvider>
+    <SessionProvider>
+      <Router>
         <Routes>
+          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/personnel" element={<PrivateRoute><Personnel /></PrivateRoute>} />
-          <Route path="/personnel/nouveau" element={<PrivateRoute><PersonnelForm /></PrivateRoute>} />
-          <Route path="/personnel/:id" element={<PrivateRoute><PersonnelDetail /></PrivateRoute>} />
-          <Route path="/personnel/:id/equipements" element={<PrivateRoute><PersonnelEquipements /></PrivateRoute>} />
-          <Route path="/equipements" element={<PrivateRoute><Equipements /></PrivateRoute>} />
-          <Route path="/equipements/nouveau" element={<PrivateRoute><EquipementForm /></PrivateRoute>} />
-          <Route path="/equipements/:id" element={<PrivateRoute><EquipementDetail /></PrivateRoute>} />
-          {/* Route pour créer un contrôle */}
-          <Route path="/controle/:id" element={
+          <Route path="/profile" element={
             <PrivateRoute>
-              <ControleForm epi={{} as any} onSubmit={()=>{}} />
+              <Profile />
             </PrivateRoute>
           } />
-          {/* Route pour la liste des contrôles */}
-          <Route path="/controles" element={<PrivateRoute><Controles /></PrivateRoute>} />
-          {/* Route ajoutée pour le détail d'un contrôle */}
-          <Route path="/controles/:id" element={<PrivateRoute><ControleDetail /></PrivateRoute>} />
-          <Route path="/controles/:id/modifier" element={<PrivateRoute><ControleEdit /></PrivateRoute>} />
-          <Route path="/parametres" element={<PrivateRoute><Settings /></PrivateRoute>} />
-          <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
-          <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/equipements" element={
+            <PrivateRoute>
+              <Equipements />
+            </PrivateRoute>
+          } />
+          <Route path="/controle/:id" element={
+            <PrivateRoute>
+              <ControleForm />
+            </PrivateRoute>
+          } />
+          <Route path="*" element={<NotFound />} />
         </Routes>
-      </SessionProvider>
-    </Router>
+        <Toaster />
+      </Router>
+    </SessionProvider>
   );
 }
-
-export default App;
