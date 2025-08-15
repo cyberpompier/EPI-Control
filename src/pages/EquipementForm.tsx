@@ -36,24 +36,12 @@ const formSchema = z.object({
   ], {
     required_error: "Veuillez sélectionner un type d'équipement",
   }),
-  marque: z.string().min(2, {
-    message: "La marque doit contenir au moins 2 caractères",
-  }),
-  modele: z.string().min(2, {
-    message: "Le modèle doit contenir au moins 2 caractères",
-  }),
-  numero_serie: z.string().min(3, {
-    message: "Le numéro de série doit contenir au moins 3 caractères",
-  }),
-  date_mise_en_service: z.date({
-    required_error: "Veuillez sélectionner une date de mise en service",
-  }),
-  date_fin_vie: z.date({
-    required_error: "Veuillez sélectionner une date de fin de vie",
-  }),
-  personnel_id: z.string().min(1, {
-    message: "Veuillez sélectionner un membre du personnel",
-  }),
+  marque: z.string().min(2, { message: "La marque doit contenir au moins 2 caractères" }),
+  modele: z.string().min(2, { message: "Le modèle doit contenir au moins 2 caractères" }),
+  numero_serie: z.string().min(3, { message: "Le numéro de série doit contenir au moins 3 caractères" }),
+  date_mise_en_service: z.date({ required_error: "Veuillez sélectionner une date de mise en service" }),
+  date_fin_vie: z.date({ required_error: "Veuillez sélectionner une date de fin de vie" }),
+  personnel_id: z.string().min(1, { message: "Veuillez sélectionner un membre du personnel" }),
 });
 
 export default function EquipementForm() {
@@ -76,13 +64,18 @@ export default function EquipementForm() {
   });
 
   useEffect(() => {
+    // Mise à jour du champ numero_serie si un code barre est présent dans l'URL
+    if (barcode) {
+      form.setValue("numero_serie", barcode);
+    }
+  }, [barcode, form]);
+
+  useEffect(() => {
     const fetchPompiers = async () => {
       setLoadingPompiers(true);
       try {
         const { data, error } = await supabase.from('personnel').select('*');
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
         setPompiers(data || []);
       } catch (error: any) {
         showError(`Erreur lors du chargement du personnel: ${error.message}`);
@@ -103,17 +96,13 @@ export default function EquipementForm() {
           marque: values.marque,
           modele: values.modele,
           numero_serie: values.numero_serie,
-          // Conversion des dates pour avoir uniquement la date sans décalage
           date_mise_en_service: format(values.date_mise_en_service, "yyyy-MM-dd"),
           date_fin_vie: format(values.date_fin_vie, "yyyy-MM-dd"),
-          personnel_id: parseInt(values.personnel_id), // Conversion en nombre puisque c'est un bigint
+          personnel_id: parseInt(values.personnel_id),
           statut: 'en_attente',
         }
       ]);
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
       showSuccess('Équipement ajouté avec succès');
       navigate('/equipements');
