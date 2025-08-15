@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,6 @@ interface Personnel {
 
 const AddControle = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -40,12 +39,6 @@ const AddControle = () => {
   });
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-    };
-
-    getUser();
     fetchEquipements();
     fetchPersonnel();
   }, []);
@@ -98,7 +91,7 @@ const AddControle = () => {
         .from('controles')
         .insert([{
           equipement_id: controle.equipement_id,
-          controleur_id: parseInt(controle.controleur_id),
+          controleur_id: parseInt(controle.controleur_id) || null,
           date_controle: controle.date_controle,
           resultat: controle.resultat,
           observations: controle.observations || null,
@@ -153,10 +146,9 @@ const AddControle = () => {
                 name="controleur_id" 
                 value={controle.controleur_id} 
                 onValueChange={(value) => handleSelectChange('controleur_id', value)}
-                required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un contrôleur" />
+                  <SelectValue placeholder="Sélectionner un contrôleur (optionnel)" />
                 </SelectTrigger>
                 <SelectContent>
                   {personnel.map((person) => (

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Equipements from '@/pages/Equipements';
@@ -29,17 +28,61 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/equipements" element={<ProtectedRoute><Equipements /></ProtectedRoute>} />
-            <Route path="/equipements/ajouter" element={<ProtectedRoute><AddEquipement /></ProtectedRoute>} />
-            <Route path="/equipements/:id/edit" element={<ProtectedRoute><EditEquipement /></ProtectedRoute>} />
-            <Route path="/equipements/:id/historique" element={<ProtectedRoute><HistoriqueEquipement /></ProtectedRoute>} />
-            <Route path="/personnel" element={<ProtectedRoute><Personnel /></ProtectedRoute>} />
-            <Route path="/personnel/ajouter" element={<ProtectedRoute><AddPersonnel /></ProtectedRoute>} />
-            <Route path="/controles" element={<ProtectedRoute><Controles /></ProtectedRoute>} />
-            <Route path="/controles/ajouter" element={<ProtectedRoute><AddControle /></ProtectedRoute>} />
-            <Route path="/habillement" element={<ProtectedRoute><Habillement /></ProtectedRoute>} />
-            <Route path="/habillement/ajouter" element={<ProtectedRoute><AddHabillement /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/equipements" element={
+              <ProtectedRoute>
+                <Equipements />
+              </ProtectedRoute>
+            } />
+            <Route path="/equipements/ajouter" element={
+              <ProtectedRoute>
+                <AddEquipement />
+              </ProtectedRoute>
+            } />
+            <Route path="/equipements/:id/edit" element={
+              <ProtectedRoute>
+                <EditEquipement />
+              </ProtectedRoute>
+            } />
+            <Route path="/equipements/:id/historique" element={
+              <ProtectedRoute>
+                <HistoriqueEquipement />
+              </ProtectedRoute>
+            } />
+            <Route path="/personnel" element={
+              <ProtectedRoute>
+                <Personnel />
+              </ProtectedRoute>
+            } />
+            <Route path="/personnel/ajouter" element={
+              <ProtectedRoute>
+                <AddPersonnel />
+              </ProtectedRoute>
+            } />
+            <Route path="/controles" element={
+              <ProtectedRoute>
+                <Controles />
+              </ProtectedRoute>
+            } />
+            <Route path="/controles/ajouter" element={
+              <ProtectedRoute>
+                <AddControle />
+              </ProtectedRoute>
+            } />
+            <Route path="/habillement" element={
+              <ProtectedRoute>
+                <Habillement />
+              </ProtectedRoute>
+            } />
+            <Route path="/habillement/ajouter" element={
+              <ProtectedRoute>
+                <AddHabillement />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
         <Toaster />

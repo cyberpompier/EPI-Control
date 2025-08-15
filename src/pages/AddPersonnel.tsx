@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,16 +19,11 @@ const AddPersonnel = () => {
     email: '',
     matricule: '',
     caserne: '',
-    grade: '',
-    role: 'pompier'
+    grade: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPersonnel(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
     setPersonnel(prev => ({ ...prev, [name]: value }));
   };
 
@@ -134,24 +129,6 @@ const AddPersonnel = () => {
                 value={personnel.grade}
                 onChange={handleChange}
               />
-            </div>
-
-            <div>
-              <Label htmlFor="role">Rôle</Label>
-              <Select 
-                name="role" 
-                value={personnel.role} 
-                onValueChange={(value) => handleSelectChange('role', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un rôle" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pompier">Pompier</SelectItem>
-                  <SelectItem value="controleur">Contrôleur</SelectItem>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="flex justify-end space-x-4">
