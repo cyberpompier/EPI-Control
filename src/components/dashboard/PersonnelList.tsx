@@ -1,81 +1,103 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getInitials } from '@/lib/utils';
-import { Link } from 'react-router-dom';
-import { Button } from '../ui/button';
-import { Users } from 'lucide-react';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-type Personnel = {
+interface RecentActivity {
   id: number;
-  nom: string | null;
-  prenom: string | null;
-  grade: string | null;
+  nom: string;
+  prenom: string;
   photo: string | null;
-};
+  grade: string;
+  last_control_date: string;
+}
 
-const PersonnelList = () => {
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
+export function PersonnelList() {
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPersonnel = async () => {
+    const fetchRecentActivity = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('personnel')
-        .select('id, nom, prenom, grade, photo')
-        .order('nom')
-        .limit(5);
+      const { data: controls, error } = await supabase
+        .from('controles')
+        .select(`
+          date_controle,
+          equipements (
+            personnel (
+              id,
+              nom,
+              prenom,
+              photo,
+              grade
+            )
+          )
+        `)
+        .order('date_controle', { ascending: false })
+        .limit(10);
 
       if (error) {
-        console.error('Error fetching personnel:', error);
-      } else {
-        setPersonnel(data || []);
+        console.error("Error fetching recent activity:", error);
+      } else if (controls) {
+        const uniquePersonnel = new Map<number, RecentActivity>();
+        controls.forEach(control => {
+          const personnel = (control.equipements as any)?.personnel;
+          if (personnel && !uniquePersonnel.has(personnel.id)) {
+            uniquePersonnel.set(personnel.id, {
+              ...personnel,
+              last_control_date: control.date_controle,
+            });
+          }
+        });
+        setRecentActivity(Array.from(uniquePersonnel.values()));
       }
       setLoading(false);
     };
 
-    fetchPersonnel();
+    fetchRecentActivity();
   }, []);
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <CardTitle>Personnel</CardTitle>
-        <Link to="/personnel">
-          <Button variant="outline" size="sm">Voir tout</Button>
-        </Link>
+      <CardHeader>
+        <CardTitle>Activité Récente du Personnel</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="text-center text-muted-foreground">Chargement...</div>
+        ) : recentActivity.length === 0 ? (
+          <div className="text-center text-muted-foreground">Aucune activité récente.</div>
         ) : (
-          <div className="space-y-4">
-            {personnel.length > 0 ? (
-              personnel.map((p) => (
-                <Link to={`/personnel/${p.id}`} key={p.id} className="flex items-center gap-4 p-2 -m-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                  <Avatar>
-                    <AvatarImage src={p.photo || undefined} alt={`${p.prenom} ${p.nom}`} />
-                    <AvatarFallback>{getInitials(p.nom || '', p.prenom || '')}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium leading-tight">{p.prenom} {p.nom}</p>
-                    <p className="text-sm text-muted-foreground">{p.grade}</p>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <Users className="mx-auto h-8 w-8 mb-2" />
-                <p>Aucun personnel trouvé.</p>
+          <div className="space-y-6">
+            {recentActivity.map((person) => (
+              <div key={person.id} className="flex items-center">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={person.photo || undefined} alt="Avatar" />
+                  <AvatarFallback>{person.prenom?.[0]}{person.nom?.[0]}</AvatarFallback>
+                </Avatar>
+                <div className="ml-4 space-y-1">
+                  <p className="text-sm font-medium leading-none">{person.prenom} {person.nom}</p>
+                  <p className="text-sm text-muted-foreground">{person.grade}</p>
+                </div>
+                <div className="ml-auto text-sm text-muted-foreground">
+                  {formatDistanceToNow(new Date(person.last_control_date), { addSuffix: true, locale: fr })}
+                </div>
               </div>
-            )}
+            ))}
           </div>
         )}
       </CardContent>
     </Card>
-  );
-};
-
-export default PersonnelList;
+  )
+}
