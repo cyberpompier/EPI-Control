@@ -160,31 +160,31 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
           <Controller
             name="date_prochaine_verification"
             control={control}
-            render={({ field }) => (
-              <div className="flex flex-col">
-                <Label htmlFor="date_prochaine_verification">Date du prochain contrôle</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full pl-3 text-left font-normal">
-                      {field.value && field.value instanceof Date
-                        ? format(field.value, "PPP", { locale: fr })
-                        : <span>Sélectionnez une date</span>
-                      }
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
+            render={({ field }) => {
+              const dateValue = field.value ? (field.value instanceof Date ? field.value : new Date(field.value)) : null;
+              return (
+                <div className="flex flex-col">
+                  <Label htmlFor="date_prochaine_verification">Date du prochain contrôle</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full pl-3 text-left font-normal">
+                        {dateValue ? format(dateValue, "PPP", { locale: fr }) : <span>Sélectionnez une date</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              );
+            }}
           />
           {errors.date_prochaine_verification && (
             <p className="text-sm text-red-500 flex items-center">

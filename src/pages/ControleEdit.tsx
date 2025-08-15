@@ -188,28 +188,28 @@ export default function ControleEdit() {
                 <Controller
                   name="date_prochaine_verification"
                   control={control}
-                  render={({ field }) => (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full pl-3 text-left font-normal">
-                          {field.value && field.value instanceof Date
-                            ? format(field.value, "PPP", { locale: fr })
-                            : <span>Choisir une date</span>
-                          }
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                  render={({ field }) => {
+                    const dateValue = field.value ? (field.value instanceof Date ? field.value : new Date(field.value)) : null;
+                    return (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full pl-3 text-left font-normal">
+                            {dateValue ? format(dateValue, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  }}
                 />
                 {errors.date_prochaine_verification && (
                   <p className="text-sm text-red-500 flex items-center">
