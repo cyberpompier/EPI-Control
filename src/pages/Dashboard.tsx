@@ -10,18 +10,19 @@ export default function Dashboard() {
     <Layout>
       <div className="p-4 md:p-8 space-y-8">
         <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        
         <StatsCards />
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-          <div className="lg:col-span-4">
-            <EquipmentStatusChart />
+        
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <RecentControls />
           </div>
-          <div className="lg:col-span-3">
+          <div>
             <PersonnelList />
           </div>
         </div>
-        <div>
-          <RecentControls />
-        </div>
+        
+        <EquipmentStatusChart />
       </div>
     </Layout>
   );
