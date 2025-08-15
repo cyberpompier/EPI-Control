@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,45 +16,50 @@ interface Controle {
   resultat: 'conforme' | 'non_conforme' | 'en_attente';
   date_prochaine_verification: string;
   equipements: {
+    id: string;
     type: string;
     marque: string;
     modele: string;
-  } | null;
+  }[] | null;
   profiles: {
     nom: string;
     prenom: string;
-  } | null;
+  }[] | null;
 }
 
 export default function ControlesPage() {
   const [controles, setControles] = useState<Controle[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const location = useLocation();
+  
   useEffect(() => {
     const fetchControles = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        const searchParams = new URLSearchParams(location.search);
+        const equipmentId = searchParams.get('equipement');
+        
+        // Construire la requête de base
+        let query = supabase
           .from('controles')
           .select(`
             id,
             date_controle,
             resultat,
             date_prochaine_verification,
-            equipements (
-              type,
-              marque,
-              modele
-            ),
-            profiles (
-              nom,
-              prenom
-            )
+            equipements ( id, type, marque, modele ),
+            profiles ( nom, prenom )
           `)
           .order('date_controle', { ascending: false });
-
+          
+        // Appliquer le filtre si le paramètre d'équipement est présent
+        if (equipmentId) {
+          query = query.eq('equipement_id', equipmentId);
+        }
+        
+        const { data, error } = await query;
         if (error) throw error;
-        setControles(data as unknown as Controle[]);
+        setControles(data as Controle[] || []);
       } catch (error) {
         console.error("Erreur lors de la récupération des contrôles:", error);
         showError("Impossible de charger les contrôles.");
@@ -64,7 +69,7 @@ export default function ControlesPage() {
     };
 
     fetchControles();
-  }, []);
+  }, [location.search]);
 
   const getResultBadge = (resultat: string) => {
     switch (resultat) {
@@ -99,7 +104,6 @@ export default function ControlesPage() {
       <Helmet>
         <title>Liste des Contrôles | EPI Control</title>
       </Helmet>
-
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
           <h1 className="text-2xl font-bold">Liste des Contrôles</h1>
@@ -112,7 +116,6 @@ export default function ControlesPage() {
           </Button>
         </Link>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Historique des contrôles</CardTitle>
@@ -133,11 +136,11 @@ export default function ControlesPage() {
               {controles.length > 0 ? (
                 controles.map((controle) => (
                   <TableRow key={controle.id}>
-                    <TableCell className="font-medium">
-                      {controle.equipements ? `${controle.equipements.marque} ${controle.equipements.modele}` : 'Équipement non trouvé'}
+                    <TableCell>
+                      {controle.equipements ? `${controle.equipements[0].marque} ${controle.equipements[0].modele}` : 'Équipement non trouvé'}
                     </TableCell>
                     <TableCell>
-                      {controle.profiles ? `${controle.profiles.prenom} ${controle.profiles.nom}` : 'Contrôleur inconnu'}
+                      {controle.profiles ? `${controle.profiles[0].prenom} ${controle.profiles[0].nom}` : 'Contrôleur inconnu'}
                     </TableCell>
                     <TableCell>{formatDate(controle.date_controle)}</TableCell>
                     <TableCell>{getResultBadge(controle.resultat)}</TableCell>
