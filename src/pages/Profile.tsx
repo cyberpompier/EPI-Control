@@ -43,7 +43,7 @@ export default function Profile() {
       try {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('*, avatar')
           .eq('id', authUser.id)
           .single();
         if (profileError) throw profileError;
@@ -140,7 +140,7 @@ export default function Profile() {
             <CardContent className="pt-6 text-center">
               <div className="relative w-24 h-24 mx-auto mb-4">
                 <Avatar className="w-full h-full">
-                  <AvatarImage src={profile?.photo || undefined} />
+                  <AvatarImage src={profile?.avatar || profile?.photo || undefined} />
                   <AvatarFallback className="text-2xl">
                     {getInitials(formData.nom, formData.prenom)}
                   </AvatarFallback>
