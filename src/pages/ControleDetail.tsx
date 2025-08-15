@@ -48,7 +48,7 @@ export default function ControleDetail() {
     );
   }
 
-  if (!controle) {
+  if (!controle || !controle.equipements) {
     return (
       <Layout>
         <div className="text-center py-12">
@@ -62,12 +62,7 @@ export default function ControleDetail() {
     );
   }
 
-  const equipement = controle.equipements;
-  const personnel = equipement?.personnel;
-  const controleur = controle.profiles;
-
   const getTypeIcon = (type: string) => {
-    if (!type) return '🛡️';
     switch (type) {
       case 'casque': return '🪖';
       case 'veste': return '🧥';
@@ -94,17 +89,16 @@ export default function ControleDetail() {
           <div>
             <h1 className="text-2xl font-bold">Détail du contrôle</h1>
             <p className="text-gray-600">
-              Contrôle du {new Date(controle.date_controle).toLocaleDateString('fr-FR')}
-              {equipement && ` - ${equipement.marque} ${equipement.modele}`}
+              Contrôle du {new Date(controle.date_controle).toLocaleDateString('fr-FR')} - {controle.equipements.marque} {controle.equipements.modele}
             </p>
           </div>
           
-          {personnel && controleur && equipement && (
+          {controle.equipements.personnel && controle.profiles && (
             <PDFGenerator 
               controle={controle}
-              epi={equipement}
-              pompier={personnel}
-              controleur={controleur}
+              epi={controle.equipements}
+              pompier={controle.equipements.personnel}
+              controleur={controle.profiles}
             />
           )}
         </div>
@@ -115,7 +109,7 @@ export default function ControleDetail() {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg flex items-center">
-                <span className="mr-2 text-xl">{getTypeIcon(equipement?.type)}</span>
+                <span className="mr-2 text-xl">{getTypeIcon(controle.equipements.type)}</span>
                 Informations sur l'équipement
               </CardTitle>
               <Badge className={controle.resultat === 'conforme' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}>
@@ -132,69 +126,65 @@ export default function ControleDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            {equipement ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Détails de l'équipement</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Type</span>
-                      <span className="font-medium">{equipement.type.charAt(0).toUpperCase() + equipement.type.slice(1)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Marque</span>
-                      <span className="font-medium">{equipement.marque}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Modèle</span>
-                      <span className="font-medium">{equipement.modele}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">N° Série</span>
-                      <span className="font-medium font-mono">{equipement.numero_serie}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Mise en service</span>
-                      <span className="font-medium">{new Date(equipement.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Fin de vie</span>
-                      <span className="font-medium">{new Date(equipement.date_fin_vie).toLocaleDateString('fr-FR')}</span>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Détails de l'équipement</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Type</span>
+                    <span className="font-medium">{controle.equipements.type.charAt(0).toUpperCase() + controle.equipements.type.slice(1)}</span>
                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Détails du contrôle</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Date du contrôle</span>
-                      <span className="font-medium">{new Date(controle.date_controle).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Contrôleur</span>
-                      <span className="font-medium">{controleur?.grade} {controleur?.prenom} {controleur?.nom}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Résultat</span>
-                      <span className={`font-medium ${controle.resultat === 'conforme' ? 'text-green-600' : 'text-red-600'}`}>
-                        {controle.resultat === 'conforme' ? 'Conforme' : 'Non conforme'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Prochain contrôle</span>
-                      <span className="font-medium">{new Date(controle.date_prochaine_verification).toLocaleDateString('fr-FR')}</span>
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Marque</span>
+                    <span className="font-medium">{controle.equipements.marque}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Modèle</span>
+                    <span className="font-medium">{controle.equipements.modele}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">N° Série</span>
+                    <span className="font-medium font-mono">{controle.equipements.numero_serie}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Mise en service</span>
+                    <span className="font-medium">{new Date(controle.equipements.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Fin de vie</span>
+                    <span className="font-medium">{new Date(controle.equipements.date_fin_vie).toLocaleDateString('fr-FR')}</span>
                   </div>
                 </div>
               </div>
-            ) : (
-              <p className="text-sm text-red-500">Données de l'équipement non disponibles.</p>
-            )}
+              
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Détails du contrôle</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Date du contrôle</span>
+                    <span className="font-medium">{new Date(controle.date_controle).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Contrôleur</span>
+                    <span className="font-medium">{controle.profiles?.grade} {controle.profiles?.prenom} {controle.profiles?.nom}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Résultat</span>
+                    <span className={`font-medium ${controle.resultat === 'conforme' ? 'text-green-600' : 'text-red-600'}`}>
+                      {controle.resultat === 'conforme' ? 'Conforme' : 'Non conforme'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Prochain contrôle</span>
+                    <span className="font-medium">{new Date(controle.date_prochaine_verification).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div className="mt-6">
               <h3 className="font-medium text-gray-900 mb-2">Observations</h3>
-              <p className="text-sm bg-gray-50 p-3 rounded-md border">{controle.observations || 'Aucune observation.'}</p>
+              <p className="text-sm bg-gray-50 p-3 rounded-md border">{controle.observations}</p>
             </div>
             
             {controle.actions_correctives && (
@@ -237,26 +227,26 @@ export default function ControleDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {personnel ? (
+            {controle.equipements.personnel ? (
               <div className="space-y-4">
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Identité</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Nom</span>
-                      <span className="font-medium">{personnel.nom}</span>
+                      <span className="font-medium">{controle.equipements.personnel.nom}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Prénom</span>
-                      <span className="font-medium">{personnel.prenom}</span>
+                      <span className="font-medium">{controle.equipements.personnel.prenom}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Grade</span>
-                      <span className="font-medium">{personnel.grade}</span>
+                      <span className="font-medium">{controle.equipements.personnel.grade}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Matricule</span>
-                      <span className="font-medium font-mono">{personnel.matricule}</span>
+                      <span className="font-medium font-mono">{controle.equipements.personnel.matricule}</span>
                     </div>
                   </div>
                 </div>
@@ -266,17 +256,17 @@ export default function ControleDetail() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Caserne</span>
-                      <span className="font-medium">{personnel.caserne}</span>
+                      <span className="font-medium">{controle.equipements.personnel.caserne}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Email</span>
-                      <span className="font-medium">{personnel.email}</span>
+                      <span className="font-medium">{controle.equipements.personnel.email}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="pt-4 border-t">
-                  <Link to={`/personnel/${personnel.id}`}>
+                  <Link to={`/personnel/${controle.equipements.personnel.id}`}>
                     <Button variant="outline" className="w-full">
                       <FileText className="h-4 w-4 mr-2" />
                       Voir le profil du pompier
@@ -284,9 +274,9 @@ export default function ControleDetail() {
                   </Link>
                 </div>
                 
-                {controle.resultat === 'non_conforme' && equipement && (
+                {controle.resultat === 'non_conforme' && (
                   <div className="pt-2">
-                    <Link to={`/controle/${equipement.id}`}>
+                    <Link to={`/controle/${controle.equipements.id}`}>
                       <Button className="w-full bg-red-600 hover:bg-red-700">
                         Recontrôler cet équipement
                       </Button>
