@@ -87,6 +87,7 @@ export default function ControleEdit() {
   }, [controleId, reset, navigate]);
 
   const onSubmit = async (data: ControleEditFormData) => {
+    console.log("Enregistrement des données :", data);
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -211,7 +212,6 @@ export default function ControleEdit() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                onClick={handleSubmit(onSubmit)}
                 className="bg-red-600 hover:bg-red-700"
               >
                 {isLoading ? "Mise à jour..." : "Enregistrer les modifications"}
