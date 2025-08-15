@@ -1,158 +1,119 @@
-import { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
-import EPICard from '@/components/epi/EPICard';
-import EPIFilter from '@/components/epi/EPIFilter';
-import { Button } from '@/components/ui/button';
-import { Plus, Filter, AlertTriangle, Search } from 'lucide-react';
-import { Helmet } from 'react-helmet';
-import { supabase } from '@/lib/supabase';
-import { EPI } from '@/types/index';
-import { Link } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { showError } from '@/utils/toast';
+"use client";
 
-export default function Equipements() {
-  const [equipements, setEquipements] = useState<EPI[]>([]);
-  const [filteredEquipements, setFilteredEquipements] = useState<EPI[]>([]);
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import EPICard from '@/components/epi/EPICard';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface Equipement {
+  id: string;
+  type: string;
+  marque?: string;
+  modele?: string;
+  numero_serie: string;
+  date_mise_en_service?: string;
+  statut: string;
+  image?: string;
+}
+
+const Equipements = () => {
+  const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('tous');
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchEquipements = async () => {
-      try {
-        const { data, error } = await supabase.from('equipements').select('*');
-        if (error) {
-          throw error;
-        }
-        const fetchedEquipements = data || [];
-        setEquipements(fetchedEquipements);
-        setFilteredEquipements(fetchedEquipements);
-      } catch (error: any) {
-        console.error('Erreur lors de la récupération des équipements:', error);
-        showError(`Erreur lors de la récupération des équipements: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEquipements();
   }, []);
 
-  const handleFilterChange = (filters: any) => {
-    let filtered = [...equipements];
+  const fetchEquipements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipements')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(epi =>
-        epi.marque.toLowerCase().includes(searchLower) ||
-        epi.modele.toLowerCase().includes(searchLower) ||
-        epi.numero_serie.toLowerCase().includes(searchLower) ||
-        epi.type.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (filters.type && filters.type !== 'all') {
-      filtered = filtered.filter(epi => epi.type === filters.type);
-    }
-
-    if (filters.status && filters.status !== 'all') {
-      filtered = filtered.filter(epi => epi.statut === filters.status);
-    }
-
-    setFilteredEquipements(filtered);
-  };
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (value === 'tous') {
-      setFilteredEquipements(equipements);
-    } else if (value === 'conformes') {
-      setFilteredEquipements(equipements.filter(epi => epi.statut === 'conforme'));
-    } else if (value === 'non_conformes') {
-      setFilteredEquipements(equipements.filter(epi => epi.statut === 'non_conforme'));
-    } else if (value === 'en_attente') {
-      setFilteredEquipements(equipements.filter(epi => epi.statut === 'en_attente'));
-    } else if (value === 'expires') {
-      const today = new Date();
-      setFilteredEquipements(equipements.filter(epi => new Date(epi.date_fin_vie) < today));
+      if (error) throw error;
+      setEquipements(data || []);
+    } catch (error) {
+      console.error('Error fetching equipements:', error);
+      toast.error('Erreur lors du chargement des équipements');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Vérifier les équipements expirés
-  const expiredEquipments = equipements.filter(epi => new Date(epi.date_fin_vie) < new Date());
+  const handleEdit = (id: string) => {
+    navigate(`/equipements/${id}/edit`);
+  };
+
+  const handleViewHistory = (id: string) => {
+    navigate(`/equipements/${id}/historique`);
+  };
+
+  const filteredEquipements = equipements.filter(equipement =>
+    equipement.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipement.numero_serie.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (equipement.marque && equipement.marque.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Chargement...</div>;
+  }
 
   return (
-    <Layout>
-      <Helmet>
-        <title>Équipements | EPI Control</title>
-      </Helmet>
-      
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Équipements</h1>
-          <p className="text-gray-600">Gestion des équipements de protection individuelle</p>
-        </div>
-        <Link to="/equipements/nouveau">
-          <Button className="mt-4 sm:mt-0 bg-red-600 hover:bg-red-700">
-            <Plus className="h-4 w-4 mr-2" /> Ajouter un équipement
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Équipements</h1>
+        <Button onClick={() => navigate('/equipements/ajouter')}>
+          <Plus className="mr-2 h-4 w-4" /> Ajouter un équipement
+        </Button>
+      </div>
+
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <Input
+            placeholder="Rechercher par type, numéro de série ou marque..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-md"
+          />
+        </CardContent>
+      </Card>
+
+      {filteredEquipements.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 mb-4">Aucun équipement trouvé</p>
+          <Button onClick={() => navigate('/equipements/ajouter')}>
+            Ajouter votre premier équipement
           </Button>
-        </Link>
-      </div>
-      
-      {expiredEquipments.length > 0 && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTitle>Attention</AlertTitle>
-          <AlertDescription>
-            {expiredEquipments.length} équipement(s) ont dépassé leur date de fin de vie et doivent être remplacés.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="mb-6">
-        <EPIFilter onFilterChange={handleFilterChange} />
-      </div>
-      
-      <Tabs defaultValue="tous" value={activeTab} onValueChange={handleTabChange} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="tous">Tous</TabsTrigger>
-          <TabsTrigger value="conformes">Conformes</TabsTrigger>
-          <TabsTrigger value="non_conformes">Non conformes</TabsTrigger>
-          <TabsTrigger value="en_attente">En attente</TabsTrigger>
-          <TabsTrigger value="expires">Expirés</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
-        </div>
-      ) : filteredEquipements.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEquipements.map((epi) => (
-            <EPICard key={epi.id} epi={epi} />
-          ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-          <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Aucun équipement trouvé</h3>
-          <p className="mt-2 text-gray-500">
-            Aucun équipement ne correspond à vos critères de recherche.
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEquipements.map((equipement) => (
+            <EPICard
+              key={equipement.id}
+              id={equipement.id}
+              type={equipement.type}
+              marque={equipement.marque}
+              modele={equipement.modele}
+              numeroSerie={equipement.numero_serie}
+              dateMiseEnService={equipement.date_mise_en_service}
+              statut={equipement.statut}
+              image={equipement.image}
+              onEdit={handleEdit}
+              onViewHistory={handleViewHistory}
+            />
+          ))}
         </div>
       )}
-      
-      <div className="fixed bottom-6 right-6 md:hidden">
-        <Link to="/equipements/nouveau">
-          <Button size="lg" className="rounded-full h-14 w-14 bg-red-600 hover:bg-red-700 shadow-lg">
-            <Plus className="h-6 w-6" />
-          </Button>
-        </Link>
-      </div>
-    </Layout>
+    </div>
   );
-}
+};
+
+export default Equipements;

@@ -1,54 +1,5 @@
 "use client";
 
-import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clipboard, Edit } from 'lucide-react';
-
-interface EPICardProps {
-  id: string;
-  type: string;
-  marque?: string;
-  modele?: string;
-  numeroSerie: string;
-  dateMiseEnService?: string;
-  statut: string;
-  image?: string;
-  onEdit: (id: string) => void;
-  onViewHistory: (id: string) => void;
-}
-
-const EPICard: React.FC<EPICardProps> = ({
-  id,
-  type,
-  marque,
-  modele,
-  numeroSerie,
-  dateMiseEnService,
-  statut,
-  image,
-  onEdit,
-  onViewHistory
-}) => {
-  const getStatusColor = (status: string) => {
-    switch (status<dyad-problem-report summary="6 problems">
-<problem file="src/pages/HistoriqueEquipement.tsx" line="85" column="20" code="2345">Argument of type '{ controleur: { nom: any; prenom: any; }[]; id: any; date_controle: any; resultat: any; observations: any; actions_correctives: any; controleur_id: any; personnel: { nom: any; prenom: any; }[]; }[]' is not assignable to parameter of type 'SetStateAction&lt;Controle[]&gt;'.
-  Type '{ controleur: { nom: any; prenom: any; }[]; id: any; date_controle: any; resultat: any; observations: any; actions_correctives: any; controleur_id: any; personnel: { nom: any; prenom: any; }[]; }[]' is not assignable to type 'Controle[]'.
-    Type '{ controleur: { nom: any; prenom: any; }[]; id: any; date_controle: any; resultat: any; observations: any; actions_correctives: any; controleur_id: any; personnel: { nom: any; prenom: any; }[]; }' is not assignable to type 'Controle'.
-      Types of property 'controleur' are incompatible.
-        Type '{ nom: any; prenom: any; }[]' is missing the following properties from type '{ nom: string; prenom: string; }': nom, prenom</problem>
-<problem file="src/pages/AddControle.tsx" line="13" column="25" code="2307">Cannot find module '@supabase/auth-helpers-react' or its corresponding type declarations.</problem>
-<problem file="src/components/ProtectedRoute.tsx" line="4" column="35" code="2307">Cannot find module '@supabase/auth-helpers-react' or its corresponding type declarations.</problem>
-<problem file="src/components/Navbar.tsx" line="5" column="25" code="2307">Cannot find module '@supabase/auth-helpers-react' or its corresponding type declarations.</problem>
-<problem file="src/App.tsx" line="5" column="40" code="2307">Cannot find module '@supabase/auth-helpers-react' or its corresponding type declarations.</problem>
-<problem file="src/pages/PersonnelDetail.tsx" line="201" column="39" code="2322">Type '{ key: string; epi: EPI; }' is not assignable to type 'IntrinsicAttributes &amp; EPICardProps'.
-  Property 'epi' does not exist on type 'IntrinsicAttributes &amp; EPICardProps'.</problem>
-</dyad-problem-report>Let's fix these TypeScript errors:
-
-<dyad-write path="src/pages/HistoriqueEquipement.tsx" description="Fixing type issues in HistoriqueEquipement">
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,18 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft } from 'lucide-react';
 
-interface Controleur {
-  nom: string;
-  prenom: string;
-}
-
 interface Controle {
   id: string;
   date_controle: string;
   resultat: string;
   observations: string | null;
   actions_correctives: string | null;
-  controleur: Controleur | null;
+  controleur: {
+    nom: string;
+    prenom: string;
+  } | null;
 }
 
 interface Equipement {
@@ -120,6 +69,7 @@ const HistoriqueEquipement = () => {
           resultat,
           observations,
           actions_correctives,
+          controleur_id,
           personnel!controles_controleur_id_fkey (nom, prenom)
         `)
         .eq('equipement_id', id)
@@ -127,16 +77,9 @@ const HistoriqueEquipement = () => {
 
       if (error) throw error;
       
-      const controlesWithControleur: Controle[] = data.map((controle: any) => ({
-        id: controle.id,
-        date_controle: controle.date_controle,
-        resultat: controle.resultat,
-        observations: controle.observations,
-        actions_correctives: controle.actions_correctives,
-        controleur: controle.personnel ? {
-          nom: controle.personnel.nom,
-          prenom: controle.personnel.prenom
-        } : null
+      const controlesWithControleur = data.map(controle => ({
+        ...controle,
+        controleur: controle.personnel || null
       }));
       
       setControles(controlesWithControleur);
