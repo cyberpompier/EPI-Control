@@ -1,55 +1,38 @@
-import React, { useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useEffect } from 'react';
+
+const scannerContainerId = "reader";
 
 interface BarcodeScannerProps {
   onScanSuccess: (decodedText: string) => void;
   onScanFailure?: (error: string) => void;
 }
 
-const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScanSuccess, onScanFailure }) => {
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const scannerContainerId = "html5qr-code-full-region";
-
+const BarcodeScanner = ({ onScanSuccess, onScanFailure }: BarcodeScannerProps) => {
   useEffect(() => {
-    if (!scannerRef.current) {
-      const html5QrcodeScanner = new Html5QrcodeScanner(
-        scannerContainerId,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          supportedScanTypes: [], // Use all supported types
-        },
-        false // verbose
-      );
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      scannerContainerId,
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      /* verbose= */ false
+    );
 
-      const successCallback = (decodedText: string) => {
-        if (scannerRef.current) {
-          scannerRef.current.clear().catch(error => {
+    let isScanning = true;
+
+    const successCallback = (decodedText: string, decodedResult: any) => {
+        if (isScanning) {
+            isScanning = false;
+            html5QrcodeScanner.clear();
+            onScanSuccess(decodedText);
+        }
+    };
+
+    html5QrcodeScanner.render(successCallback, onScanFailure);
+
+    return () => {
+      if (html5QrcodeScanner && html5QrcodeScanner.getState()) {
+          html5QrcodeScanner.clear().catch(error => {
             console.error("Failed to clear html5QrcodeScanner.", error);
           });
-          scannerRef.current = null; // Prevent further scans
-        }
-        onScanSuccess(decodedText);
-      };
-
-      const errorCallback = (errorMessage: string) => {
-        if (onScanFailure) {
-          // This callback can be very noisy, so we don't call it by default
-          // onScanFailure(errorMessage);
-        }
-      };
-
-      html5QrcodeScanner.render(successCallback, errorCallback);
-      scannerRef.current = html5QrcodeScanner;
-    }
-
-    // Cleanup function to clear the scanner
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.error("Failed to clear html5QrcodeScanner.", error);
-        });
-        scannerRef.current = null;
       }
     };
   }, [onScanSuccess, onScanFailure]);
