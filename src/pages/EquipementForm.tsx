@@ -21,7 +21,18 @@ import { supabase } from '@/lib/supabase';
 import { Pompier } from '@/types/index';
 
 const formSchema = z.object({
-  type: z.enum(['casque', 'veste', 'surpantalon', 'gants', 'rangers', 'autre'], {
+  type: z.enum([
+    'Casque F1',
+    'Casque F2',
+    'Parka',
+    'Blouson Softshell',
+    'Bottes à Lacets',
+    'Gant de protection',
+    'Pantalon TSI',
+    'Veste TSI',
+    'Veste de protection',
+    'Surpantalon',
+  ], {
     required_error: "Veuillez sélectionner un type d'équipement",
   }),
   marque: z.string().min(2, {
@@ -53,7 +64,7 @@ export default function EquipementForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: 'casque',
+      type: 'Casque F1',
       marque: '',
       modele: '',
       numero_serie: '',
@@ -112,20 +123,14 @@ export default function EquipementForm() {
   };
 
   const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'casque':
-        return '🪖';
-      case 'veste':
-        return '🧥';
-      case 'surpantalon':
-        return '👖';
-      case 'gants':
-        return '🧤';
-      case 'rangers':
-        return '👢';
-      default:
-        return '🛡️';
-    }
+    if (!type) return '🛡️';
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('casque')) return '🪖';
+    if (lowerType.includes('veste') || lowerType.includes('parka') || lowerType.includes('blouson')) return '🧥';
+    if (lowerType.includes('pantalon')) return '👖';
+    if (lowerType.includes('gant')) return '🧤';
+    if (lowerType.includes('botte')) return '👢';
+    return '🛡️';
   };
 
   return (
@@ -170,12 +175,16 @@ export default function EquipementForm() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="casque">🪖 Casque</SelectItem>
-                              <SelectItem value="veste">🧥 Veste</SelectItem>
-                              <SelectItem value="surpantalon">👖 Surpantalon</SelectItem>
-                              <SelectItem value="gants">🧤 Gants</SelectItem>
-                              <SelectItem value="rangers">👢 Rangers</SelectItem>
-                              <SelectItem value="autre">🛡️ Autre</SelectItem>
+                              <SelectItem value="Casque F1">Casque F1</SelectItem>
+                              <SelectItem value="Casque F2">Casque F2</SelectItem>
+                              <SelectItem value="Parka">Parka</SelectItem>
+                              <SelectItem value="Blouson Softshell">Blouson Softshell</SelectItem>
+                              <SelectItem value="Bottes à Lacets">Bottes à Lacets</SelectItem>
+                              <SelectItem value="Gant de protection">Gant de protection</SelectItem>
+                              <SelectItem value="Pantalon TSI">Pantalon TSI</SelectItem>
+                              <SelectItem value="Veste TSI">Veste TSI</SelectItem>
+                              <SelectItem value="Veste de protection">Veste de protection</SelectItem>
+                              <SelectItem value="Surpantalon">Surpantalon</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

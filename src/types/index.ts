@@ -11,7 +11,17 @@ export interface User {
 
 export interface EPI {
   id: string; // UUID
-  type: 'casque' | 'veste' | 'surpantalon' | 'gants' | 'rangers' | 'autre';
+  type:
+    | 'Casque F1'
+    | 'Casque F2'
+    | 'Parka'
+    | 'Blouson Softshell'
+    | 'Bottes à Lacets'
+    | 'Gant de protection'
+    | 'Pantalon TSI'
+    | 'Veste TSI'
+    | 'Veste de protection'
+    | 'Surpantalon';
   marque: string;
   modele: string;
   numero_serie: string;
