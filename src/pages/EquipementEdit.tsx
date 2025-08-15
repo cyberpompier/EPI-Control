@@ -19,6 +19,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { Pompier } from '@/types/index';
+import Barcode from 'react-barcode';
 
 const formSchema = z.object({
   type: z.enum([
@@ -175,56 +176,54 @@ export default function EquipementEdit() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Type d'équipement</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionnez un type" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Casque F1">Casque F1</SelectItem>
-                          <SelectItem value="Casque F2">Casque F2</SelectItem>
-                          <SelectItem value="Parka">Parka</SelectItem>
-                          <SelectItem value="Blouson Softshell">Blouson Softshell</SelectItem>
-                          <SelectItem value="Bottes à Lacets">Bottes à Lacets</SelectItem>
-                          <SelectItem value="Gant de protection">Gant de protection</SelectItem>
-                          <SelectItem value="Pantalon TSI">Pantalon TSI</SelectItem>
-                          <SelectItem value="Veste TSI">Veste TSI</SelectItem>
-                          <SelectItem value="Veste de protection">Veste de protection</SelectItem>
-                          <SelectItem value="Surpantalon">Surpantalon</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectContent>
+                            <SelectItem value="Casque F1">Casque F1</SelectItem>
+                            <SelectItem value="Casque F2">Casque F2</SelectItem>
+                            <SelectItem value="Parka">Parka</SelectItem>
+                            <SelectItem value="Blouson Softshell">Blouson Softshell</SelectItem>
+                            <SelectItem value="Bottes à Lacets">Bottes à Lacets</SelectItem>
+                            <SelectItem value="Gant de protection">Gant de protection</SelectItem>
+                            <SelectItem value="Pantalon TSI">Pantalon TSI</SelectItem>
+                            <SelectItem value="Veste TSI">Veste TSI</SelectItem>
+                            <SelectItem value="Veste de protection">Veste de protection</SelectItem>
+                            <SelectItem value="Surpantalon">Surpantalon</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="personnel_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Membre du personnel assigné</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionnez un membre" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {pompiers.map((pompier) => (
-                            <SelectItem key={pompier.id} value={String(pompier.id)}>
-                              {`${pompier.grade || ''} ${pompier.prenom || ''} ${pompier.nom || ''}`.trim()}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <SelectContent>
+                            {pompiers.map((pompier) => (
+                              <SelectItem key={pompier.id} value={String(pompier.id)}>
+                                {`${pompier.grade || ''} ${pompier.prenom || ''} ${pompier.nom || ''}`.trim()}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -233,13 +232,12 @@ export default function EquipementEdit() {
                     <FormItem>
                       <FormLabel>Marque</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Ex: MSA, Bristol, Haix..." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="modele"
@@ -247,28 +245,33 @@ export default function EquipementEdit() {
                     <FormItem>
                       <FormLabel>Modèle</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Ex: F1 XF, ErgoTech Action..." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-
               <FormField
                 control={form.control}
                 name="numero_serie"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Numéro de série</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <div className="flex items-center space-x-2">
+                      <FormControl className="flex-1">
+                        <Input {...field} />
+                      </FormControl>
+                      {field.value && (
+                        <div className="w-1/3">
+                          <Barcode value={String(field.value)} />
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -309,7 +312,6 @@ export default function EquipementEdit() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="date_fin_vie"
@@ -350,9 +352,8 @@ export default function EquipementEdit() {
                   )}
                 />
               </div>
-
               <div className="flex justify-end space-x-2 pt-6">
-                <Button variant="outline" type="button" onClick={() => navigate(`/equipements`)}>
+                <Button variant="outline" type="button" onClick={() => navigate('/equipements')}>
                   Annuler
                 </Button>
                 <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
