@@ -43,7 +43,7 @@ export default function Profile() {
       try {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*, avatar')
+          .select('*, avatar, role')
           .eq('id', authUser.id)
           .single();
         if (profileError) throw profileError;
@@ -150,7 +150,7 @@ export default function Profile() {
                 </Button>
               </div>
               <h2 className="text-xl font-semibold">{formData.prenom} {formData.nom}</h2>
-              <p className="text-gray-500">{profile?.grade || 'Pompier'}</p>
+              <p className="text-gray-500">{profile?.role || 'Pompier'}</p>
               <p className="text-sm text-gray-500">{profile?.caserne || 'Caserne non spécifiée'}</p>
             </CardContent>
             <CardFooter>
