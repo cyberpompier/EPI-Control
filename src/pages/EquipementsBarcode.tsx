@@ -30,7 +30,16 @@ export default function EquipementsBarcode() {
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-4">Scanner le code barre</h1>
         <div className="mb-4">
-          <BarcodeReader onError={handleError} onScan={handleScan} />
+          <BarcodeReader 
+            onError={handleError} 
+            onScan={handleScan} 
+            style={{ 
+              width: "100%", 
+              height: "300px", 
+              minHeight: "300px", 
+              border: "1px solid #ddd" 
+            }}
+          />
         </div>
         {scannedCode && (
           <div className="mt-4">
