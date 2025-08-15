@@ -59,7 +59,7 @@ export default function ControlesPage() {
         
         const { data, error } = await query;
         if (error) throw error;
-        setControles(data as Controle[] || []);
+        setControles((data as Controle[] || []));
       } catch (error) {
         console.error("Erreur lors de la récupération des contrôles:", error);
         showError("Impossible de charger les contrôles.");
@@ -137,10 +137,14 @@ export default function ControlesPage() {
                 controles.map((controle) => (
                   <TableRow key={controle.id}>
                     <TableCell>
-                      {controle.equipements ? `${controle.equipements[0].marque} ${controle.equipements[0].modele}` : 'Équipement non trouvé'}
+                      {controle.equipements && controle.equipements.length > 0 
+                        ? `${controle.equipements[0].marque} ${controle.equipements[0].modele}`
+                        : 'Équipement non trouvé'}
                     </TableCell>
                     <TableCell>
-                      {controle.profiles ? `${controle.profiles[0].prenom} ${controle.profiles[0].nom}` : 'Contrôleur inconnu'}
+                      {controle.profiles && controle.profiles.length > 0 
+                        ? `${controle.profiles[0].prenom} ${controle.profiles[0].nom}`
+                        : 'Contrôleur inconnu'}
                     </TableCell>
                     <TableCell>{formatDate(controle.date_controle)}</TableCell>
                     <TableCell>{getResultBadge(controle.resultat)}</TableCell>
