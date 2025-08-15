@@ -50,17 +50,18 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
+    <div className="flex items-center space-x-4 p-4">
       <Avatar>
         <AvatarImage src={profileData.avatar || undefined} />
         <AvatarFallback className="text-2xl">
           {getInitials(profileData.nom, profileData.prenom)}
         </AvatarFallback>
       </Avatar>
-      <div className="mt-4">
+      <div>
         <h2 className="text-xl font-bold">
           {profileData.prenom || "Prénom"} {profileData.nom || "Nom"}
         </h2>
+        <p className="text-gray-600">{user?.email}</p>
       </div>
     </div>
   );
