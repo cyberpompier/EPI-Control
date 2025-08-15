@@ -47,12 +47,7 @@ const Controles: React.FC = () => {
             {controles.map((controle) => (
               <TableRow key={controle.id}>
                 <TableCell className="font-medium">
-                  {controle.equipements ? (
-                    (
-                      `${controle.equipements.marque ?? ''} ${controle.equipements.modele ?? ''}`.trim() ||
-                      'Équipement non trouvé'
-                    )
-                  ) : 'Équipement non trouvé'}
+                  {controle.equipements ? `${controle.equipements.marque} ${controle.equipements.modele}` : 'Équipement non trouvé'}
                 </TableCell>
                 {/* Ajouter d'autres cellules si nécessaire */}
               </TableRow>
