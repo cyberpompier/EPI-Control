@@ -16,8 +16,9 @@ export default function EPIFilter({ onFilterChange }: EPIFilterProps) {
   const [showFilters, setShowFilters] = useState(false);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    applyFilters(e.target.value, typeFilter, statusFilter);
+    const { value } = e.currentTarget;
+    setSearchTerm(value);
+    applyFilters(value, typeFilter, statusFilter);
   };
 
   const handleTypeChange = (value: string) => {

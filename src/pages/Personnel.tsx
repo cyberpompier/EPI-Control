@@ -128,7 +128,7 @@ export default function Personnel() {
             placeholder="Rechercher un pompier..."
             className="pl-8"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.currentTarget.value)}
           />
         </div>
         

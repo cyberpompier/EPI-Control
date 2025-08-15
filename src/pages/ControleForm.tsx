@@ -25,7 +25,7 @@ export default function ControleForm() {
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value } = e.currentTarget;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 

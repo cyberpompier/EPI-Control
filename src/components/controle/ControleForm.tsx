@@ -60,7 +60,7 @@ export default function ControleForm({ epi, onSubmit, isLoading = false }: Contr
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+    const files = e.currentTarget.files;
     if (files && files.length > 0) {
       // Simuler l'upload (dans une vraie application, cela enverrait les fichiers au serveur)
       Array.from(files).forEach(() => {
