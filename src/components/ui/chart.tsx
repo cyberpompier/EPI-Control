@@ -44,11 +44,6 @@ import {
   type TooltipProps,
   type XAxisProps,
   type YAxisProps,
-  type NameType,
-  type ValueType,
-  type Payload,
-  type Formatter,
-  type ContentType,
 } from "recharts"
 
 import { cn } from "@/lib/utils"
@@ -67,7 +62,6 @@ import {
 
 // Helper to sync gradients with the parent chart
 const GRADIENT_ID_PREFIX = "recharts-gradient-"
-let gradientCount = 0
 function useChartId(id?: string) {
   const generatedId = React.useId()
   return id ?? generatedId
@@ -185,10 +179,10 @@ type ChartConfig = {
 const ChartLegend = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    payload: Payload[]
+    payload: any[]
     nameKey?: string
-    onMouseEnter?: (data: Payload) => void
-    onMouseLeave?: (data: Payload) => void
+    onMouseEnter?: (data: any) => void
+    onMouseLeave?: (data: any) => void
   }
 >(
   (
@@ -222,7 +216,7 @@ const ChartLegend = React.forwardRef<
 
           return (
             <div
-              key={item.dataKey}
+              key={item.value}
               className="recharts-legend-item group/item flex items-center gap-1.5"
               onMouseEnter={() => onMouseEnter?.(item)}
               onMouseLeave={() => onMouseLeave?.(item)}
@@ -265,9 +259,9 @@ type ChartTooltipContentProps = {
   indicator?: "line" | "dot" | "dashed"
   hideLabel?: boolean
   hideIndicator?: boolean
-  labelFormatter?: (label: string, payload: Payload[]) => React.ReactNode
-  valueFormatter?: (value: number, name: NameType, item: Payload) => React.ReactNode
-  nameFormatter?: (name: NameType, item: Payload) => React.ReactNode
+  labelFormatter?: (label: string, payload: any[]) => React.ReactNode
+  valueFormatter?: (value: number, name: any, item: any) => React.ReactNode
+  nameFormatter?: (name: any, item: any) => React.ReactNode
 }
 
 const ChartTooltipContent = React.forwardRef<
@@ -409,13 +403,9 @@ export type {
   CartesianGridProps,
   CellProps,
   ChartConfig,
-  ContentType,
-  Formatter,
   LabelListProps,
   LabelProps,
   LineProps,
-  NameType,
-  Payload,
   PieProps,
   PolarAngleAxisProps,
   PolarGridProps,
@@ -426,7 +416,6 @@ export type {
   ScatterProps,
   SectorProps,
   TooltipProps,
-  ValueType,
   XAxisProps,
   YAxisProps,
 }

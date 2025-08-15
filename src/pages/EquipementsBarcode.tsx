@@ -1,30 +1,22 @@
 import React, { useState } from 'react';
-import { QrReader } from 'react-qr-reader';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Camera, CheckCircle } from 'lucide-react';
+import BarcodeScanner from '@/components/BarcodeScanner';
 
 export default function EquipementsBarcode() {
   const [scannedCode, setScannedCode] = useState('');
   const navigate = useNavigate();
 
-  const handleResult = (result: any, error: any) => {
-    if (result && !scannedCode) {
-      const code = result.getText();
-      if (code) {
-        setScannedCode(code);
-        showSuccess("Code-barres scanné : " + code);
-        setTimeout(() => {
-          navigate(`/equipements/nouveau?barcode=${encodeURIComponent(code)}`);
-        }, 1500);
-      }
-    }
-
-    if (error) {
-      // Cette erreur se déclenche en continu lorsqu'aucun code-barres n'est trouvé,
-      // il n'est donc pas utile d'afficher une notification à l'utilisateur.
+  const handleScanSuccess = (decodedText: string) => {
+    if (!scannedCode) { // Prevent multiple navigations
+      setScannedCode(decodedText);
+      showSuccess("Code-barres scanné : " + decodedText);
+      setTimeout(() => {
+        navigate(`/equipements/nouveau?barcode=${encodeURIComponent(decodedText)}`);
+      }, 1500);
     }
   };
 
@@ -49,19 +41,8 @@ export default function EquipementsBarcode() {
                 <p className="text-gray-600 mb-4">
                   Veuillez placer le code-barres de l'équipement devant la caméra.
                 </p>
-                <div className="relative w-full aspect-video bg-gray-200 rounded-md overflow-hidden border">
-                  <QrReader
-                    onResult={handleResult}
-                    constraints={{ facingMode: 'environment' }}
-                    containerStyle={{ width: '100%', height: '100%' }}
-                    videoContainerStyle={{ width: '100%', height: '100%', paddingTop: 0 }}
-                    videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <Camera className="h-12 w-12 text-gray-400 mb-2" />
-                    <p className="text-gray-500">En attente du scan...</p>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/3 border-2 border-red-500 border-dashed rounded-lg"></div>
-                  </div>
+                <div className="w-full rounded-md overflow-hidden border">
+                  <BarcodeScanner onScanSuccess={handleScanSuccess} />
                 </div>
               </div>
             )}
