@@ -20,11 +20,11 @@ interface Controle {
     type: string;
     marque: string;
     modele: string;
-  }[] | null;
+  } | null;
   profiles: {
     nom: string;
     prenom: string;
-  }[] | null;
+  } | null;
 }
 
 export default function ControlesPage() {
@@ -59,7 +59,8 @@ export default function ControlesPage() {
         
         const { data, error } = await query;
         if (error) throw error;
-        setControles((data as Controle[] || []));
+        // Correction du cast en passant d'abord par unknown
+        setControles(data as unknown as Controle[] || []);
       } catch (error) {
         console.error("Erreur lors de la récupération des contrôles:", error);
         showError("Impossible de charger les contrôles.");
@@ -137,13 +138,13 @@ export default function ControlesPage() {
                 controles.map((controle) => (
                   <TableRow key={controle.id}>
                     <TableCell>
-                      {controle.equipements && controle.equipements.length > 0 
-                        ? `${controle.equipements[0].marque} ${controle.equipements[0].modele}`
+                      {controle.equipements 
+                        ? `${controle.equipements.marque} ${controle.equipements.modele} (${controle.equipements.type})`
                         : 'Équipement non trouvé'}
                     </TableCell>
                     <TableCell>
-                      {controle.profiles && controle.profiles.length > 0 
-                        ? `${controle.profiles[0].prenom} ${controle.profiles[0].nom}`
+                      {controle.profiles 
+                        ? `${controle.profiles.prenom} ${controle.profiles.nom}`
                         : 'Contrôleur inconnu'}
                     </TableCell>
                     <TableCell>{formatDate(controle.date_controle)}</TableCell>
