@@ -15,6 +15,7 @@ import ControleEdit from '@/pages/ControleEdit';
 import EquipementDetail from '@/pages/EquipementDetail';
 import EquipementForm from '@/pages/EquipementForm';
 import EquipementEdit from '@/pages/EquipementEdit';
+import EquipementsBarcode from '@/pages/EquipementsBarcode';
 import Personnel from '@/pages/Personnel';
 import PersonnelDetail from '@/pages/PersonnelDetail';
 import PersonnelForm from '@/pages/PersonnelForm';
@@ -49,6 +50,11 @@ export default function App() {
           <Route path="/equipements/nouveau" element={
             <PrivateRoute>
               <EquipementForm />
+            </PrivateRoute>
+          } />
+          <Route path="/equipements/barcode" element={
+            <PrivateRoute>
+              <EquipementsBarcode />
             </PrivateRoute>
           } />
           <Route path="/equipements/:id" element={
