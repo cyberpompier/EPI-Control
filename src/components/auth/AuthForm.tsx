@@ -67,8 +67,6 @@ export default function AuthForm() {
               },
             },
           }}
-          // Désactivation du header de l'authentification pour éviter les doublons
-          magicLink={false}
         />
       </CardContent>
     </Card>

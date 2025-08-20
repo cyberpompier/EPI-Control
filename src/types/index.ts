@@ -10,7 +10,7 @@ export interface User {
 }
 
 export interface EPI {
-  id: number; // Changed from string to number to match database
+  id: string; // UUID
   type:
     | 'Casque F1'
     | 'Casque F2'
@@ -35,8 +35,8 @@ export interface EPI {
 }
 
 export interface Controle {
-  id: number; // Changed from string to number
-  equipement_id: number; // Changed from string to number
+  id: string; // UUID
+  equipement_id: string; // UUID
   controleur_id: string; // UUID from auth.users
   date_controle: string;
   resultat: 'conforme' | 'non_conforme';

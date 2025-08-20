@@ -1,330 +1,389 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Layout } from '@/components/layout/Layout';
+import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
-import { showError, showSuccess } from '@/utils/toast';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { CalendarIcon, ArrowLeft, Shield } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { showSuccess, showError } from '@/utils/toast';
+import { Helmet } from 'react-helmet';
+import { supabase } from '@/lib/supabase';
+import { Pompier } from '@/types/index';
+import Barcode from 'react-barcode';
 
-const equipementSchema = z.object({
-  type: z.string().min(1, "Le type est requis"),
-  marque: z.string().optional(),
-  modele: z.string().optional(),
-  numero_serie: z.string().min(1, "Le numéro de série est requis"),
-  date_mise_en_service: z.string().min(1, "La date de mise en service est requise"),
-  date_fin_vie: z.string().optional().nullable(),
-  statut: z.enum(['en_service', 'en_maintenance', 'reforme']),
-  personnel_id: z.string().optional().nullable(),
+const formSchema = z.object({
+  type: z.enum([
+    'Casque F1',
+    'Casque F2',
+    'Parka',
+    'Blouson Softshell',
+    'Bottes à Lacets',
+    'Gant de protection',
+    'Pantalon TSI',
+    'Veste TSI',
+    'Veste de protection',
+    'Surpantalon',
+  ], {
+    required_error: "Veuillez sélectionner un type d'équipement",
+  }),
+  marque: z.string().min(2, { message: "La marque doit contenir au moins 2 caractères" }),
+  modele: z.string().min(2, { message: "Le modèle doit contenir au moins 2 caractères" }),
+  numero_serie: z.string().min(3, { message: "Le numéro de série doit contenir au moins 3 caractères" }),
+  date_mise_en_service: z.date({ required_error: "Veuillez sélectionner une date de mise en service" }),
+  date_fin_vie: z.date({ required_error: "Veuillez sélectionner une date de fin de vie" }),
+  personnel_id: z.string().min(1, { message: "Veuillez sélectionner un membre du personnel" }),
 });
-
-type EquipementFormData = z.infer<typeof equipementSchema>;
-
-interface Personnel {
-  id: number;
-  nom: string;
-  prenom: string;
-}
 
 export default function EquipementForm() {
   const navigate = useNavigate();
-  const { id } = useParams<{ id?: string }>();
-  const isEdit = !!id;
-  
-  const [formData, setFormData] = useState<EquipementFormData>({
-    type: '',
-    marque: '',
-    modele: '',
-    numero_serie: '',
-    date_mise_en_service: format(new Date(), 'yyyy-MM-dd'),
-    date_fin_vie: null,
-    statut: 'en_service',
-    personnel_id: null,
+  const [searchParams] = useSearchParams();
+  const barcode = searchParams.get("barcode") || "";
+  const [isLoading, setIsLoading] = useState(false);
+  const [pompiers, setPompiers] = useState<Pompier[]>([]);
+  const [loadingPompiers, setLoadingPompiers] = useState(true);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      type: 'Casque F1',
+      marque: '',
+      modele: '',
+      numero_serie: barcode,
+      personnel_id: '',
+    },
   });
-  
-  const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchPersonnelList();
-    if (isEdit && id) {
-      fetchEquipementDetails(id);
+    // Mise à jour du champ numero_serie si un code barre est présent dans l'URL
+    if (barcode) {
+      form.setValue("numero_serie", barcode);
     }
-  }, [isEdit, id]);
+  }, [barcode, form]);
 
-  const fetchPersonnelList = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('personnel')
-      .select('id, nom, prenom')
-      .order('nom');
+  useEffect(() => {
+    const fetchPompiers = async () => {
+      setLoadingPompiers(true);
+      try {
+        const { data, error } = await supabase.from('personnel').select('*');
+        if (error) throw error;
+        setPompiers(data || []);
+      } catch (error: any) {
+        showError(`Erreur lors du chargement du personnel: ${error.message}`);
+        console.error('Erreur lors de la récupération des pompiers:', error);
+      } finally {
+        setLoadingPompiers(false);
+      }
+    };
+    fetchPompiers();
+  }, []);
 
-    if (error) {
-      console.error('Error fetching personnel:', error);
-    } else {
-      setPersonnelList(data || []);
-    }
-    setLoading(false);
-  };
-
-  const fetchEquipementDetails = async (equipementId: string) => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('equipements')
-      .select('*')
-      .eq('id', equipementId)
-      .single();
-
-    if (error) {
-      showError('Erreur lors du chargement des détails de l\'équipement');
-      console.error(error);
-      navigate('/equipements');
-    } else if (data) {
-      setFormData({
-        type: data.type || '',
-        marque: data.marque || '',
-        modele: data.modele || '',
-        numero_serie: data.numero_serie || '',
-        date_mise_en_service: data.date_mise_en_service || '',
-        date_fin_vie: data.date_fin_vie || null,
-        statut: data.statut || 'en_service',
-        personnel_id: data.personnel_id ? data.personnel_id.toString() : null,
-      });
-    }
-    setLoading(false);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user makes a selection
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setErrors({});
-
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     try {
-      // Validate form data
-      const validatedData = equipementSchema.parse({
-        ...formData,
-        personnel_id: formData.personnel_id || null,
-      });
+      const { error } = await supabase.from('equipements').insert([
+        {
+          type: values.type,
+          marque: values.marque,
+          modele: values.modele,
+          numero_serie: values.numero_serie,
+          date_mise_en_service: format(values.date_mise_en_service, "yyyy-MM-dd"),
+          date_fin_vie: format(values.date_fin_vie, "yyyy-MM-dd"),
+          personnel_id: parseInt(values.personnel_id),
+          statut: 'en_attente',
+        }
+      ]);
+      if (error) throw error;
       
-      if (isEdit && id) {
-        // Update existing equipment
-        const { error } = await supabase
-          .from('equipements')
-          .update({
-            ...validatedData,
-            personnel_id: validatedData.personnel_id ? parseInt(validatedData.personnel_id) : null,
-          })
-          .eq('id', id);
-
-        if (error) throw error;
-        showSuccess('Équipement mis à jour avec succès');
-      } else {
-        // Insert new equipment
-        const { error } = await supabase
-          .from('equipements')
-          .insert([{
-            ...validatedData,
-            personnel_id: validatedData.personnel_id ? parseInt(validatedData.personnel_id) : null,
-          }]);
-
-        if (error) throw error;
-        showSuccess('Équipement ajouté avec succès');
-      }
-
+      showSuccess('Équipement ajouté avec succès');
       navigate('/equipements');
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        error.errors.forEach(err => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0]] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-      } else {
-        console.error('Error saving equipement:', error);
-        showError(`Erreur lors ${isEdit ? 'de la mise à jour' : 'de l\'ajout'} de l'équipement`);
-      }
+    } catch (error: any) {
+      console.error('Erreur lors de l\'ajout de l\'équipement:', error);
+      showError(`Erreur lors de l'ajout de l'équipement: ${error.message}`);
     } finally {
-      setSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Layout headerTitle={isEdit ? "Modification d'équipement" : "Ajout d'équipement"}>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-        </div>
-      </Layout>
-    );
-  }
+  const getTypeIcon = (type: string) => {
+    if (!type) return '🛡️';
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('casque')) return '🪖';
+    if (lowerType.includes('veste') || lowerType.includes('parka') || lowerType.includes('blouson')) return '🧥';
+    if (lowerType.includes('pantalon')) return '👖';
+    if (lowerType.includes('gant')) return '🧤';
+    if (lowerType.includes('botte')) return '👢';
+    return '🛡️';
+  };
 
   return (
-    <Layout headerTitle={isEdit ? "Modification d'équipement" : "Ajout d'équipement"}>
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>{isEdit ? "Modifier l'équipement" : "Ajouter un nouvel équipement"}</CardTitle>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
-              <Input
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                placeholder="Type d'équipement"
-                className={errors.type ? 'border-red-500' : ''}
-              />
-              {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="marque">Marque</Label>
-                <Input
-                  id="marque"
-                  name="marque"
-                  value={formData.marque || ''}
-                  onChange={handleChange}
-                  placeholder="Marque"
-                />
+    <Layout>
+      <Helmet>
+        <title>Nouvel équipement | EPI Control</title>
+      </Helmet>
+      
+      <div className="mb-6">
+        <Link to="/equipements" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Retour aux équipements
+        </Link>
+        
+        <h1 className="text-2xl font-bold">Nouvel équipement</h1>
+        <p className="text-gray-600">Ajouter un nouvel équipement de protection individuelle</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                Informations de l'équipement
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Type d'équipement</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez un type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Casque F1">Casque F1</SelectItem>
+                              <SelectItem value="Casque F2">Casque F2</SelectItem>
+                              <SelectItem value="Parka">Parka</SelectItem>
+                              <SelectItem value="Blouson Softshell">Blouson Softshell</SelectItem>
+                              <SelectItem value="Bottes à Lacets">Bottes à Lacets</SelectItem>
+                              <SelectItem value="Gant de protection">Gant de protection</SelectItem>
+                              <SelectItem value="Pantalon TSI">Pantalon TSI</SelectItem>
+                              <SelectItem value="Veste TSI">Veste TSI</SelectItem>
+                              <SelectItem value="Veste de protection">Veste de protection</SelectItem>
+                              <SelectItem value="Surpantalon">Surpantalon</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="personnel_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Membre du personnel assigné</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                              <SelectValue placeholder={loadingPompiers ? "Chargement..." : "Sélectionnez un membre"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {loadingPompiers ? (
+                                <SelectItem value="__loading__" disabled>Chargement...</SelectItem>
+                              ) : pompiers.length > 0 ? (
+                                pompiers.map((pompier) => (
+                                  <SelectItem key={pompier.id} value={String(pompier.id)}>
+                                    {`${pompier.grade || ''} ${pompier.prenom || ''} ${pompier.nom || ''}`.trim()}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="__none__" disabled>Aucun membre trouvé</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="marque"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marque</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: MSA, Bristol, Haix..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="modele"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modèle</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: F1 XF, ErgoTech Action..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="numero_serie"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Numéro de série</FormLabel>
+                        <div className="flex items-center space-x-2">
+                          <FormControl className="flex-1">
+                            <Input placeholder="Numéro de série unique" {...field} />
+                          </FormControl>
+                          {field.value && (
+                            <div className="w-1/3">
+                              <Barcode value={String(field.value)} />
+                            </div>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="date_mise_en_service"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Date de mise en service</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP", { locale: fr })
+                                  ) : (
+                                    <span>Sélectionnez une date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="date_fin_vie"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Date de fin de vie</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP", { locale: fr })
+                                  ) : (
+                                    <span>Sélectionnez une date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-6">
+                    <Button variant="outline" type="button" onClick={() => navigate('/equipements')}>
+                      Annuler
+                    </Button>
+                    <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
+                      {isLoading ? "Enregistrement..." : "Enregistrer l'équipement"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Aperçu</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="text-6xl mb-4">
+                  {getTypeIcon(form.watch('type'))}
+                </div>
+                <h3 className="font-medium text-lg">
+                  {form.watch('marque') || 'Marque'} {form.watch('modele') || 'Modèle'}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {form.watch('numero_serie') || 'N° de série'}
+                </p>
+                
+                <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                  <p className="text-xs text-gray-600 mb-2">Assigné à :</p>
+                  <p className="font-medium">
+                    {form.watch('personnel_id') ? 
+                      pompiers.find(p => String(p.id) === form.watch('personnel_id'))?.prenom + ' ' +
+                      pompiers.find(p => String(p.id) === form.watch('personnel_id'))?.nom
+                      : 'Aucun membre sélectionné'
+                    }
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="modele">Modèle</Label>
-                <Input
-                  id="modele"
-                  name="modele"
-                  value={formData.modele || ''}
-                  onChange={handleChange}
-                  placeholder="Modèle"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="numero_serie">Numéro de série *</Label>
-              <Input
-                id="numero_serie"
-                name="numero_serie"
-                value={formData.numero_serie}
-                onChange={handleChange}
-                placeholder="Numéro de série"
-                className={errors.numero_serie ? 'border-red-500' : ''}
-              />
-              {errors.numero_serie && <p className="text-red-500 text-sm">{errors.numero_serie}</p>}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date_mise_en_service">Date de mise en service *</Label>
-                <Input
-                  id="date_mise_en_service"
-                  name="date_mise_en_service"
-                  type="date"
-                  value={formData.date_mise_en_service}
-                  onChange={handleChange}
-                  className={errors.date_mise_en_service ? 'border-red-500' : ''}
-                />
-                {errors.date_mise_en_service && <p className="text-red-500 text-sm">{errors.date_mise_en_service}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date_fin_vie">Date de fin de vie</Label>
-                <Input
-                  id="date_fin_vie"
-                  name="date_fin_vie"
-                  type="date"
-                  value={formData.date_fin_vie || ''}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="statut">Statut</Label>
-              <Select 
-                name="statut" 
-                value={formData.statut} 
-                onValueChange={(value) => handleSelectChange('statut', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en_service">En service</SelectItem>
-                  <SelectItem value="en_maintenance">En maintenance</SelectItem>
-                  <SelectItem value="reforme">Réformé</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="personnel_id">Assigné à</Label>
-              <Select 
-                name="personnel_id" 
-                value={formData.personnel_id || ''} 
-                onValueChange={(value) => handleSelectChange('personnel_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un pompier" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Non assigné</SelectItem>
-                  {personnelList.map((person) => (
-                    <SelectItem key={person.id} value={person.id.toString()}>
-                      {person.prenom} {person.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => navigate('/equipements')}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? 'Enregistrement...' : (isEdit ? 'Mettre à jour' : 'Ajouter')}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </Layout>
   );
 }

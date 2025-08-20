@@ -1,230 +1,247 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
+import { useParams, Link } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { showError } from '@/utils/toast';
-import { AlertTriangle, Calendar, User, Wrench } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { EPI } from '@/types/index';
-
-interface Equipement {
-  id: number;
-  type: string;
-  marque: string;
-  modele: string;
-  numero_serie: string;
-  date_mise_en_service: string;
-  date_fin_vie: string | null;
-  statut: string;
-  image: string | null;
-  personnel: {
-    id: number;
-    nom: string;
-    prenom: string;
-  } | null;
-}
+import { Pompier, EPI, Controle } from '@/types';
+import { ArrowLeft, User, Calendar, Shield, Wrench, Plus, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { getStatusIcon, getStatusColor } from '@/utils/statusUtils';
 
 export default function EquipementDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [epi, setEpi] = useState<EPI | null>(null);
+  const [equipement, setEquipement] = useState<EPI | null>(null);
+  const [pompier, setPompier] = useState<Pompier | null>(null);
+  const [controles, setControles] = useState<Controle[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      fetchEquipementDetails();
-    }
-  }, [id]);
+    const fetchData = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const { data: equipementData, error: equipementError } = await supabase
+          .from('equipements')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-  const fetchEquipementDetails = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('equipements')
-      .select(`
-        id,
-        type,
-        marque,
-        modele,
-        numero_serie,
-        date_mise_en_service,
-        date_fin_vie,
-        statut,
-        image,
-        personnel (
-          id,
-          nom,
-          prenom
-        )
-      `)
-      .eq('id', id)
-      .single();
+        if (equipementError) throw equipementError;
+        setEquipement(equipementData);
 
-    if (error) {
-      showError('Erreur lors du chargement des détails de l\'équipement');
-      console.error(error);
-    } else if (data) {
-      // Extract personnel data correctly
-      const personnelData = data.personnel && data.personnel.length > 0 
-        ? data.personnel[0] 
-        : null;
+        if (equipementData && equipementData.personnel_id) {
+          const { data: pompierData, error: pompierError } = await supabase
+            .from('personnel')
+            .select('*')
+            .eq('id', equipementData.personnel_id)
+            .single();
+          if (pompierError) throw pompierError;
+          setPompier(pompierData);
+        }
+
+        const { data: controlesData, error: controlesError } = await supabase
+          .from('controles')
+          .select('*, controleur:profiles(prenom, nom)')
+          .eq('equipement_id', id)
+          .order('date_controle', { ascending: false });
         
-      // Transform the data to match EPI interface
-      const transformedData: EPI = {
-        id: data.id,
-        type: data.type as EPI['type'],
-        marque: data.marque || '',
-        modele: data.modele || '',
-        numero_serie: data.numero_serie,
-        date_mise_en_service: data.date_mise_en_service,
-        date_fin_vie: data.date_fin_vie,
-        personnel_id: personnelData?.id || 0,
-        statut: data.statut as 'conforme' | 'non_conforme' | 'en_attente',
-        created_at: new Date().toISOString(),
-        image: data.image || undefined,
-        personnel: personnelData ? {
-          id: personnelData.id,
-          nom: personnelData.nom || '',
-          prenom: personnelData.prenom || '',
-          matricule: '',
-          caserne: '',
-          grade: '',
-          email: '',
-          photo: ''
-        } : undefined
-      };
-      setEpi(transformedData);
-    }
-    setLoading(false);
-  };
+        if (controlesError) throw controlesError;
+        setControles(controlesData || []);
 
-  const handleDeleteEquipement = async () => {
-    if (!epi) return;
-
-    const { error } = await supabase
-      .from('equipements')
-      .delete()
-      .eq('id', epi.id);
-
-    if (error) {
-      showError('Erreur lors de la suppression de l\'équipement');
-      console.error(error);
-    } else {
-      navigate('/equipements');
-    }
-  };
+      } catch (error) {
+        console.error('Erreur lors de la récupération des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [id]);
 
   if (loading) {
     return (
-      <Layout headerTitle="Chargement...">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
         </div>
       </Layout>
     );
   }
 
-  if (!epi) {
+  if (!equipement) {
     return (
-      <Layout headerTitle="Équipement non trouvé">
-        <div className="text-center py-8">
-          <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-          <h2 className="mt-4 text-xl font-bold">Équipement non trouvé</h2>
-          <p className="mt-2 text-gray-600">L'équipement que vous recherchez n'existe pas ou a été supprimé.</p>
-          <Button className="mt-4" onClick={() => navigate('/equipements')}>
-            Retour à la liste
-          </Button>
+      <Layout>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold mb-2">Équipement non trouvé</h2>
+          <p className="text-gray-600 mb-6">L'équipement demandé n'existe pas ou a été supprimé.</p>
+          <Link to="/equipements">
+            <Button>Retour aux équipements</Button>
+          </Link>
         </div>
       </Layout>
     );
   }
+
+  const getInitials = (nom?: string, prenom?: string) => {
+    return `${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase();
+  };
+
+  const ControleIcon = ({ resultat }: { resultat: string }) => {
+    switch (resultat) {
+      case 'conforme': return <CheckCircle className="text-green-500" />;
+      case 'non_conforme': return <XCircle className="text-red-500" />;
+      default: return <AlertTriangle className="text-yellow-500" />;
+    }
+  };
 
   return (
-    <Layout headerTitle={epi.type}>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <Layout>
+      <Helmet>
+        <title>{`${equipement.type} ${equipement.marque} ${equipement.modele} | EPI Control`}</title>
+      </Helmet>
+      
+      <div className="mb-6">
+        <Link to={pompier ? `/personnel/${pompier.id}/equipements` : '/equipements'} className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Retour
+        </Link>
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold">{epi.type}</h1>
-            <p className="text-gray-600">{epi.marque} {epi.modele}</p>
+            <h1 className="text-2xl font-bold">{equipement.type} {equipement.marque} {equipement.modele}</h1>
+            <p className="text-gray-600">N/S: {equipement.numero_serie}</p>
           </div>
-          <div className="flex gap-2">
-            <Link to={`/equipements/${epi.id}/edit`}>
-              <Button variant="outline">Modifier</Button>
+          
+          <div className="flex gap-2 mt-4 sm:mt-0">
+            <Link to={`/controle/${equipement.id}`}>
+              <Button className="bg-red-600 hover:bg-red-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau contrôle
+              </Button>
             </Link>
-            <Button variant="destructive" onClick={handleDeleteEquipement}>
-              Supprimer
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Détails de l'équipement</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-medium">Numéro de série</h3>
-                  <p className="text-gray-600">{epi.numero_serie}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium">Statut</h3>
-                  <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    epi.statut === 'conforme' ? 'bg-green-100 text-green-800' :
-                    epi.statut === 'non_conforme' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {epi.statut === 'conforme' ? 'Conforme' :
-                     epi.statut === 'non_conforme' ? 'Non conforme' : epi.statut}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-medium flex items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Dates importantes
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Mise en service: {format(new Date(epi.date_mise_en_service), 'dd MMMM yyyy', { locale: fr })}
-                  </p>
-                  {epi.date_fin_vie && (
-                    <p className="text-gray-600 text-sm">
-                      Fin de vie: {format(new Date(epi.date_fin_vie), 'dd MMMM yyyy', { locale: fr })}
-                    </p>
-                  )}
-                </div>
-                {epi.personnel && (
-                  <div>
-                    <h3 className="font-medium flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      Assigné à
-                    </h3>
-                    <Link to={`/personnel/${epi.personnel.id}`} className="text-blue-600 hover:underline">
-                      {epi.personnel.prenom} {epi.personnel.nom}
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Wrench className="mr-2 h-5 w-5" />
-                  Historique des contrôles
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-4 text-gray-500">Aucun contrôle enregistré pour cet équipement.</p>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations sur l'équipement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Type</p>
+                  <p className="font-medium">{equipement.type}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Marque</p>
+                  <p className="font-medium">{equipement.marque}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Modèle</p>
+                  <p className="font-medium">{equipement.modele}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Numéro de série</p>
+                  <p className="font-medium">{equipement.numero_serie}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Mise en service</p>
+                  <p className="font-medium">{new Date(equipement.date_mise_en_service).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Fin de vie</p>
+                  <p className="font-medium">{new Date(equipement.date_fin_vie).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Statut</p>
+                  <Badge className={`${getStatusColor(equipement.statut)}`}>
+                    {getStatusIcon(equipement.statut)}
+                    {equipement.statut.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pompier assigné</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pompier ? (
+                <Link to={`/personnel/${pompier.id}`} className="flex items-center space-x-3 group">
+                  <Avatar>
+                    <AvatarImage src={`https://i.pravatar.cc/150?u=${pompier.id}`} />
+                    <AvatarFallback>{getInitials(pompier.nom, pompier.prenom)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold group-hover:underline">{pompier.prenom} {pompier.nom}</p>
+                    <p className="text-sm text-gray-500">{pompier.grade}</p>
+                  </div>
+                </Link>
+              ) : (
+                <div className="flex items-center text-gray-500">
+                  <User className="h-5 w-5 mr-2" />
+                  <span>Non assigné</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Historique des contrôles</CardTitle>
+          <Button variant="outline" size="sm">
+            <FileText className="h-4 w-4 mr-2" />
+            Exporter l'historique
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {controles.length > 0 ? (
+            <div className="space-y-4">
+              {controles.map(controle => (
+                <div key={controle.id} className="flex items-start p-3 border rounded-lg bg-gray-50">
+                  <div className="mr-3 pt-1">
+                    <ControleIcon resultat={controle.resultat} />
+                  </div>
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-center">
+                      <p className="font-semibold capitalize">{controle.resultat.replace('_', ' ')}</p>
+                      <p className="text-sm text-gray-500">{new Date(controle.date_controle).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{controle.observations}</p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Contrôlé par: {controle.controleur ? `${controle.controleur.prenom} ${controle.controleur.nom}` : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium">Aucun contrôle enregistré</h3>
+              <p className="mt-2 text-gray-500 mb-4">Cet équipement n'a pas encore été contrôlé.</p>
+              <Link to={`/controle/${equipement.id}`}>
+                <Button className="bg-red-600 hover:bg-red-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Effectuer le premier contrôle
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </Layout>
   );
 }

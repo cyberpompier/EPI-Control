@@ -1,170 +1,185 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
+import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
-import { Plus, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { showError } from '@/utils/toast';
 
 interface Controle {
-  id: number;
+  id: string;
   date_controle: string;
-  resultat: string;
-  observations: string | null;
+  resultat: 'conforme' | 'non_conforme' | 'en_attente';
+  date_prochaine_verification: string;
   equipements: {
-    id: number;
+    id: string;
     type: string;
-    marque: string | null;
-    modele: string | null;
+    marque: string;
+    modele: string;
   } | null;
-  personnel: {
-    id: number;
+  profiles: {
     nom: string;
     prenom: string;
   } | null;
 }
 
-export default function Controles() {
-  const location = useLocation();
+export default function ControlesPage() {
   const [controles, setControles] = useState<Controle[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Get equipment_id from URL query params if present
-  const urlParams = new URLSearchParams(location.search);
-  const equipmentId = urlParams.get('equipment_id');
-
+  const location = useLocation();
+  
   useEffect(() => {
+    const fetchControles = async () => {
+      setLoading(true);
+      try {
+        const searchParams = new URLSearchParams(location.search);
+        const equipmentId = searchParams.get('equipement');
+        
+        // Construire la requête de base
+        let query = supabase
+          .from('controles')
+          .select(`
+            id,
+            date_controle,
+            resultat,
+            date_prochaine_verification,
+            equipements ( id, type, marque, modele ),
+            profiles ( nom, prenom )
+          `)
+          .order('date_controle', { ascending: false });
+          
+        // Appliquer le filtre si le paramètre d'équipement est présent
+        if (equipmentId) {
+          query = query.eq('equipement_id', equipmentId);
+        }
+        
+        const { data, error } = await query;
+        if (error) throw error;
+        // Correction du cast en passant d'abord par unknown
+        setControles(data as unknown as Controle[] || []);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des contrôles:", error);
+        showError("Impossible de charger les contrôles.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchControles();
-  }, [equipmentId]);
+  }, [location.search]);
 
-  const fetchControles = async () => {
-    setLoading(true);
-    let query = supabase
-      .from('controles')
-      .select(`
-        id,
-        date_controle,
-        resultat,
-        observations,
-        equipements (
-          id,
-          type,
-          marque,
-          modele
-        ),
-        personnel (
-          id,
-          nom,
-          prenom
-        )
-      `)
-      .order('date_controle', { ascending: false });
-
-    if (equipmentId) {
-      query = query.eq('equipement_id', equipmentId);
+  const getResultBadge = (resultat: string) => {
+    switch (resultat) {
+      case 'conforme':
+        return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">Conforme</Badge>;
+      case 'non_conforme':
+        return <Badge variant="destructive">Non Conforme</Badge>;
+      case 'en_attente':
+        return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white">En attente</Badge>;
+      default:
+        return <Badge variant="outline">{resultat}</Badge>;
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching controles:', error);
-    } else {
-      // Transform data to ensure proper typing
-      const transformedData = data?.map(item => ({
-        ...item,
-        equipements: item.equipements ? {
-          id: item.equipements[0]?.id || 0,
-          type: item.equipements[0]?.type || '',
-          marque: item.equipements[0]?.marque || null,
-          modele: item.equipements[0]?.modele || null
-        } : null,
-        personnel: item.personnel ? {
-          id: item.personnel[0]?.id || 0,
-          nom: item.personnel[0]?.nom || '',
-          prenom: item.personnel[0]?.prenom || ''
-        } : null
-      })) || [];
-      
-      setControles(transformedData);
-    }
-    setLoading(false);
   };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold">Contrôles</h1>
-          <Link to="/controles/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau contrôle
-            </Button>
-          </Link>
+      <Helmet>
+        <title>Liste des Contrôles | EPI Control</title>
+      </Helmet>
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Liste des Contrôles</h1>
+          <p className="text-gray-600">Consultez et gérez l'historique des contrôles d'équipements.</p>
         </div>
-
-        {loading ? (
-          <div className="text-center py-8">Chargement...</div>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Liste des contrôles</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {controles.length === 0 ? (
-                <p className="text-center py-4 text-gray-500">
-                  Aucun contrôle enregistré.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {controles.map((controle) => (
-                    <div key={controle.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">
-                            {controle.equipements 
-                              ? `${controle.equipements.type} ${controle.equipements.marque || ''} ${controle.equipements.modele || ''}`
-                              : 'Équipement inconnu'}
-                          </h3>
-                          {controle.personnel && (
-                            <p className="text-sm text-gray-600">
-                              Contrôlé par: {controle.personnel.prenom} {controle.personnel.nom}
-                            </p>
-                          )}
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          controle.resultat === 'conforme' ? 'bg-green-100 text-green-800' :
-                          controle.resultat === 'non_conforme' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {controle.resultat === 'conforme' ? 'Conforme' : 
-                           controle.resultat === 'non_conforme' ? 'Non conforme' : controle.resultat}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center text-sm text-gray-500">
-                        <Calendar className="mr-1 h-4 w-4" />
-                        {format(new Date(controle.date_controle), 'dd MMMM yyyy', { locale: fr })}
-                      </div>
-                      {controle.observations && (
-                        <p className="mt-2 text-sm">{controle.observations}</p>
-                      )}
-                      <div className="mt-3">
-                        <Link to={`/controles/${controle.id}`}>
-                          <Button variant="outline" size="sm">
-                            Voir détails
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <Link to="/equipements">
+          <Button className="bg-red-600 hover:bg-red-700 mt-4 sm:mt-0">
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau Contrôle
+          </Button>
+        </Link>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Historique des contrôles</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Équipement</TableHead>
+                <TableHead>Contrôleur</TableHead>
+                <TableHead>Date du contrôle</TableHead>
+                <TableHead>Résultat</TableHead>
+                <TableHead>Prochaine vérification</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {controles.length > 0 ? (
+                controles.map((controle) => (
+                  <TableRow key={controle.id}>
+                    <TableCell>
+                      {controle.equipements 
+                        ? `${controle.equipements.marque} ${controle.equipements.modele} (${controle.equipements.type})`
+                        : 'Équipement non trouvé'}
+                    </TableCell>
+                    <TableCell>
+                      {controle.profiles 
+                        ? `${controle.profiles.prenom} ${controle.profiles.nom}`
+                        : 'Contrôleur inconnu'}
+                    </TableCell>
+                    <TableCell>{formatDate(controle.date_controle)}</TableCell>
+                    <TableCell>{getResultBadge(controle.resultat)}</TableCell>
+                    <TableCell>{formatDate(controle.date_prochaine_verification)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="icon" asChild>
+                          <Link to={`/controles/${controle.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button variant="outline" size="icon" asChild>
+                          <Link to={`/controles/${controle.id}/modifier`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button variant="destructive" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center h-24">
+                    Aucun contrôle trouvé.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </Layout>
   );
 }

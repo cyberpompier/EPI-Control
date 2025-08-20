@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { showSuccess, showError } from '@/utils/toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 
 const controleEditSchema = z.object({
   resultat: z.enum(['conforme', 'non_conforme'], {
@@ -120,6 +121,9 @@ export default function ControleEdit() {
 
   return (
     <Layout>
+      <Helmet>
+        <title>Modifier le contrôle | EPI Control</title>
+      </Helmet>
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>

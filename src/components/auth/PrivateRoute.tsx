@@ -1,21 +1,28 @@
-import { useSession } from '@/components/auth/SessionProvider';
-import { Layout } from '@/components/layout/Layout';
+import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useSession } from '@/components/auth/SessionProvider';
+import Layout from '../layout/Layout';
 
 interface PrivateRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export function PrivateRoute({ children }: PrivateRouteProps) {
+export default function PrivateRoute({ children }: PrivateRouteProps) {
   const { session, loading } = useSession();
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
+        </div>
+      </Layout>
+    );
   }
 
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
-  return <Layout>{children}</Layout>;
+  return <>{children}</>;
 }
