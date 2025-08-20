@@ -1,294 +1,266 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
+import { Layout } from '@/components/layout/Layout';
 import PDFGenerator from '@/components/pdf/PDFGenerator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { showError } from '@/utils/toast';
-import { ArrowLeft, CheckCircle, AlertTriangle, User, FileText, Camera } from 'lucide-react';
+import { Calendar, User, Wrench, FileText } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+interface Controle {
+  id: number;
+  date_controle: string;
+  resultat: string;
+  observations: string | null;
+  actions_correctives: string | null;
+  date_prochaine_verification: string | null;
+  equipements: {
+    id: number;
+    type: string;
+    marque: string | null;
+    modele: string | null;
+    numero_serie: string;
+    personnel: {
+      id: number;
+      nom: string;
+      prenom: string;
+    } | null;
+  } | null;
+  personnel: {
+    id: number;
+    nom: string;
+    prenom: string;
+  } | null;
+}
 
 export default function ControleDetail() {
   const { id } = useParams<{ id: string }>();
-  const [controle, setControle] = useState<any | null>(null);
+  const [controle, setControle] = useState<Controle | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchControle = async () => {
-      if (!id) return;
-      try {
-        const { data, error } = await supabase
-          .from('controles')
-          .select('*, equipements(*, personnel(*)), profiles:controleur_id(id, nom, prenom, role)')
-          .eq('id', id)
-          .single();
-
-        if (error) throw error;
-        setControle(data);
-      } catch (error) {
-        console.error('Erreur lors de la récupération du contrôle:', error);
-        showError("Erreur lors de la récupération des détails du contrôle.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchControle();
+    if (id) {
+      fetchControleDetails();
+    }
   }, [id]);
+
+  const fetchControleDetails = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('controles')
+      .select(`
+        id,
+        date_controle,
+        resultat,
+        observations,
+        actions_correctives,
+        date_prochaine_verification,
+        equipements (
+          id,
+          type,
+          marque,
+          modele,
+          numero_serie,
+          personnel (
+            id,
+            nom,
+            prenom
+          )
+        ),
+        personnel (
+          id,
+          nom,
+          prenom
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      showError('Erreur lors du chargement des détails du contrôle');
+      console.error(error);
+    } else if (data) {
+      // Transform data to ensure proper typing
+      const transformedData = {
+        ...data,
+        equipements: data.equipements ? {
+          ...data.equipements,
+          personnel: data.equipements.personnel ? {
+            id: data.equipements.personnel[0]?.id || 0,
+            nom: data.equipements.personnel[0]?.nom || '',
+            prenom: data.equipements.personnel[0]?.prenom || ''
+          } : null
+        } : null,
+        personnel: data.personnel ? {
+          id: data.personnel[0]?.id || 0,
+          nom: data.personnel[0]?.nom || '',
+          prenom: data.personnel[0]?.prenom || ''
+        } : null
+      };
+      setControle(transformedData);
+    }
+    setLoading(false);
+  };
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
+      <Layout headerTitle="Chargement...">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </div>
       </Layout>
     );
   }
 
-  if (!controle || !controle.equipements) {
+  if (!controle) {
     return (
-      <Layout>
-        <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-2">Contrôle non trouvé</h2>
-          <p className="text-gray-600 mb-6">Le contrôle demandé n'existe pas ou les données associées sont manquantes.</p>
-          <Link to="/controles">
-            <Button>Retour à la liste des contrôles</Button>
-          </Link>
+      <Layout headerTitle="Contrôle non trouvé">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-bold">Contrôle non trouvé</h2>
+          <p className="mt-2 text-gray-600">Le contrôle que vous recherchez n'existe pas.</p>
+          <Button className="mt-4" onClick={() => window.history.back()}>
+            Retour
+          </Button>
         </div>
       </Layout>
     );
   }
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'casque': return '🪖';
-      case 'veste': return '🧥';
-      case 'surpantalon': return '👖';
-      case 'gants': return '🧤';
-      case 'rangers': return '👢';
-      default: return '🛡️';
-    }
-  };
 
   return (
-    <Layout>
-      <Helmet>
-        <title>Détail du contrôle | EPI Control</title>
-      </Helmet>
-      
-      <div className="mb-6">
-        <Link to="/controles" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Retour aux contrôles
-        </Link>
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+    <Layout headerTitle={`Contrôle du ${format(new Date(controle.date_controle), 'dd/MM/yyyy', { locale: fr })}`}>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Détail du contrôle</h1>
+            <h1 className="text-3xl font-bold">
+              Contrôle du {format(new Date(controle.date_controle), 'dd MMMM yyyy', { locale: fr })}
+            </h1>
             <p className="text-gray-600">
-              Contrôle du {new Date(controle.date_controle).toLocaleDateString('fr-FR')} - {controle.equipements.marque} {controle.equipements.modele}
+              {controle.equipements 
+                ? `${controle.equipements.type} (${controle.equipements.numero_serie})`
+                : 'Équipement inconnu'}
             </p>
           </div>
-          
-          {controle.equipements.personnel && controle.profiles && (
-            <PDFGenerator 
-              controle={controle}
-              epi={controle.equipements}
-              pompier={controle.equipements.personnel}
-              controleur={controle.profiles}
-            />
-          )}
+          <div className="flex gap-2">
+            <PDFGenerator controle={controle} />
+            <Link to={`/controles/${controle.id}/edit`}>
+              <Button variant="outline">Modifier</Button>
+            </Link>
+          </div>
         </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg flex items-center">
-                <span className="mr-2 text-xl">{getTypeIcon(controle.equipements.type)}</span>
-                Informations sur l'équipement
-              </CardTitle>
-              <Badge className={controle.resultat === 'conforme' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}>
-                {controle.resultat === 'conforme' ? (
-                  <span className="flex items-center">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Conforme
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" /> Non conforme
-                  </span>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Wrench className="mr-2 h-5 w-5" />
+                  Détails du contrôle
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-medium">Résultat</h3>
+                  <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                    controle.resultat === 'conforme' ? 'bg-green-100 text-green-800' :
+                    controle.resultat === 'non_conforme' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {controle.resultat === 'conforme' ? 'Conforme' : 
+                     controle.resultat === 'non_conforme' ? 'Non conforme' : controle.resultat}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium flex items-center">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Dates
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Contrôle effectué: {format(new Date(controle.date_controle), 'dd MMMM yyyy', { locale: fr })}
+                  </p>
+                  {controle.date_prochaine_verification && (
+                    <p className="text-gray-600 text-sm">
+                      Prochaine vérification: {format(new Date(controle.date_prochaine_verification), 'dd MMMM yyyy', { locale: fr })}
+                    </p>
+                  )}
+                </div>
+                
+                {controle.observations && (
+                  <div>
+                    <h3 className="font-medium">Observations</h3>
+                    <p className="text-gray-600">{controle.observations}</p>
+                  </div>
                 )}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Détails de l'équipement</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Type</span>
-                    <span className="font-medium">{controle.equipements.type.charAt(0).toUpperCase() + controle.equipements.type.slice(1)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Marque</span>
-                    <span className="font-medium">{controle.equipements.marque}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Modèle</span>
-                    <span className="font-medium">{controle.equipements.modele}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">N° Série</span>
-                    <span className="font-medium font-mono">{controle.equipements.numero_serie}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Mise en service</span>
-                    <span className="font-medium">{new Date(controle.equipements.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Fin de vie</span>
-                    <span className="font-medium">{new Date(controle.equipements.date_fin_vie).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Détails du contrôle</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Date du contrôle</span>
-                    <span className="font-medium">{new Date(controle.date_controle).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Contrôleur</span>
-                    <span className="font-medium capitalize">{controle.profiles?.role} {controle.profiles?.prenom} {controle.profiles?.nom}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Résultat</span>
-                    <span className={`font-medium ${controle.resultat === 'conforme' ? 'text-green-600' : 'text-red-600'}`}>
-                      {controle.resultat === 'conforme' ? 'Conforme' : 'Non conforme'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Prochain contrôle</span>
-                    <span className="font-medium">{new Date(controle.date_prochaine_verification).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <h3 className="font-medium text-gray-900 mb-2">Observations</h3>
-              <p className="text-sm bg-gray-50 p-3 rounded-md border">{controle.observations}</p>
-            </div>
-            
-            {controle.actions_correctives && (
-              <div className="mt-4">
-                <h3 className="font-medium text-gray-900 mb-2">Actions correctives</h3>
-                <p className="text-sm bg-red-50 p-3 rounded-md border border-red-100">{controle.actions_correctives}</p>
-              </div>
-            )}
-            
-            {controle.photos && controle.photos.length > 0 && (
-              <div className="mt-6">
-                <h3 className="font-medium text-gray-900 mb-2 flex items-center">
-                  <Camera className="h-4 w-4 mr-1" />
-                  Photos ({controle.photos.length})
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {controle.photos.map((photo: string, index: number) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={photo}
-                        alt={`Photo ${index + 1}`}
-                        className="h-32 w-full object-cover rounded-md border"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <Button variant="secondary" size="sm">Agrandir</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <User className="h-5 w-5 mr-2" />
-              Informations sur le pompier
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {controle.equipements.personnel ? (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Identité</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Nom</span>
-                      <span className="font-medium">{controle.equipements.personnel.nom}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Prénom</span>
-                      <span className="font-medium">{controle.equipements.personnel.prenom}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Grade</span>
-                      <span className="font-medium">{controle.equipements.personnel.grade}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Matricule</span>
-                      <span className="font-medium font-mono">{controle.equipements.personnel.matricule}</span>
-                    </div>
-                  </div>
-                </div>
                 
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Affectation</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Caserne</span>
-                      <span className="font-medium">{controle.equipements.personnel.caserne}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Email</span>
-                      <span className="font-medium">{controle.equipements.personnel.email}</span>
-                    </div>
+                {controle.actions_correctives && (
+                  <div>
+                    <h3 className="font-medium">Actions correctives</h3>
+                    <p className="text-gray-600">{controle.actions_correctives}</p>
                   </div>
-                </div>
-                
-                <div className="pt-4 border-t">
-                  <Link to={`/personnel/${controle.equipements.personnel.id}`}>
-                    <Button variant="outline" className="w-full">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Voir le profil du pompier
-                    </Button>
-                  </Link>
-                </div>
-                
-                {controle.resultat === 'non_conforme' && (
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            {controle.equipements && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="mr-2 h-5 w-5" />
+                    Équipement contrôlé
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="font-medium">{controle.equipements.type}</p>
+                  <p className="text-sm text-gray-600">
+                    {controle.equipements.marque} {controle.equipements.modele}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    N° de série: {controle.equipements.numero_serie}
+                  </p>
+                  {controle.equipements.personnel && (
+                    <div className="pt-2">
+                      <h3 className="font-medium flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        Assigné à
+                      </h3>
+                      <Link to={`/personnel/${controle.equipements.personnel.id}`} className="text-blue-600 hover:underline text-sm">
+                        {controle.equipements.personnel.prenom} {controle.equipements.personnel.nom}
+                      </Link>
+                    </div>
+                  )}
                   <div className="pt-2">
-                    <Link to={`/controle/${controle.equipements.id}`}>
-                      <Button className="w-full bg-red-600 hover:bg-red-700">
-                        Recontrôler cet équipement
+                    <Link to={`/equipements/${controle.equipements.id}`}>
+                      <Button variant="outline" size="sm">
+                        Voir l'équipement
                       </Button>
                     </Link>
                   </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">Aucun pompier n'était assigné à cet équipement au moment du contrôle.</p>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+            
+            {controle.personnel && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="mr-2 h-5 w-5" />
+                    Contrôleur
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Link to={`/personnel/${controle.personnel.id}`} className="text-blue-600 hover:underline">
+                    {controle.personnel.prenom} {controle.personnel.nom}
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );

@@ -1,29 +1,36 @@
-"use client";
-
-import React from 'react';
+import { ReactNode } from 'react';
 import Header from './Header';
-import Footer from './Footer';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   headerTitle?: string;
 }
 
-const Layout = ({ children, headerTitle }: LayoutProps) => {
+export function Layout({ children, headerTitle }: LayoutProps) {
+  const navigate = useNavigate();
+  
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-6">
         {headerTitle && (
-          <div className="mb-6">
+          <div className="mb-6 flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate(-1)}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <h2 className="text-xl font-semibold">Pompier assigné : {headerTitle}</h2>
           </div>
         )}
         {children}
       </main>
-      <Footer />
     </div>
   );
-};
-
-export default Layout;
+}

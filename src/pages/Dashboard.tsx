@@ -1,5 +1,5 @@
 import React from 'react';
-import Layout from '@/components/layout/Layout';
+import { Layout } from '@/components/layout/Layout';
 import StatsCards from '@/components/dashboard/StatsCards';
 import EquipmentStatusChart from '@/components/dashboard/EquipmentStatusChart';
 import RecentControls from '@/components/dashboard/RecentControls';

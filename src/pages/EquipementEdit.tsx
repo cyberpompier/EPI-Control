@@ -1,368 +1,312 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useParams } from 'react-router-dom';
 import * as z from 'zod';
-import Layout from '@/components/layout/Layout';
+import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { CalendarIcon, ArrowLeft, Shield } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { showSuccess, showError } from '@/utils/toast';
-import { Helmet } from 'react-helmet';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
-import { Pompier } from '@/types/index';
-import Barcode from 'react-barcode';
+import { showError, showSuccess } from '@/utils/toast';
 
-const formSchema = z.object({
-  type: z.enum([
-    'Casque F1',
-    'Casque F2',
-    'Parka',
-    'Blouson Softshell',
-    'Bottes à Lacets',
-    'Gant de protection',
-    'Pantalon TSI',
-    'Veste TSI',
-    'Veste de protection',
-    'Surpantalon',
-  ], {
-    required_error: "Veuillez sélectionner un type d'équipement",
-  }),
-  marque: z.string().min(2, {
-    message: "La marque doit contenir au moins 2 caractères",
-  }),
-  modele: z.string().min(2, {
-    message: "Le modèle doit contenir au moins 2 caractères",
-  }),
-  numero_serie: z.string().min(3, {
-    message: "Le numéro de série doit contenir au moins 3 caractères",
-  }),
-  date_mise_en_service: z.date({
-    required_error: "Veuillez sélectionner une date de mise en service",
-  }),
-  date_fin_vie: z.date({
-    required_error: "Veuillez sélectionner une date de fin de vie",
-  }),
-  personnel_id: z.string().min(1, {
-    message: "Veuillez sélectionner un membre du personnel",
-  }),
+const equipementSchema = z.object({
+  type: z.string().min(1, "Le type est requis"),
+  marque: z.string().optional(),
+  modele: z.string().optional(),
+  numero_serie: z.string().min(1, "Le numéro de série est requis"),
+  date_mise_en_service: z.string().min(1, "La date de mise en service est requise"),
+  date_fin_vie: z.string().optional().nullable(),
+  statut: z.enum(['en_service', 'en_maintenance', 'reforme']),
+  personnel_id: z.string().optional().nullable(),
 });
 
-export default function EquipementEdit() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [pompiers, setPompiers] = useState<Pompier[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+type EquipementFormData = z.infer<typeof equipementSchema>;
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+interface Personnel {
+  id: number;
+  nom: string;
+  prenom: string;
+}
+
+export default function EquipementEdit() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  
+  const [formData, setFormData] = useState<EquipementFormData>({
+    type: '',
+    marque: '',
+    modele: '',
+    numero_serie: '',
+    date_mise_en_service: '',
+    date_fin_vie: null,
+    statut: 'en_service',
+    personnel_id: null,
   });
+  
+  const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoadingData(true);
-      try {
-        // Fetch pompiers
-        const { data: pompiersData, error: pompiersError } = await supabase.from('personnel').select('*');
-        if (pompiersError) throw pompiersError;
-        setPompiers(pompiersData || []);
+    if (id) {
+      fetchEquipementDetails();
+      fetchPersonnelList();
+    }
+  }, [id]);
 
-        // Fetch equipement
-        if (id) {
-          const { data: equipementData, error: equipementError } = await supabase
-            .from('equipements')
-            .select('*')
-            .eq('id', id)
-            .single();
-          if (equipementError) throw equipementError;
-          
-          if (equipementData) {
-            form.reset({
-              ...equipementData,
-              date_mise_en_service: new Date(equipementData.date_mise_en_service),
-              date_fin_vie: new Date(equipementData.date_fin_vie),
-              personnel_id: String(equipementData.personnel_id),
-            });
-          }
-        }
-      } catch (error: any) {
-        showError(`Erreur lors du chargement des données: ${error.message}`);
-        console.error('Erreur:', error);
-        navigate('/equipements');
-      } finally {
-        setLoadingData(false);
-      }
-    };
-    fetchData();
-  }, [id, form, navigate]);
+  const fetchPersonnelList = async () => {
+    const { data, error } = await supabase
+      .from('personnel')
+      .select('id, nom, prenom')
+      .order('nom');
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsLoading(true);
+    if (error) {
+      console.error('Error fetching personnel:', error);
+    } else {
+      setPersonnelList(data || []);
+    }
+  };
+
+  const fetchEquipementDetails = async () => {
+    if (!id) return;
+    
+    const { data, error } = await supabase
+      .from('equipements')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      showError('Erreur lors du chargement des détails de l\'équipement');
+      console.error(error);
+      navigate('/equipements');
+    } else if (data) {
+      setFormData({
+        type: data.type || '',
+        marque: data.marque || '',
+        modele: data.modele || '',
+        numero_serie: data.numero_serie || '',
+        date_mise_en_service: data.date_mise_en_service || '',
+        date_fin_vie: data.date_fin_vie || null,
+        statut: data.statut || 'en_service',
+        personnel_id: data.personnel_id ? data.personnel_id.toString() : null,
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user makes a selection
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrors({});
+
     try {
+      // Validate form data
+      const validatedData = equipementSchema.parse({
+        ...formData,
+        personnel_id: formData.personnel_id || null,
+      });
+      
+      // Update equipment
       const { error } = await supabase
         .from('equipements')
         .update({
-          type: values.type,
-          marque: values.marque,
-          modele: values.modele,
-          numero_serie: values.numero_serie,
-          date_mise_en_service: format(values.date_mise_en_service, "yyyy-MM-dd"),
-          date_fin_vie: format(values.date_fin_vie, "yyyy-MM-dd"),
-          personnel_id: parseInt(values.personnel_id),
+          ...validatedData,
+          personnel_id: validatedData.personnel_id ? parseInt(validatedData.personnel_id) : null,
         })
         .eq('id', id);
 
       if (error) throw error;
       
       showSuccess('Équipement mis à jour avec succès');
-      navigate(`/equipements`);
-    } catch (error: any) {
-      console.error('Erreur lors de la mise à jour de l\'équipement:', error);
-      showError(`Erreur: ${error.message}`);
+      navigate('/equipements');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach(err => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0]] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      } else {
+        console.error('Error updating equipement:', error);
+        showError('Erreur lors de la mise à jour de l\'équipement');
+      }
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
-  if (loadingData) {
+  if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
+      <Layout headerTitle="Modification d'équipement">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </div>
       </Layout>
     );
   }
 
   return (
-    <Layout>
-      <Helmet>
-        <title>Modifier l'équipement | EPI Control</title>
-      </Helmet>
-      
-      <div className="mb-6">
-        <Link to={`/equipements`} className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Retour aux équipements
-        </Link>
-        
-        <h1 className="text-2xl font-bold">Modifier l'équipement</h1>
-        <p className="text-gray-600">Mettre à jour les informations de l'équipement.</p>
-      </div>
-      
-      <Card>
+    <Layout headerTitle="Modification d'équipement">
+      <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
-            Informations de l'équipement
-          </CardTitle>
+          <CardTitle>Modifier l'équipement</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type d'équipement</FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionnez un type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Casque F1">Casque F1</SelectItem>
-                            <SelectItem value="Casque F2">Casque F2</SelectItem>
-                            <SelectItem value="Parka">Parka</SelectItem>
-                            <SelectItem value="Blouson Softshell">Blouson Softshell</SelectItem>
-                            <SelectItem value="Bottes à Lacets">Bottes à Lacets</SelectItem>
-                            <SelectItem value="Gant de protection">Gant de protection</SelectItem>
-                            <SelectItem value="Pantalon TSI">Pantalon TSI</SelectItem>
-                            <SelectItem value="Veste TSI">Veste TSI</SelectItem>
-                            <SelectItem value="Veste de protection">Veste de protection</SelectItem>
-                            <SelectItem value="Surpantalon">Surpantalon</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="personnel_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Membre du personnel assigné</FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionnez un membre" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {pompiers.map((pompier) => (
-                              <SelectItem key={pompier.id} value={String(pompier.id)}>
-                                {`${pompier.grade || ''} ${pompier.prenom || ''} ${pompier.nom || ''}`.trim()}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="marque"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marque</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: MSA, Bristol, Haix..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="modele"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modèle</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: F1 XF, ErgoTech Action..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="numero_serie"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Numéro de série</FormLabel>
-                    <div className="flex items-center space-x-2">
-                      <FormControl className="flex-1">
-                        <Input {...field} />
-                      </FormControl>
-                      {field.value && (
-                        <div className="w-1/3">
-                          <Barcode value={String(field.value)} />
-                        </div>
-                      )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="type">Type *</Label>
+              <Input
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                placeholder="Type d'équipement"
+                className={errors.type ? 'border-red-500' : ''}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
+              {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="marque">Marque</Label>
+                <Input
+                  id="marque"
+                  name="marque"
+                  value={formData.marque || ''}
+                  onChange={handleChange}
+                  placeholder="Marque"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modele">Modèle</Label>
+                <Input
+                  id="modele"
+                  name="modele"
+                  value={formData.modele || ''}
+                  onChange={handleChange}
+                  placeholder="Modèle"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="numero_serie">Numéro de série *</Label>
+              <Input
+                id="numero_serie"
+                name="numero_serie"
+                value={formData.numero_serie}
+                onChange={handleChange}
+                placeholder="Numéro de série"
+                className={errors.numero_serie ? 'border-red-500' : ''}
+              />
+              {errors.numero_serie && <p className="text-red-500 text-sm">{errors.numero_serie}</p>}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date_mise_en_service">Date de mise en service *</Label>
+                <Input
+                  id="date_mise_en_service"
                   name="date_mise_en_service"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Date de mise en service</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: fr })
-                              ) : (
-                                <span>Sélectionnez une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date > new Date()}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  type="date"
+                  value={formData.date_mise_en_service}
+                  onChange={handleChange}
+                  className={errors.date_mise_en_service ? 'border-red-500' : ''}
                 />
-                <FormField
-                  control={form.control}
+                {errors.date_mise_en_service && <p className="text-red-500 text-sm">{errors.date_mise_en_service}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date_fin_vie">Date de fin de vie</Label>
+                <Input
+                  id="date_fin_vie"
                   name="date_fin_vie"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Date de fin de vie</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: fr })
-                              ) : (
-                                <span>Sélectionnez une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  type="date"
+                  value={formData.date_fin_vie || ''}
+                  onChange={handleChange}
                 />
               </div>
-              <div className="flex justify-end space-x-2 pt-6">
-                <Button variant="outline" type="button" onClick={() => navigate('/equipements')}>
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
-                  {isLoading ? "Mise à jour..." : "Enregistrer les modifications"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="statut">Statut</Label>
+              <Select 
+                name="statut" 
+                value={formData.statut} 
+                onValueChange={(value) => handleSelectChange('statut', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en_service">En service</SelectItem>
+                  <SelectItem value="en_maintenance">En maintenance</SelectItem>
+                  <SelectItem value="reforme">Réformé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="personnel_id">Assigné à</Label>
+              <Select 
+                name="personnel_id" 
+                value={formData.personnel_id || ''} 
+                onValueChange={(value) => handleSelectChange('personnel_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un pompier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Non assigné</SelectItem>
+                  {personnelList.map((person) => (
+                    <SelectItem key={person.id} value={person.id.toString()}>
+                      {person.prenom} {person.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button type="button" variant="outline" onClick={() => navigate('/equipements')}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Mise à jour...' : 'Mettre à jour'}
+            </Button>
+          </CardFooter>
+        </form>
       </Card>
     </Layout>
   );
