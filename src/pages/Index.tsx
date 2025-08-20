@@ -23,21 +23,8 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Helmet>
         <title>{`EPI Control | Gestion des équipements de protection`}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </Helmet>
-      
-      <header className="bg-red-700 text-white shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <img src="/logo-pompier.svg" alt="Logo Pompiers" className="h-10 w-10" />
-            <span className="font-bold text-xl">EPI Control</span>
-          </div>
-          <Link to="/login">
-            <Button variant="outline" className="text-white border-white hover:bg-red-800">
-              Connexion
-            </Button>
-          </Link>
-        </div>
-      </header>
       
       <main className="flex-grow">
         <section className="bg-gradient-to-b from-red-700 to-red-800 text-white py-20">
