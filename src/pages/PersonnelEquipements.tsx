@@ -7,25 +7,12 @@ import { supabase } from '@/lib/supabase';
 import { showError } from '@/utils/toast';
 import { Plus, QrCode } from 'lucide-react';
 import EPICard from '@/components/epi/EPICard';
+import { EPI } from '@/types/index';
 
 interface Personnel {
   id: number;
   nom: string;
   prenom: string;
-}
-
-interface EPI {
-  id: number;
-  type: string;
-  marque: string;
-  modele: string;
-  numero_serie: string;
-  date_mise_en_service: string;
-  date_fin_vie: string | null;
-  statut: string;
-  image: string | null;
-  personnel_id: number;
-  created_at: string;
 }
 
 export default function PersonnelEquipements() {
@@ -69,7 +56,22 @@ export default function PersonnelEquipements() {
       showError('Erreur lors du chargement des équipements');
       console.error(equipementsError);
     } else {
-      setEpis(equipementsData || []);
+      // Transform database data to match EPI interface
+      const transformedEpis = equipementsData?.map(item => ({
+        id: item.id,
+        type: item.type,
+        marque: item.marque || '',
+        modele: item.modele || '',
+        numero_serie: item.numero_serie,
+        date_mise_en_service: item.date_mise_en_service,
+        date_fin_vie: item.date_fin_vie,
+        personnel_id: item.personnel_id,
+        statut: item.statut as 'conforme' | 'non_conforme' | 'en_attente',
+        created_at: new Date().toISOString(),
+        image: item.image || undefined
+      })) || [];
+      
+      setEpis(transformedEpis);
     }
 
     setLoading(false);

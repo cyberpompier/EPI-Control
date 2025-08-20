@@ -9,8 +9,9 @@ import { showError } from '@/utils/toast';
 import { Calendar, User, Wrench, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Controle, EPI, Pompier } from '@/types/index';
 
-interface Controle {
+interface ControleData {
   id: number;
   date_controle: string;
   resultat: string;
@@ -84,21 +85,52 @@ export default function ControleDetail() {
       console.error(error);
     } else if (data) {
       // Transform data to ensure proper typing
-      const transformedData = {
-        ...data,
+      const transformedData: Controle = {
+        id: data.id,
+        equipement_id: data.equipements?.id || 0,
+        controleur_id: '',
+        date_controle: data.date_controle,
+        resultat: data.resultat as 'conforme' | 'non_conforme',
+        observations: data.observations || '',
+        photos: [],
+        actions_correctives: data.actions_correctives || '',
+        date_prochaine_verification: data.date_prochaine_verification || '',
         equipements: data.equipements ? {
-          ...data.equipements,
+          id: data.equipements.id,
+          type: data.equipements.type as EPI['type'],
+          marque: data.equipements.marque || '',
+          modele: data.equipements.modele || '',
+          numero_serie: data.equipements.numero_serie,
+          date_mise_en_service: '',
+          date_fin_vie: '',
+          personnel_id: data.equipements.personnel?.id || 0,
+          statut: 'en_attente',
+          created_at: new Date().toISOString(),
           personnel: data.equipements.personnel ? {
-            id: data.equipements.personnel[0]?.id || 0,
-            nom: data.equipements.personnel[0]?.nom || '',
-            prenom: data.equipements.personnel[0]?.prenom || ''
-          } : null
-        } : null,
-        personnel: data.personnel ? {
-          id: data.personnel[0]?.id || 0,
-          nom: data.personnel[0]?.nom || '',
-          prenom: data.personnel[0]?.prenom || ''
-        } : null
+            id: data.equipements.personnel.id,
+            nom: data.equipements.personnel.nom || '',
+            prenom: data.equipements.personnel.prenom || '',
+            matricule: '',
+            caserne: '',
+            grade: '',
+            email: '',
+            photo: ''
+          } : undefined
+        } : undefined,
+        pompier: data.personnel ? {
+          id: data.personnel.id,
+          nom: data.personnel.nom || '',
+          prenom: data.personnel.prenom || '',
+          matricule: '',
+          caserne: '',
+          grade: '',
+          email: '',
+          photo: ''
+        } : undefined,
+        controleur: data.personnel ? {
+          prenom: data.personnel.prenom || '',
+          nom: data.personnel.nom || ''
+        } : undefined
       };
       setControle(transformedData);
     }
@@ -129,6 +161,37 @@ export default function ControleDetail() {
     );
   }
 
+  // Create the objects needed for PDFGenerator
+  const epi: EPI = controle.equipements || {
+    id: 0,
+    type: 'Casque F1',
+    marque: '',
+    modele: '',
+    numero_serie: '',
+    date_mise_en_service: '',
+    date_fin_vie: '',
+    personnel_id: 0,
+    statut: 'en_attente',
+    created_at: new Date().toISOString()
+  };
+
+  const pompier: Pompier = controle.pompier || {
+    id: 0,
+    nom: '',
+    prenom: '',
+    matricule: '',
+    caserne: '',
+    grade: '',
+    email: '',
+    photo: ''
+  };
+
+  const controleur = controle.controleur || {
+    nom: '',
+    prenom: '',
+    role: ''
+  };
+
   return (
     <Layout headerTitle={`Contrôle du ${format(new Date(controle.date_controle), 'dd/MM/yyyy', { locale: fr })}`}>
       <div className="space-y-6">
@@ -144,7 +207,7 @@ export default function ControleDetail() {
             </p>
           </div>
           <div className="flex gap-2">
-            <PDFGenerator controle={controle} />
+            <PDFGenerator controle={controle} epi={epi} pompier={pompier} controleur={controleur} />
             <Link to={`/controles/${controle.id}/edit`}>
               <Button variant="outline">Modifier</Button>
             </Link>
@@ -244,7 +307,7 @@ export default function ControleDetail() {
               </Card>
             )}
             
-            {controle.personnel && (
+            {controle.pompier && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -253,8 +316,8 @@ export default function ControleDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Link to={`/personnel/${controle.personnel.id}`} className="text-blue-600 hover:underline">
-                    {controle.personnel.prenom} {controle.personnel.nom}
+                  <Link to={`/personnel/${controle.pompier.id}`} className="text-blue-600 hover:underline">
+                    {controle.pompier.prenom} {controle.pompier.nom}
                   </Link>
                 </CardContent>
               </Card>

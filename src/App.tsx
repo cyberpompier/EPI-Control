@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { SessionProvider } from '@/components/auth/SessionProvider';
-import PrivateRoute from '@/components/auth/PrivateRoute';
+import { PrivateRoute } from '@/components/auth/PrivateRoute';
 import { Toaster } from '@/components/ui/toaster';
 
 // Public pages
@@ -21,7 +21,7 @@ import EquipementEdit from '@/pages/EquipementEdit';
 import EquipementsBarcode from '@/pages/EquipementsBarcode';
 import Controles from '@/pages/Controles';
 import ControleDetail from '@/pages/ControleDetail';
-import ControleForm from '@/pages/ControleForm';
+import ControleFormPage from '@/pages/ControleForm';
 import ControleEdit from '@/pages/ControleEdit';
 import Reports from '@/pages/Reports';
 import Notifications from '@/pages/Notifications';
@@ -53,7 +53,7 @@ function App() {
           <Route path="/equipements/:id/modifier" element={<PrivateRoute><EquipementEdit /></PrivateRoute>} />
 
           <Route path="/controles" element={<PrivateRoute><Controles /></PrivateRoute>} />
-          <Route path="/controle/:id" element={<PrivateRoute><ControleForm /></PrivateRoute>} />
+          <Route path="/controle/:id" element={<PrivateRoute><ControleFormPage /></PrivateRoute>} />
           <Route path="/controles/:id" element={<PrivateRoute><ControleDetail /></PrivateRoute>} />
           <Route path="/controles/:id/modifier" element={<PrivateRoute><ControleEdit /></PrivateRoute>} />
 

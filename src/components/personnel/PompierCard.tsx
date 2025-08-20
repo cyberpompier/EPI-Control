@@ -14,7 +14,7 @@ interface PompierCardProps {
   epiCount: EpiStats;
 }
 
-const getInitials = (nom: string, prenom: string) => {
+const getInitials = (nom: string | null, prenom: string | null) => {
   const firstInitial = prenom ? prenom.charAt(0).toUpperCase() : '';
   const lastInitial = nom ? nom.charAt(0).toUpperCase() : '';
   return `${firstInitial}${lastInitial}`;
@@ -27,7 +27,7 @@ export const PompierCard = ({ pompier, epiCount }: PompierCardProps) => {
         <div className="flex items-center mb-4">
           <Avatar className="h-12 w-12 mr-4">
             <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
-            <AvatarFallback>{getInitials(pompier.nom || '', pompier.prenom || '')}</AvatarFallback>
+            <AvatarFallback>{getInitials(pompier.nom, pompier.prenom)}</AvatarFallback>
           </Avatar>
           <div>
             <h3 className="text-lg font-semibold">{pompier.prenom} {pompier.nom}</h3>

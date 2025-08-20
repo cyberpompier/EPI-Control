@@ -1,4 +1,4 @@
-import Layout from '@/components/layout/Layout';
+import { Layout } from '@/components/layout/Layout';
 import { Helmet } from 'react-helmet';
 
 export default function Settings() {

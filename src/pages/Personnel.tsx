@@ -6,18 +6,10 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { Search, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-interface Personnel {
-  id: number;
-  nom: string;
-  prenom: string;
-  grade: string;
-  caserne: string;
-  photo: string | null;
-}
+import { Pompier } from '@/types/index';
 
 export default function Personnel() {
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
+  const [personnel, setPersonnel] = useState<Pompier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -42,8 +34,8 @@ export default function Personnel() {
 
   const filteredPersonnel = personnel.filter(p => 
     `${p.nom} ${p.prenom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.grade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.caserne.toLowerCase().includes(searchTerm.toLowerCase())
+    p.grade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.caserne?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -74,7 +66,7 @@ export default function Personnel() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredPersonnel.map((pompier) => (
-              <PompierCard key={pompier.id} pompier={pompier} />
+              <PompierCard key={pompier.id} pompier={pompier} epiCount={{total: 0, conformes: 0, nonConformes: 0}} />
             ))}
           </div>
         )}

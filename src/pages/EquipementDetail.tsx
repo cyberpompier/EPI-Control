@@ -8,8 +8,9 @@ import { showError } from '@/utils/toast';
 import { AlertTriangle, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { EPI } from '@/types/index';
 
-interface EPI {
+interface Equipement {
   id: number;
   type: string;
   marque: string;
@@ -19,8 +20,6 @@ interface EPI {
   date_fin_vie: string | null;
   statut: string;
   image: string | null;
-  personnel_id: number;
-  created_at: string;
   personnel: {
     id: number;
     nom: string;
@@ -68,10 +67,28 @@ export default function EquipementDetail() {
       console.error(error);
     } else if (data) {
       // Transform the data to match EPI interface
-      const transformedData = {
-        ...data,
+      const transformedData: EPI = {
+        id: data.id,
+        type: data.type as EPI['type'],
+        marque: data.marque || '',
+        modele: data.modele || '',
+        numero_serie: data.numero_serie,
+        date_mise_en_service: data.date_mise_en_service,
+        date_fin_vie: data.date_fin_vie,
         personnel_id: data.personnel?.id || 0,
-        created_at: new Date().toISOString()
+        statut: data.statut as 'conforme' | 'non_conforme' | 'en_attente',
+        created_at: new Date().toISOString(),
+        image: data.image || undefined,
+        personnel: data.personnel ? {
+          id: data.personnel.id,
+          nom: data.personnel.nom || '',
+          prenom: data.personnel.prenom || '',
+          matricule: '',
+          caserne: '',
+          grade: '',
+          email: '',
+          photo: ''
+        } : undefined
       };
       setEpi(transformedData);
     }
@@ -151,14 +168,12 @@ export default function EquipementDetail() {
                 <div>
                   <h3 className="font-medium">Statut</h3>
                   <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    epi.statut === 'en_service' ? 'bg-green-100 text-green-800' :
-                    epi.statut === 'en_maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                    epi.statut === 'reforme' ? 'bg-red-100 text-red-800' :
+                    epi.statut === 'conforme' ? 'bg-green-100 text-green-800' :
+                    epi.statut === 'non_conforme' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {epi.statut === 'en_service' ? 'En service' :
-                     epi.statut === 'en_maintenance' ? 'En maintenance' :
-                     epi.statut === 'reforme' ? 'Réformé' : epi.statut}
+                    {epi.statut === 'conforme' ? 'Conforme' :
+                     epi.statut === 'non_conforme' ? 'Non conforme' : epi.statut}
                   </p>
                 </div>
                 <div>

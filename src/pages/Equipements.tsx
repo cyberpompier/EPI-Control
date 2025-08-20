@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { Search, Plus, QrCode } from 'lucide-react';
 import EPICard from '@/components/epi/EPICard';
+import { EPI } from '@/types/index';
 
-interface EPI {
+interface Equipement {
   id: number;
   type: string;
   marque: string;
@@ -18,8 +19,6 @@ interface EPI {
   date_fin_vie: string | null;
   statut: string;
   image: string | null;
-  personnel_id: number;
-  created_at: string;
   personnel: {
     nom: string;
     prenom: string;
@@ -61,9 +60,27 @@ export default function Equipements() {
     } else {
       // Transform the data to match EPI interface
       const transformedData = data?.map(item => ({
-        ...item,
-        personnel_id: item.personnel?.id || 0,
-        created_at: new Date().toISOString()
+        id: item.id,
+        type: item.type as EPI['type'],
+        marque: item.marque || '',
+        modele: item.modele || '',
+        numero_serie: item.numero_serie,
+        date_mise_en_service: item.date_mise_en_service,
+        date_fin_vie: item.date_fin_vie,
+        personnel_id: item.personnel ? 0 : 0, // This will be updated when we have personnel_id
+        statut: item.statut as 'conforme' | 'non_conforme' | 'en_attente',
+        created_at: new Date().toISOString(),
+        image: item.image || undefined,
+        personnel: item.personnel ? {
+          id: 0, // This will be updated when we have personnel_id
+          nom: item.personnel.nom || '',
+          prenom: item.personnel.prenom || '',
+          matricule: '',
+          caserne: '',
+          grade: '',
+          email: '',
+          photo: ''
+        } : undefined
       })) || [];
       
       setEpis(transformedData);

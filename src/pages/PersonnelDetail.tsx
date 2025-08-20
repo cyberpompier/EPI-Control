@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { AlertTriangle, Shield } from 'lucide-react';
 import { showError } from '@/utils/toast';
+import { EPI } from '@/types/index';
 
 interface Personnel {
   id: number;
@@ -16,20 +17,6 @@ interface Personnel {
   caserne: string;
   photo: string | null;
   matricule: string;
-}
-
-interface EPI {
-  id: number;
-  type: string;
-  marque: string;
-  modele: string;
-  numero_serie: string;
-  date_mise_en_service: string;
-  date_fin_vie: string | null;
-  statut: string;
-  image: string | null;
-  personnel_id: number;
-  created_at: string;
 }
 
 export default function PersonnelDetail() {
@@ -74,7 +61,22 @@ export default function PersonnelDetail() {
       showError('Erreur lors du chargement des équipements');
       console.error(equipementsError);
     } else {
-      setEpis(equipementsData || []);
+      // Transform database data to match EPI interface
+      const transformedEpis = equipementsData?.map(item => ({
+        id: item.id,
+        type: item.type,
+        marque: item.marque || '',
+        modele: item.modele || '',
+        numero_serie: item.numero_serie,
+        date_mise_en_service: item.date_mise_en_service,
+        date_fin_vie: item.date_fin_vie,
+        personnel_id: item.personnel_id,
+        statut: item.statut as 'conforme' | 'non_conforme' | 'en_attente',
+        created_at: new Date().toISOString(),
+        image: item.image || undefined
+      })) || [];
+      
+      setEpis(transformedEpis);
     }
 
     setLoading(false);
