@@ -84,10 +84,21 @@ export default function ControleDetail() {
       showError('Erreur lors du chargement des détails du contrôle');
       console.error(error);
     } else if (data) {
+      // Extract nested data correctly
+      const equipementData = data.equipements && data.equipements.length > 0 
+        ? data.equipements[0] 
+        : null;
+      const equipementPersonnel = equipementData?.personnel && equipementData.personnel.length > 0 
+        ? equipementData.personnel[0] 
+        : null;
+      const controlePersonnel = data.personnel && data.personnel.length > 0 
+        ? data.personnel[0] 
+        : null;
+        
       // Transform data to ensure proper typing
       const transformedData: Controle = {
         id: data.id,
-        equipement_id: data.equipements?.id || 0,
+        equipement_id: equipementData?.id || 0,
         controleur_id: '',
         date_controle: data.date_controle,
         resultat: data.resultat as 'conforme' | 'non_conforme',
@@ -95,21 +106,21 @@ export default function ControleDetail() {
         photos: [],
         actions_correctives: data.actions_correctives || '',
         date_prochaine_verification: data.date_prochaine_verification || '',
-        equipements: data.equipements ? {
-          id: data.equipements.id,
-          type: data.equipements.type as EPI['type'],
-          marque: data.equipements.marque || '',
-          modele: data.equipements.modele || '',
-          numero_serie: data.equipements.numero_serie,
+        equipements: equipementData ? {
+          id: equipementData.id,
+          type: equipementData.type as EPI['type'],
+          marque: equipementData.marque || '',
+          modele: equipementData.modele || '',
+          numero_serie: equipementData.numero_serie,
           date_mise_en_service: '',
           date_fin_vie: '',
-          personnel_id: data.equipements.personnel?.id || 0,
+          personnel_id: equipementPersonnel?.id || 0,
           statut: 'en_attente',
           created_at: new Date().toISOString(),
-          personnel: data.equipements.personnel ? {
-            id: data.equipements.personnel.id,
-            nom: data.equipements.personnel.nom || '',
-            prenom: data.equipements.personnel.prenom || '',
+          personnel: equipementPersonnel ? {
+            id: equipementPersonnel.id,
+            nom: equipementPersonnel.nom || '',
+            prenom: equipementPersonnel.prenom || '',
             matricule: '',
             caserne: '',
             grade: '',
@@ -117,19 +128,20 @@ export default function ControleDetail() {
             photo: ''
           } : undefined
         } : undefined,
-        pompier: data.personnel ? {
-          id: data.personnel.id,
-          nom: data.personnel.nom || '',
-          prenom: data.personnel.prenom || '',
+        pompier: controlePersonnel ? {
+          id: controlePersonnel.id,
+          nom: controlePersonnel.nom || '',
+          prenom: controlePersonnel.prenom || '',
           matricule: '',
           caserne: '',
           grade: '',
           email: '',
           photo: ''
         } : undefined,
-        controleur: data.personnel ? {
-          prenom: data.personnel.prenom || '',
-          nom: data.personnel.nom || ''
+        controleur: controlePersonnel ? {
+          prenom: controlePersonnel.prenom || '',
+          nom: controlePersonnel.nom || '',
+          role: 'controleur' // Provide a default role value
         } : undefined
       };
       setControle(transformedData);
@@ -189,7 +201,7 @@ export default function ControleDetail() {
   const controleur = controle.controleur || {
     nom: '',
     prenom: '',
-    role: ''
+    role: 'controleur' // Provide a default role value
   };
 
   return (

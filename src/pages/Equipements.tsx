@@ -59,29 +59,36 @@ export default function Equipements() {
       console.error('Error fetching equipements:', error);
     } else {
       // Transform the data to match EPI interface
-      const transformedData = data?.map(item => ({
-        id: item.id,
-        type: item.type as EPI['type'],
-        marque: item.marque || '',
-        modele: item.modele || '',
-        numero_serie: item.numero_serie,
-        date_mise_en_service: item.date_mise_en_service,
-        date_fin_vie: item.date_fin_vie,
-        personnel_id: item.personnel ? 0 : 0, // This will be updated when we have personnel_id
-        statut: item.statut as 'conforme' | 'non_conforme' | 'en_attente',
-        created_at: new Date().toISOString(),
-        image: item.image || undefined,
-        personnel: item.personnel ? {
-          id: 0, // This will be updated when we have personnel_id
-          nom: item.personnel.nom || '',
-          prenom: item.personnel.prenom || '',
-          matricule: '',
-          caserne: '',
-          grade: '',
-          email: '',
-          photo: ''
-        } : undefined
-      })) || [];
+      const transformedData = data?.map(item => {
+        // Extract personnel data correctly
+        const personnelData = item.personnel && item.personnel.length > 0 
+          ? item.personnel[0] 
+          : null;
+          
+        return {
+          id: item.id,
+          type: item.type as EPI['type'],
+          marque: item.marque || '',
+          modele: item.modele || '',
+          numero_serie: item.numero_serie,
+          date_mise_en_service: item.date_mise_en_service,
+          date_fin_vie: item.date_fin_vie,
+          personnel_id: personnelData ? 0 : 0, // This will be updated when we have personnel_id
+          statut: item.statut as 'conforme' | 'non_conforme' | 'en_attente',
+          created_at: new Date().toISOString(),
+          image: item.image || undefined,
+          personnel: personnelData ? {
+            id: 0, // This will be updated when we have personnel_id
+            nom: personnelData.nom || '',
+            prenom: personnelData.prenom || '',
+            matricule: '',
+            caserne: '',
+            grade: '',
+            email: '',
+            photo: ''
+          } : undefined
+        };
+      }) || [];
       
       setEpis(transformedData);
     }

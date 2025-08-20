@@ -11,11 +11,15 @@ import { supabase } from '@/lib/supabase';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import * as z from 'zod';
 
+// Define the schema using zod
 const controleSchema = z.object({
   equipement_id: z.string().min(1, "L'équipement est requis"),
   date_controle: z.string().min(1, "La date de contrôle est requise"),
-  resultat: z.enum(['conforme', 'non_conforme'], "Le résultat est requis"),
+  resultat: z.enum(['conforme', 'non_conforme'], {
+    required_error: "Le résultat est requis"
+  }),
   observations: z.string().optional(),
   actions_correctives: z.string().optional(),
   date_prochaine_verification: z.string().optional().nullable(),
@@ -79,7 +83,15 @@ export default function ControleForm() {
     if (error) {
       console.error('Error fetching equipements:', error);
     } else {
-      setEquipements(data || []);
+      // Extract personnel data correctly
+      const transformedData = data?.map(item => ({
+        id: item.id,
+        type: item.type,
+        numero_serie: item.numero_serie,
+        personnel: item.personnel && item.personnel.length > 0 ? item.personnel[0] : null
+      })) || [];
+      
+      setEquipements(transformedData);
     }
     setLoading(false);
   };
@@ -98,7 +110,7 @@ export default function ControleForm() {
       navigate('/controles');
     } else if (data) {
       setFormData({
-        equipement_id: data.equipement_id || '',
+        equipement_id: data.equipement_id?.toString() || '',
         date_controle: data.date_controle || format(new Date(), 'yyyy-MM-dd'),
         resultat: data.resultat || 'conforme',
         observations: data.observations || '',
@@ -140,6 +152,7 @@ export default function ControleForm() {
     setErrors({});
 
     try {
+      // Validate form data using zod
       const validatedData = controleSchema.parse(formData);
       
       let error;
@@ -254,7 +267,7 @@ export default function ControleForm() {
               <Textarea
                 id="observations"
                 name="observations"
-                value={formData.observations}
+                value={formData.observations || ''}
                 onChange={handleChange}
                 placeholder="Observations sur l'état de l'équipement"
               />
@@ -265,7 +278,7 @@ export default function ControleForm() {
               <Textarea
                 id="actions_correctives"
                 name="actions_correctives"
-                value={formData.actions_correctives}
+                value={formData.actions_correctives || ''}
                 onChange={handleChange}
                 placeholder="Actions à entreprendre si non conforme"
               />

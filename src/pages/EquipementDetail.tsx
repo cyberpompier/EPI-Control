@@ -66,6 +66,11 @@ export default function EquipementDetail() {
       showError('Erreur lors du chargement des détails de l\'équipement');
       console.error(error);
     } else if (data) {
+      // Extract personnel data correctly
+      const personnelData = data.personnel && data.personnel.length > 0 
+        ? data.personnel[0] 
+        : null;
+        
       // Transform the data to match EPI interface
       const transformedData: EPI = {
         id: data.id,
@@ -75,14 +80,14 @@ export default function EquipementDetail() {
         numero_serie: data.numero_serie,
         date_mise_en_service: data.date_mise_en_service,
         date_fin_vie: data.date_fin_vie,
-        personnel_id: data.personnel?.id || 0,
+        personnel_id: personnelData?.id || 0,
         statut: data.statut as 'conforme' | 'non_conforme' | 'en_attente',
         created_at: new Date().toISOString(),
         image: data.image || undefined,
-        personnel: data.personnel ? {
-          id: data.personnel.id,
-          nom: data.personnel.nom || '',
-          prenom: data.personnel.prenom || '',
+        personnel: personnelData ? {
+          id: personnelData.id,
+          nom: personnelData.nom || '',
+          prenom: personnelData.prenom || '',
           matricule: '',
           caserne: '',
           grade: '',
