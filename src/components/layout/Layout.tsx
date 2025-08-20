@@ -13,7 +13,7 @@ export function Layout({ children, headerTitle }: LayoutProps) {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-6">
         {headerTitle && (
@@ -26,7 +26,7 @@ export function Layout({ children, headerTitle }: LayoutProps) {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h2 className="text-xl font-semibold">Pompier assigné : {headerTitle}</h2>
+            <h2 className="text-xl font-semibold">{headerTitle}</h2>
           </div>
         )}
         {children}

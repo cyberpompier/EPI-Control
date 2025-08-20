@@ -22,7 +22,7 @@ export default function Header() {
   return (
     <header className="bg-red-700 text-white shadow-md">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-2">
+        <Link to="/dashboard" className="flex items-center space-x-2">
           <img src="/logo-pompier.svg" alt="Logo Pompiers" className="h-10 w-10" />
           <span className="font-bold text-xl">EPI Control</span>
         </Link>
