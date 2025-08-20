@@ -141,7 +141,7 @@ export default function ControleDetail() {
         controleur: controlePersonnel ? {
           prenom: controlePersonnel.prenom || '',
           nom: controlePersonnel.nom || '',
-          role: 'controleur' // Provide a default role value
+          role: 'controleur'
         } : undefined
       };
       setControle(transformedData);
@@ -198,10 +198,15 @@ export default function ControleDetail() {
     photo: ''
   };
 
-  const controleur = controle.controleur || {
+  // Fix the controleur type to match PDFGenerator requirements
+  const controleur = controle.controleur ? {
+    nom: controle.controleur.nom,
+    prenom: controle.controleur.prenom,
+    role: controle.controleur.role || 'controleur'
+  } : {
     nom: '',
     prenom: '',
-    role: 'controleur' // Provide a default role value
+    role: 'controleur'
   };
 
   return (

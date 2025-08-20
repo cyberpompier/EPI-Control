@@ -54,6 +54,11 @@ export default function Login() {
                   },
                 },
               },
+              style: {
+                button: {
+                  borderRadius: '0.5rem',
+                },
+              },
             }}
             theme="light"
             localization={{
@@ -74,6 +79,8 @@ export default function Login() {
                 },
               },
             }}
+            // Désactivation du header de l'authentification pour éviter les doublons
+            magicLink={false}
           />
         </CardContent>
       </Card>
