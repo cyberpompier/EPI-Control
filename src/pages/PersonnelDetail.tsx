@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { Pompier, EPI } from '@/types/index';
-import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText, Pencil } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
 
 export default function PersonnelDetail() {
