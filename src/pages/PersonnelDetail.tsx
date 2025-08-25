@@ -9,38 +9,82 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/supabase';
 import { Pompier, EPI } from '@/types/index';
-import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText, Pencil } from 'lucide-react';
+import { ArrowLeft, Mail, MapPin, Shield, Plus, Pencil, FileText } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function PersonnelDetail() {
   const { id } = useParams<{ id: string }>();
   const [pompier, setPompier] = useState<Pompier | null>(null);
+  const [editedPompier, setEditedPompier] = useState<Pompier | null>(null);
   const [equipements, setEquipements] = useState<EPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
 
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
       try {
-        const { data: pompierData, error: pompierError } = await supabase.from('personnel').select('*').eq('id', id).single();
+        const { data: pompierData, error: pompierError } = await supabase
+          .from('personnel')
+          .select('*')
+          .eq('id', id)
+          .single();
         if (pompierError) throw pompierError;
         setPompier(pompierData);
-        
-        const { data: equipementsData, error: equipementsError } = await supabase.from('equipements').select('*').eq('personnel_id', id);
+        setEditedPompier(pompierData);
+
+        const { data: equipementsData, error: equipementsError } = await supabase
+          .from('equipements')
+          .select('*')
+          .eq('personnel_id', id);
         if (equipementsError) throw equipementsError;
         setEquipements(equipementsData || []);
-        
       } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
       } finally {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, [id]);
+
+  const handleEdit = () => setIsEditing(true);
+  const handleCancel = () => {
+    setEditedPompier(pompier);
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    if (!editedPompier) return;
+    try {
+      const { error } = await supabase
+        .from('personnel')
+        .update({
+          nom: editedPompier.nom,
+          prenom: editedPompier.prenom,
+          email: editedPompier.email,
+          caserne: editedPompier.caserne,
+          grade: editedPompier.grade,
+          matricule: editedPompier.matricule,
+          photo: editedPompier.photo
+        })
+        .eq('id', editedPompier.id);
+
+      if (error) throw error;
+
+      setPompier(editedPompier);
+      setIsEditing(false);
+      toast.success('Informations mises à jour avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleInputChange = (field: keyof Pompier, value: string) => {
+    if (editedPompier) setEditedPompier({ ...editedPompier, [field]: value });
+  };
 
   if (loading) {
     return (
@@ -66,6 +110,13 @@ export default function PersonnelDetail() {
     );
   }
 
+  const stats = {
+    total: equipements.length,
+    conformes: equipements.filter(e => e.statut === 'conforme').length,
+    nonConformes: equipements.filter(e => e.statut === 'non_conforme').length,
+    enAttente: equipements.filter(e => e.statut === 'en_attente').length
+  };
+
   const getGradeColor = (grade: string) => {
     switch (grade.toLowerCase()) {
       case 'capitaine': return 'bg-red-100 text-red-800 border-red-200';
@@ -77,158 +128,118 @@ export default function PersonnelDetail() {
     }
   };
 
-  const stats = {
-    total: equipements.length,
-    conformes: equipements.filter(e => e.statut === 'conforme').length,
-    nonConformes: equipements.filter(e => e.statut === 'non_conforme').length,
-    enAttente: equipements.filter(e => e.statut === 'en_attente').length
-  };
-  // Ajoute cette fonction juste avant le return
-const handleEdit = () => {
-  setIsEditing(true);
-};
-
   return (
     <Layout>
-    <div className="flex justify-between items-center mb-6">
-  <h1 className="text-3xl font-bold">Détails du Personnel</h1>
-  {!isEditing && (
-    <Button onClick={handleEdit}>
-      <Pencil className="mr-2 h-4 w-4" />
-      Modifier
-    </Button>
-  )}
-</div>
-
       <Helmet>
         <title>{pompier.prenom} {pompier.nom} | EPI Control</title>
       </Helmet>
-      
-      <div className="mb-6">
-        <Link to="/personnel" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Retour au personnel
-        </Link>
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <div>
-            <h1 className="text-2xl font-bold">{pompier.prenom} {pompier.nom}</h1>
-            <p className="text-gray-600">{pompier.grade} - {pompier.caserne}</p>
+
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Détails du Personnel</h1>
+        {!isEditing ? (
+          <Button onClick={handleEdit}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Modifier
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCancel}>Annuler</Button>
+            <Button onClick={handleSave}>Enregistrer</Button>
           </div>
-          
-          <div className="flex gap-2 mt-4 sm:mt-0">
-            <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
-              <Button className="bg-red-600 hover:bg-red-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter un équipement
-              </Button>
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
-      
+
+      {/* Card principale avec infos pompier */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         <Card className="lg:col-span-1">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Avatar className="h-24 w-24 mx-auto mb-4">
-                <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
-                <AvatarFallback className="text-xl">{getInitials(pompier.nom || '', pompier.prenom || '')}</AvatarFallback>
-              </Avatar>
-              
-              <h2 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h2>
-              <Badge className={`${getGradeColor(pompier.grade || '')} mt-2`} variant="outline">
-                {pompier.grade}
-              </Badge>
-              
-              <div className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center justify-center">
-                  <Shield className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>{pompier.matricule}</span>
-                </div>
-                
-                <div className="flex items-center justify-center">
-                  <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-xs">{pompier.email}</span>
-                </div>
-                                
-                <div className="flex items-center justify-center">
-                  <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>{pompier.caserne}</span>
-                </div>
+          <CardContent className="pt-6 text-center">
+            <Avatar className="h-24 w-24 mx-auto mb-4">
+              <AvatarImage src={editedPompier?.photo || undefined} alt={`${editedPompier?.prenom} ${editedPompier?.nom}`} />
+              <AvatarFallback className="text-xl">{getInitials(editedPompier?.nom || '', editedPompier?.prenom || '')}</AvatarFallback>
+            </Avatar>
+
+            {isEditing ? (
+              <div className="space-y-2">
+                <input
+                  className="w-full border rounded p-1 text-center"
+                  value={editedPompier?.prenom || ''}
+                  onChange={e => handleInputChange('prenom', e.target.value)}
+                  placeholder="Prénom"
+                />
+                <input
+                  className="w-full border rounded p-1 text-center"
+                  value={editedPompier?.nom || ''}
+                  onChange={e => handleInputChange('nom', e.target.value)}
+                  placeholder="Nom"
+                />
+                <input
+                  className="w-full border rounded p-1 text-center"
+                  value={editedPompier?.grade || ''}
+                  onChange={e => handleInputChange('grade', e.target.value)}
+                  placeholder="Grade"
+                />
+                <input
+                  className="w-full border rounded p-1 text-center"
+                  value={editedPompier?.email || ''}
+                  onChange={e => handleInputChange('email', e.target.value)}
+                  placeholder="Email"
+                />
+                <input
+                  className="w-full border rounded p-1 text-center"
+                  value={editedPompier?.caserne || ''}
+                  onChange={e => handleInputChange('caserne', e.target.value)}
+                  placeholder="Caserne"
+                />
+                <input
+                  className="w-full border rounded p-1 text-center"
+                  value={editedPompier?.matricule || ''}
+                  onChange={e => handleInputChange('matricule', e.target.value)}
+                  placeholder="Matricule"
+                />
               </div>
-            </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h2>
+                <Badge className={`${getGradeColor(pompier.grade || '')} mt-2`} variant="outline">{pompier.grade}</Badge>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-center"><Shield className="h-4 w-4 mr-2 text-gray-500" /> {pompier.matricule}</div>
+                  <div className="flex items-center justify-center"><Mail className="h-4 w-4 mr-2 text-gray-500" /> {pompier.email}</div>
+                  <div className="flex items-center justify-center"><MapPin className="h-4 w-4 mr-2 text-gray-500" /> {pompier.caserne}</div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
-        
+
+        {/* Statistiques EPI */}
         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-sm text-gray-500">Total EPI</div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.conformes}</div>
-                <div className="text-sm text-gray-500">Conformes</div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{stats.nonConformes}</div>
-                <div className="text-sm text-gray-500">Non conformes</div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{stats.enAttente}</div>
-                <div className="text-sm text-gray-500">En attente</div>
-              </div>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{stats.total}</div><div className="text-sm text-gray-500">Total EPI</div></CardContent></Card>
+          <Card><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-green-600">{stats.conformes}</div><div className="text-sm text-gray-500">Conformes</div></CardContent></Card>
+          <Card><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-red-600">{stats.nonConformes}</div><div className="text-sm text-gray-500">Non conformes</div></CardContent></Card>
+          <Card><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-yellow-600">{stats.enAttente}</div><div className="text-sm text-gray-500">En attente</div></CardContent></Card>
         </div>
       </div>
-      
+
+      {/* Équipements assignés */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Équipements assignés</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <FileText className="h-4 w-4 mr-2" />
-              Rapport complet
-            </Button>
+            <Button variant="outline" size="sm"><FileText className="h-4 w-4 mr-2" /> Rapport complet</Button>
           </div>
         </CardHeader>
         <CardContent>
           {equipements.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {equipements.map((epi) => (
-                <EPICard key={epi.id} epi={epi} />
-              ))}
+              {equipements.map(epi => <EPICard key={epi.id} epi={epi} />)}
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
               <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900">Aucun équipement assigné</h3>
-              <p className="mt-2 text-gray-500 mb-4">
-                Ce pompier n'a pas encore d'équipement assigné.
-              </p>
+              <p className="mt-2 text-gray-500 mb-4">Ce pompier n'a pas encore d'équipement assigné.</p>
               <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
-                <Button className="bg-red-600 hover:bg-red-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un équipement
-                </Button>
+                <Button className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2" /> Ajouter un équipement</Button>
               </Link>
             </div>
           )}
