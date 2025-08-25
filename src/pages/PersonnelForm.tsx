@@ -17,6 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const formSchema = z.object({
   nom: z.string().min(2, {
@@ -86,6 +88,7 @@ export default function PersonnelForm() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <Header />
       <div className="flex-grow container mx-auto p-4">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
@@ -218,6 +221,7 @@ export default function PersonnelForm() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }
