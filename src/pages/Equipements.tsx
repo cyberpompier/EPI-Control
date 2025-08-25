@@ -19,11 +19,10 @@ export default function Equipements() {
       const { data, error } = await supabase
         .from('equipements')
         .select(`
-          *,
-          personnels (
-            id,
-            nom,
-            prenom
+          id, type, marque, modele, numero_serie, statut,
+          date_mise_en_service, date_fin_vie, image, personnel_id,
+          personnel (
+            id, nom, prenom
           )
         `);
 
@@ -37,15 +36,15 @@ export default function Equipements() {
     fetchEquipements();
   }, []);
 
-  // 🔍 Filtrage des équipements côté front
-  const filteredEquipements = equipements.filter((equipement) =>
-    equipement.numero_serie?.toLowerCase().includes(search.toLowerCase())
+  // 🔍 Filtrage côté front
+  const filteredEquipements = equipements.filter((e) =>
+    (e.numero_serie || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <Layout>
       <div className="p-4">
-        {/* Titre, recherche et boutons d'action */}
+        {/* Titre, recherche et actions */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
           <h1 className="text-2xl font-bold">Équipements</h1>
 
@@ -76,7 +75,7 @@ export default function Equipements() {
           </div>
         </div>
 
-        {/* Liste des équipements */}
+        {/* Liste */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
