@@ -94,7 +94,7 @@ const EquipementDetail = () => {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/equipement/barcode`}>
+          <Link to={`/equipements/barcode`}>
             <Button variant="outline">
               <Scan className="h-4 w-4 mr-2" />
               Scanner
