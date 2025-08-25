@@ -22,10 +22,6 @@ interface Personnel {
   photo?: string;
 }
 
-const getInitials = (nom: string, prenom: string) => {
-  return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
-};
-
 const PersonnelDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -77,20 +73,22 @@ const PersonnelDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 relative">
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute top-4 right-4"
+              onClick={() => navigate(`/personnel/${id}/edit`)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
             <div className="text-center">
-              <div className="absolute top-4 right-4">
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => navigate(`/personnel/${id}/edit`)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </div>
               <Avatar className="h-24 w-24 mx-auto mb-4">
                 <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
-                <AvatarFallback className="text-xl">{getInitials(pompier.nom || '', pompier.prenom || '')}</AvatarFallback>
+                <AvatarFallback>
+                  {pompier.prenom.charAt(0)}
+                  {pompier.nom.charAt(0)}
+                </AvatarFallback>
               </Avatar>
               <h2 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h2>
               <p className="text-muted-foreground">{pompier.grade}</p>
