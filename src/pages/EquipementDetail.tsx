@@ -27,7 +27,7 @@ const EquipementDetail = () => {
           .from('equipements')
           .select(`
             *,
-            personnel:personnel_id (nom, prenom)
+            personnel:personnel_id (nom, prenom, photo)
           `)
           .eq('id', id)
           .single();
@@ -94,7 +94,7 @@ const EquipementDetail = () => {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/equipements/barcode`}>
+          <Link to={`/equipement/barcode`}>
             <Button variant="outline">
               <Scan className="h-4 w-4 mr-2" />
               Scanner
@@ -109,9 +109,14 @@ const EquipementDetail = () => {
       <Card className="mb-8">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl">{equipement.type}</CardTitle>
-              <p className="text-gray-600">{equipement.marque} - {equipement.modele}</p>
+            <div className="text-center md:text-left">
+              <CardTitle className="text-2xl mx-auto">{equipement.type}</CardTitle>
+              <p className="text-gray-600">Numéro de série: {equipement.numero_serie}</p>
+              <p className="text-gray-600">
+                Assigné à: {equipement.personnel 
+                  ? `${equipement.personnel.prenom} ${equipement.personnel.nom}`
+                  : 'Non assigné'}
+              </p>
             </div>
             <Badge className={getStatusColor(equipement.statut)}>
               {equipement.statut.replace('_', ' ')}
@@ -124,8 +129,12 @@ const EquipementDetail = () => {
               <h3 className="text-lg font-semibold mb-4">Informations générales</h3>
               <div className="space-y-3">
                 <div className="flex items-center">
-                  <span className="font-medium w-32">Numéro de série:</span>
-                  <span>{equipement.numero_serie}</span>
+                  <span className="font-medium w-32">Marque:</span>
+                  <span>{equipement.marque || 'Non spécifiée'}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-medium w-32">Modèle:</span>
+                  <span>{equipement.modele || 'Non spécifié'}</span>
                 </div>
                 <div className="flex items-center">
                   <span className="font-medium w-32">Date de mise en service:</span>
@@ -143,38 +152,49 @@ const EquipementDetail = () => {
                       : 'Non spécifiée'}
                   </span>
                 </div>
-                <div className="flex items-center">
-                  <span className="font-medium w-32">Assigné à:</span>
-                  <span>
-                    {equipement.personnel 
-                      ? `${equipement.personnel.prenom} ${equipement.personnel.nom}`
-                      : 'Non assigné'}
-                  </span>
-                </div>
               </div>
             </div>
             
             <div>
-              <h3 className="text-lg font-semibold mb-4">Image</h3>
-              {equipement.image ? (
-                <div className="flex justify-center">
-                  <img 
-                    src={equipement.image} 
-                    alt={equipement.type}
-                    className="max-w-full h-auto rounded-lg shadow-md"
-                    style={{ maxHeight: '200px' }}
-                  />
+              <h3 className="text-lg font-semibold mb-4">Images</h3>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <p className="text-sm font-medium mb-2">Photo de l'équipement</p>
+                  {equipement.image ? (
+                    <div className="flex justify-center">
+                      <img 
+                        src={equipement.image} 
+                        alt={equipement.type}
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex justify-center">
+                      <img 
+                        src={defaultImageUrl} 
+                        alt="Image non disponible"
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex justify-center">
-                  <img 
-                    src={defaultImageUrl} 
-                    alt="Image non disponible"
-                    className="max-w-full h-auto rounded-lg shadow-md"
-                    style={{ maxHeight: '200px' }}
-                  />
-                </div>
-              )}
+                
+                {equipement.personnel && equipement.personnel.photo && (
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-2">Photo du personnel</p>
+                    <div className="flex justify-center">
+                      <img 
+                        src={equipement.personnel.photo} 
+                        alt={`${equipement.personnel.prenom} ${equipement.personnel.nom}`}
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
