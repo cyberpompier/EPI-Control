@@ -1,81 +1,132 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import { showSuccess, showError } from '@/utils/toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle } from 'lucide-react';
-import BarcodeScanner from '@/components/BarcodeScanner';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { showError, showSuccess } from '@/utils/toast';
 import { supabase } from '@/lib/supabase';
+import BarcodeScanner from '@/components/BarcodeScanner';
 
 export default function EquipementsBarcode() {
   const [scannedCode, setScannedCode] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   const navigate = useNavigate();
 
   const handleScanSuccess = async (decodedText: string) => {
-    if (scannedCode) return; // Empêche les scans multiples
-
     setScannedCode(decodedText);
-    showSuccess("Code-barres scanné : " + decodedText);
-
+    setIsScanning(false);
+    
     try {
+      // Rechercher l'équipement par code-barres
       const { data, error } = await supabase
         .from('equipements')
-        .select('id')
+        .select('*')
         .eq('numero_serie', decodedText)
         .single();
 
-      // PGRST116 est le code d'erreur pour "aucune ligne trouvée", ce qui est normal ici.
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      if (error) throw error;
 
       if (data) {
-        showSuccess("Équipement trouvé. Redirection vers la page de modification...");
-        setTimeout(() => {
-          navigate(`/equipements/${data.id}/modifier`);
-        }, 1500);
+        showSuccess('Équipement trouvé !');
+        navigate(`/equipements/${data.id}`);
       } else {
-        showSuccess("Équipement non trouvé. Redirection vers la page de création...");
-        setTimeout(() => {
-          navigate(`/equipements/nouveau?barcode=${encodeURIComponent(decodedText)}`);
-        }, 1500);
+        showError('Équipement non trouvé');
       }
-    } catch (err: any) {
-      console.error("Erreur lors de la recherche de l'équipement:", err);
-      showError(`Erreur lors de la recherche: ${err.message}`);
-      setTimeout(() => setScannedCode(''), 2000); // Réinitialiser pour permettre un nouveau scan
+    } catch (error) {
+      console.error('Error searching equipement:', error);
+      showError('Erreur lors de la recherche de l\'équipement');
+    }
+  };
+
+  const handleManualSearch = async () => {
+    if (!manualCode.trim()) {
+      showError('Veuillez entrer un code-barres');
+      return;
+    }
+
+    try {
+      // Rechercher l'équipement par code-barres
+      const { data, error } = await supabase
+        .from('equipements')
+        .select('*')
+        .eq('numero_serie', manualCode)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        showSuccess('Équipement trouvé !');
+        navigate(`/equipements/${data.id}`);
+      } else {
+        showError('Équipement non trouvé');
+      }
+    } catch (error) {
+      console.error('Error searching equipement:', error);
+      showError('Erreur lors de la recherche de l\'équipement');
     }
   };
 
   return (
-    <Layout>
-      <div className="p-4 flex justify-center items-center" style={{ minHeight: 'calc(100vh - 200px)' }}>
-        <Card className="w-full max-w-lg text-center">
-          <CardHeader>
-            <CardTitle className="text-2xl">Scanner le code-barres</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {scannedCode ? (
-              <div className="flex flex-col items-center justify-center h-64">
-                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <p className="text-lg font-semibold">Code-barres scanné avec succès !</p>
-                <p className="text-gray-600 font-mono text-xl my-2">{scannedCode}</p>
-                <p className="text-gray-500">Recherche de l'équipement en cours...</p>
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700 mt-4"></div>
+    <div className="container mx-auto py-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Recherche par code-barres</CardTitle>
+          <CardDescription>
+            Scannez ou entrez manuellement le code-barres d'un équipement
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Scanner un code-barres</h3>
+            
+            {!isScanning ? (
+              <div className="flex flex-col items-center space-y-4">
+                <p className="text-center text-muted-foreground">
+                  {scannedCode 
+                    ? `Dernier code scanné : ${scannedCode}` 
+                    : 'Cliquez sur le bouton pour activer le scanner'}
+                </p>
+                <Button onClick={() => setIsScanning(true)}>
+                  Activer le scanner
+                </Button>
               </div>
             ) : (
-              <div>
-                <p className="text-gray-600 mb-4">
-                  Veuillez placer le code-barres de l'équipement devant la caméra.
-                </p>
-                <div className="w-full rounded-md overflow-hidden border">
-                  <BarcodeScanner onScanSuccess={handleScanSuccess} />
+              <div className="space-y-4">
+                <div className="w-full h-64 rounded-md overflow-hidden border">
+                  <BarcodeScanner onResult={handleScanSuccess} />
                 </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsScanning(false)}
+                  className="w-full"
+                >
+                  Arrêter le scanner
+                </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-    </Layout>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Recherche manuelle</h3>
+            <div className="flex space-x-2">
+              <div className="flex-1">
+                <Label htmlFor="manual-code">Code-barres</Label>
+                <Input
+                  id="manual-code"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  placeholder="Entrez le code-barres"
+                />
+              </div>
+              <Button onClick={handleManualSearch} className="self-end">
+                Rechercher
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
