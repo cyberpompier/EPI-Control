@@ -15,6 +15,7 @@ export default function EquipementsBarcode() {
   const navigate = useNavigate();
 
   const handleScanSuccess = async (decodedText: string) => {
+    console.log('Code scanné:', decodedText);
     setScannedCode(decodedText);
     setIsScanning(false);
     
@@ -26,6 +27,8 @@ export default function EquipementsBarcode() {
         .eq('numero_serie', decodedText)
         .single();
 
+      console.log('Réponse de la base de données:', { data, error });
+      
       if (error) {
         console.error('Supabase error:', error);
         showError('Équipement non trouvé');
@@ -44,11 +47,18 @@ export default function EquipementsBarcode() {
     }
   };
 
+  const handleScanError = (error: string) => {
+    console.error('Erreur de scan:', error);
+    showError(`Erreur de scan: ${error}`);
+  };
+
   const handleManualSearch = async () => {
     if (!manualCode.trim()) {
       showError('Veuillez entrer un code-barres');
       return;
     }
+
+    console.log('Recherche manuelle pour le code:', manualCode);
 
     try {
       // Rechercher l'équipement par numéro de série
@@ -57,6 +67,8 @@ export default function EquipementsBarcode() {
         .select('*')
         .eq('numero_serie', manualCode)
         .single();
+
+      console.log('Réponse de la base de données:', { data, error });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -103,7 +115,7 @@ export default function EquipementsBarcode() {
             ) : (
               <div className="space-y-4">
                 <div className="w-full h-64 rounded-md overflow-hidden border">
-                  <BarcodeScanner onResult={handleScanSuccess} />
+                  <BarcodeScanner onResult={handleScanSuccess} onError={handleScanError} />
                 </div>
                 <Button 
                   variant="outline" 
