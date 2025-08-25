@@ -84,6 +84,16 @@ export default function PersonnelDetail() {
 
   return (
     <Layout>
+    <div className="flex justify-between items-center mb-6">
+  <h1 className="text-3xl font-bold">Détails du Personnel</h1>
+  {!isEditing && (
+    <Button onClick={handleEdit}>
+      <Pencil className="mr-2 h-4 w-4" />
+      Modifier
+    </Button>
+  )}
+</div>
+
       <Helmet>
         <title>{pompier.prenom} {pompier.nom} | EPI Control</title>
       </Helmet>
