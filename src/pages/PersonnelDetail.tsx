@@ -165,7 +165,7 @@ export default function PersonnelDetail() {
                 <Select value={editedPompier?.grade || ''} onValueChange={value => handleInputChange('grade', value)}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner un grade" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Pompier">Pompier</SelectItem>
+                    <SelectItem value="Sapeur">Sapeur</SelectItem>
                     <SelectItem value="Caporal">Caporal</SelectItem>
                     <SelectItem value="Caporal-chef">Caporal-chef</SelectItem>
                     <SelectItem value="Sergent">Sergent</SelectItem>
