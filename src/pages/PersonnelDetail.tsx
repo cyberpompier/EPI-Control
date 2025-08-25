@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Pencil, Plus, Hash, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import EPICard from '@/components/epi/EPICard';
+import EPICard from '@/components/EPICard';
 
 interface Personnel {
   id: number;
@@ -160,7 +160,7 @@ const PersonnelDetail = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {equipment.map((item) => (
                   <EPICard
                     key={item.id}

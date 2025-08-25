@@ -1,95 +1,140 @@
-"use client";
-
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { EPI } from '@/types/index';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Hash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface EPICardProps {
-  id: string;
-  type: string;
-  marque?: string;
-  modele?: string;
-  numero_serie: string;
-  statut: string;
-  date_mise_en_service?: string;
-  date_fin_vie?: string;
-  image?: string;
+  epi: EPI;
 }
 
-const EPICard = ({ 
-  id, 
-  type, 
-  marque, 
-  modele, 
-  numero_serie, 
-  statut, 
-  date_mise_en_service, 
-  date_fin_vie, 
-  image 
-}: EPICardProps) => {
-  const getBadgeVariant = (statut: string) => {
+export default function EPICard({ epi }: EPICardProps) {
+  const getStatusColor = (statut: string) => {
     switch (statut) {
-      case 'en_service': return 'default';
-      case 'en_reparation': return 'destructive';
-      case 'hors_service': return 'secondary';
-      default: return 'outline';
+      case 'conforme':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'non_conforme':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'en_attente':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+  const getStatusIcon = (statut: string) => {
+    switch (statut) {
+      case 'conforme':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'non_conforme':
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      case 'en_attente':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'casque':
+        return '🪖';
+      case 'veste':
+        return '🧥';
+      case 'surpantalon':
+        return '👖';
+      case 'gants':
+        return '🧤';
+      case 'rangers':
+        return '👢';
+      default:
+        return '🛡️';
+    }
+  };
+
+  // Calcul de la date d'expiration
+  const today = new Date();
+  const expiryDate = new Date(epi.date_fin_vie);
+  const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  const isExpired = daysUntilExpiry <= 0;
 
   return (
     <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="p-4 bg-gray-50 border-b">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-semibold flex items-center">
-            {image ? (
+            {epi.image ? (
               <img 
-                src={image} 
-                alt={type} 
-                className="w-10 h-10 object-cover rounded-md mr-3"
+                src={epi.image} 
+                alt={epi.type} 
+                className="mr-2 w-6 h-6 object-contain"
               />
             ) : (
-              <div className="w-10 h-10 bg-gray-200 rounded-md mr-3 flex items-center justify-center">
-                <Hash className="h-5 w-5 text-gray-500" />
-              </div>
+              <span className="mr-2 text-xl">{getTypeIcon(epi.type)}</span>
             )}
-            <div>
-              <span>{type}</span>
-              <Badge variant={getBadgeVariant(statut)} className="ml-2">
-                {statut.replace('_', ' ')}
-              </Badge>
-            </div>
+            {epi.type.charAt(0).toUpperCase() + epi.type.slice(1)}
           </CardTitle>
+          <Badge className={getStatusColor(epi.statut)} variant="outline">
+            <span className="flex items-center">
+              {getStatusIcon(epi.statut)}
+              <span className="ml-1">
+                {epi.statut === 'conforme' ? 'Conforme' : 
+                 epi.statut === 'non_conforme' ? 'Non conforme' : 'En attente'}
+              </span>
+            </span>
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="p-4">
         <div className="space-y-2">
-          <div className="flex items-center text-sm">
-            <span className="font-medium w-32">Marque/Modèle:</span>
-            <span>{marque} {modele}</span>
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-gray-500">Marque</span>
+            <span className="text-sm">{epi.marque}</span>
           </div>
-          <div className="flex items-center text-sm">
-            <Hash className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span className="font-medium w-32">N° Série:</span>
-            <span>{numero_serie}</span>
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-gray-500">Modèle</span>
+            <span className="text-sm">{epi.modele}</span>
           </div>
-          {date_mise_en_service && (
-            <div className="flex items-center text-sm">
-              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span className="font-medium w-32">Mise en service:</span>
-              <span>{new Date(date_mise_en_service).toLocaleDateString()}</span>
-            </div>
-          )}
-          {date_fin_vie && (
-            <div className="flex items-center text-sm">
-              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span className="font-medium w-32">Fin de vie:</span>
-              <span>{new Date(date_fin_vie).toLocaleDateString()}</span>
-            </div>
-          )}
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-gray-500">N° Série</span>
+            <span className="text-sm font-mono">{epi.numero_serie}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-gray-500">Mise en service</span>
+            <span className="text-sm">{new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-gray-500">Fin de vie</span>
+            <span className={`text-sm ${isExpired ? 'text-red-600 font-bold' : isExpiringSoon ? 'text-yellow-600 font-bold' : ''}`}>
+              {new Date(epi.date_fin_vie).toLocaleDateString('fr-FR')}
+              {isExpired && ' (Expiré)'}
+              {isExpiringSoon && ` (Dans ${daysUntilExpiry} jours)`}
+            </span>
+          </div>
         </div>
       </CardContent>
+      <CardFooter className="p-4 bg-gray-50 border-t flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Link to={`/controles?equipement=${epi.id}`}>
+            <Button variant="outline" size="sm" className="text-gray-600">
+              <Clipboard className="h-4 w-4 mr-1" /> Historique
+            </Button>
+          </Link>
+          <Link to={`/equipements/${epi.id}/modifier`}>
+            <Button variant="outline" size="icon" aria-label="Modifier l'équipement">
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+        <Link to={`/controle/${epi.id}`}>
+          <Button size="sm" className="bg-red-600 hover:bg-red-700">
+            Contrôler
+          </Button>
+        </Link>
+      </CardFooter>
     </Card>
   );
-};
-
-export default EPICard;
+}
