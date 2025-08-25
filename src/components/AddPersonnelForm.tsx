@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,6 @@ const AddPersonnelForm = ({ personnelToEdit, onClose }) => {
     caserne: '',
     grade: ''
   });
-  const supabase = createClient();
 
   useEffect(() => {
     if (personnelToEdit) {

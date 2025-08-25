@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from 'lucide-react';
 import {
@@ -17,7 +17,6 @@ import { toast } from 'react-hot-toast';
 const PersonnelTable = ({ onEdit }) => {
   const [personnel, setPersonnel] = useState([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     fetchPersonnel();
