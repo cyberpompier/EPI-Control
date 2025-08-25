@@ -1,12 +1,3 @@
-import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useSession } from '@/components/auth/SessionProvider';
-import Layout from '../layout/Layout';
-
-interface PrivateRouteProps {
-  children: ReactNode;
-}
-
 export default function PrivateRoute({ children }: PrivateRouteProps) {
   const { session, loading } = useSession();
 
@@ -24,6 +15,6 @@ export default function PrivateRoute({ children }: PrivateRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // ✅ toutes les pages protégées passent automatiquement par Layout
+  // Ici on entoure tout le contenu avec Layout
   return <Layout>{children}</Layout>;
 }
