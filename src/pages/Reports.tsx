@@ -13,45 +13,34 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { subMonths, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// Définition des types pour nos données
+// Types
 interface Equipement {
   id: string;
   type: string;
   statut: string;
-  personnel: {
-    caserne: string;
-  }[] | null;
+  personnel: { caserne: string }[] | null;
 }
 
 interface Controle {
   id: string;
   date_controle: string;
   resultat: string;
-  equipements: {
-    type: string;
-    personnel: {
-      caserne: string;
-    }[] | null;
-  } | null;
+  equipements: { type: string; personnel: { caserne: string }[] | null } | null;
 }
 
 export default function Reports() {
-  // États pour les filtres
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subMonths(new Date(), 1),
     to: new Date(),
   });
   const [selectedCaserne, setSelectedCaserne] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
-
-  // États pour les données et le chargement
   const [loading, setLoading] = useState(true);
   const [controles, setControles] = useState<Controle[]>([]);
   const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [casernes, setCasernes] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
 
-  // Récupération des données initiales
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -60,20 +49,18 @@ export default function Reports() {
           .from('controles')
           .select('id, date_controle, resultat, equipements(type, personnel(caserne))');
         if (controlesError) throw controlesError;
-        setControles((controlesData as any) || []);
+        setControles(controlesData || []);
 
         const { data: equipementsData, error: equipementsError } = await supabase
           .from('equipements')
           .select('id, type, statut, personnel(caserne)');
         if (equipementsError) throw equipementsError;
-        setEquipements((equipementsData as any) || []);
+        setEquipements(equipementsData || []);
 
-        // Récupération dynamique des casernes et types pour les filtres
-        const uniqueCasernes = [...new Set(equipementsData.map(e => e.personnel?.[0]?.caserne).filter(Boolean))];
+        const uniqueCasernes = [...new Set((equipementsData || []).map(e => e.personnel?.[0]?.caserne).filter(Boolean))];
+        const uniqueTypes = [...new Set((equipementsData || []).map(e => e.type).filter(Boolean))];
         setCasernes(uniqueCasernes as string[]);
-        const uniqueTypes = [...new Set(equipementsData.map(e => e.type).filter(Boolean))];
         setTypes(uniqueTypes as string[]);
-
       } catch (error) {
         console.error("Erreur de chargement des données pour les rapports:", error);
       } finally {
@@ -83,7 +70,6 @@ export default function Reports() {
     fetchData();
   }, []);
 
-  // Calcul mémoïsé pour les données filtrées pour optimiser les performances
   const filteredData = useMemo(() => {
     const filteredControles = controles.filter(c => {
       const date = new Date(c.date_controle);
@@ -94,18 +80,16 @@ export default function Reports() {
     });
 
     const filteredEquipements = equipements.filter(e => {
-        const matchesCaserne = selectedCaserne === 'all' || e.personnel?.[0]?.caserne === selectedCaserne;
-        const matchesType = selectedType === 'all' || e.type === selectedType;
-        return matchesCaserne && matchesType;
+      const matchesCaserne = selectedCaserne === 'all' || e.personnel?.[0]?.caserne === selectedCaserne;
+      const matchesType = selectedType === 'all' || e.type === selectedType;
+      return matchesCaserne && matchesType;
     });
 
     return { filteredControles, filteredEquipements };
   }, [controles, equipements, dateRange, selectedCaserne, selectedType]);
 
-  // Calcul mémoïsé pour les statistiques et les graphiques
   const reportStats = useMemo(() => {
     const { filteredControles, filteredEquipements } = filteredData;
-
     const totalEquipements = filteredEquipements.length;
     const conformes = filteredEquipements.filter(e => e.statut === 'conforme').length;
     const nonConformes = filteredEquipements.filter(e => e.statut === 'non_conforme').length;
@@ -119,9 +103,7 @@ export default function Reports() {
 
     const monthlyTrendData = filteredControles.reduce((acc, controle) => {
       const month = format(new Date(controle.date_controle), 'MMM yyyy', { locale: fr });
-      if (!acc[month]) {
-        acc[month] = { month, controles: 0, conformes: 0, nonConformes: 0 };
-      }
+      if (!acc[month]) acc[month] = { month, controles: 0, conformes: 0, nonConformes: 0 };
       acc[month].controles++;
       if (controle.resultat === 'conforme') acc[month].conformes++;
       if (controle.resultat === 'non_conforme') acc[month].nonConformes++;
@@ -141,25 +123,15 @@ export default function Reports() {
 
   const exportReport = (format: 'pdf' | 'excel') => {
     console.log(`Export en ${format.toUpperCase()}`);
-    // La logique d'exportation serait implémentée ici
   };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
       <Helmet>
         <title>{`Rapports | EPI Control`}</title>
       </Helmet>
-      
+
+      {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
           <h1 className="text-2xl font-bold">Rapports et Statistiques</h1>
@@ -171,6 +143,7 @@ export default function Reports() {
         </Button>
       </div>
 
+      {/* Filtres */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Filtres</CardTitle>
@@ -198,6 +171,7 @@ export default function Reports() {
         </CardContent>
       </Card>
 
+      {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Équipements analysés" value={reportStats.totalEquipements} icon={Shield} color="blue" />
         <StatCard title="Contrôles effectués" value={reportStats.totalControles} icon={Users} color="gray" />
@@ -205,6 +179,7 @@ export default function Reports() {
         <StatCard title="Non Conformes" value={reportStats.nonConformes} icon={AlertTriangle} color="red" />
       </div>
 
+      {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <Card className="lg:col-span-3">
           <CardHeader>
