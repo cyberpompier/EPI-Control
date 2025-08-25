@@ -1,342 +1,186 @@
-"use client";
-
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { useParams, Link } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
+import EPICard from '@/components/epi/EPICard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, Plus, Hash, User, Search } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import EPICard from '@/components/EPICard';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Helmet } from 'react-helmet';
+import { supabase } from '@/lib/supabase';
+import { Pompier, EPI } from '@/types/index';
+import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText, Pencil } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 
-interface Personnel {
-  id: number;
-  nom: string;
-  prenom: string;
-  email: string;
-  caserne: string;
-  grade: string;
-  photo: string;
-  matricule: string;
-}
-
-interface Equipment {
-  id: string;
-  type: string;
-  marque: string;
-  modele: string;
-  numero_serie: string;
-  statut: string;
-  date_mise_en_service: string;
-  date_fin_vie: string;
-  image: string;
-}
-
-const PersonnelDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [personnel, setPersonnel] = useState<Personnel | null>(null);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+export default function PersonnelDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [pompier, setPompier] = useState<Pompier | null>(null);
+  const [editedPompier, setEditedPompier] = useState<Pompier | null>(null);
+  const [equipements, setEquipements] = useState<EPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedPersonnel, setEditedPersonnel] = useState<Personnel | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchPersonnelAndEquipment = async () => {
+    const fetchData = async () => {
       if (!id) return;
-      
       try {
-        // Fetch personnel details
-        const { data: personnelData, error: personnelError } = await supabase
-          .from('personnel')
-          .select('*')
-          .eq('id', id)
-          .single();
+        const { data: pompierData, error: pompierError } = await supabase.from('personnel').select('*').eq('id', id).single();
+        if (pompierError) throw pompierError;
+        setPompier(pompierData);
+        setEditedPompier(pompierData);
 
-        if (personnelError) throw personnelError;
-
-        // Fetch assigned equipment
-        const { data: equipmentData, error: equipmentError } = await supabase
-          .from('equipements')
-          .select('*')
-          .eq('personnel_id', id);
-
-        if (equipmentError) throw equipmentError;
-
-        setPersonnel(personnelData);
-        setEditedPersonnel(personnelData);
-        setEquipment(equipmentData || []);
+        const { data: equipementsData, error: equipementsError } = await supabase.from('equipements').select('*').eq('personnel_id', id);
+        if (equipementsError) throw equipementsError;
+        setEquipements(equipementsData || []);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Erreur lors de la récupération des données:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchPersonnelAndEquipment();
+    fetchData();
   }, [id]);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
+  const handleEdit = () => setIsEditing(true);
   const handleCancel = () => {
     setIsEditing(false);
-    setEditedPersonnel(personnel);
+    setEditedPompier(pompier);
   };
 
   const handleSave = async () => {
-    if (!editedPersonnel) return;
-    
+    if (!editedPompier) return;
     try {
       const { error } = await supabase
         .from('personnel')
         .update({
-          nom: editedPersonnel.nom,
-          prenom: editedPersonnel.prenom,
-          email: editedPersonnel.email,
-          caserne: editedPersonnel.caserne,
-          grade: editedPersonnel.grade,
-          matricule: editedPersonnel.matricule
+          nom: editedPompier.nom,
+          prenom: editedPompier.prenom,
+          email: editedPompier.email,
+          caserne: editedPompier.caserne,
+          grade: editedPompier.grade,
+          matricule: editedPompier.matricule
         })
-        .eq('id', editedPersonnel.id);
+        .eq('id', editedPompier.id);
 
       if (error) throw error;
-
-      setPersonnel(editedPersonnel);
+      setPompier(editedPompier);
       setIsEditing(false);
       toast.success('Informations mises à jour avec succès');
     } catch (error) {
-      console.error('Error updating personnel:', error);
+      console.error('Erreur lors de la mise à jour:', error);
       toast.error('Erreur lors de la mise à jour');
     }
   };
 
-  const handleInputChange = (field: keyof Personnel, value: string) => {
-    if (editedPersonnel) {
-      setEditedPersonnel({
-        ...editedPersonnel,
-        [field]: value
-      });
+  const handleInputChange = (field: keyof Pompier, value: string) => {
+    if (editedPompier) setEditedPompier({ ...editedPompier, [field]: value });
+  };
+
+  if (loading) return <Layout><div className="flex justify-center items-center h-screen">Chargement...</div></Layout>;
+  if (!pompier) return <Layout><div className="text-center py-12">Pompier non trouvé</div></Layout>;
+
+  const getGradeColor = (grade: string) => {
+    switch (grade.toLowerCase()) {
+      case 'capitaine': return 'bg-red-100 text-red-800 border-red-200';
+      case 'lieutenant': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'adjudant': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'sergent': return 'bg-green-100 text-green-800 border-green-200';
+      case 'caporal': case 'caporal-chef': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const filteredEquipment = equipment.filter(item =>
-    item.numero_serie.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
-  }
-
-  if (!personnel) {
-    return <div className="flex justify-center items-center h-screen">Personnel non trouvé</div>;
-  }
+  const stats = {
+    total: equipements.length,
+    conformes: equipements.filter(e => e.statut === 'conforme').length,
+    nonConformes: equipements.filter(e => e.statut === 'non_conforme').length,
+    enAttente: equipements.filter(e => e.statut === 'en_attente').length
+  };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Détails du Personnel</h1>
-        {!isEditing && (
-          <Button onClick={handleEdit}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Modifier
-          </Button>
-        )}
-      </div>
+    <Layout>
+      <Helmet><title>{pompier.prenom} {pompier.nom} | EPI Control</title></Helmet>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Personnel Information Card */}
-        <Card className="lg:col-span-1 relative">
-          <CardHeader className="text-center">
-            {personnel.photo ? (
-              <Avatar className="h-24 w-24 mx-auto mb-4">
-                <AvatarImage src={personnel.photo} alt={`${personnel.prenom} ${personnel.nom}`} />
-                <AvatarFallback>{personnel.prenom.charAt(0)}{personnel.nom.charAt(0)}</AvatarFallback>
-              </Avatar>
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-4 flex items-center justify-center">
-                <User className="h-12 w-12 text-gray-500" />
-              </div>
-            )}
-            <CardTitle>
+      <div className="mb-6">
+        <Link to="/personnel" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Retour au personnel
+        </Link>
+
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
+              <AvatarFallback>{getInitials(pompier.nom || '', pompier.prenom || '')}</AvatarFallback>
+            </Avatar>
+            <div>
               {isEditing ? (
                 <div className="space-y-2">
-                  <Input
-                    value={editedPersonnel?.prenom || ''}
-                    onChange={(e) => handleInputChange('prenom', e.target.value)}
-                    placeholder="Prénom"
-                  />
-                  <Input
-                    value={editedPersonnel?.nom || ''}
-                    onChange={(e) => handleInputChange('nom', e.target.value)}
-                    placeholder="Nom"
-                  />
+                  <Input value={editedPompier?.prenom || ''} onChange={e => handleInputChange('prenom', e.target.value)} placeholder="Prénom"/>
+                  <Input value={editedPompier?.nom || ''} onChange={e => handleInputChange('nom', e.target.value)} placeholder="Nom"/>
+                  <Input value={editedPompier?.grade || ''} onChange={e => handleInputChange('grade', e.target.value)} placeholder="Grade"/>
+                  <Input value={editedPompier?.caserne || ''} onChange={e => handleInputChange('caserne', e.target.value)} placeholder="Caserne"/>
+                  <Input value={editedPompier?.email || ''} onChange={e => handleInputChange('email', e.target.value)} placeholder="Email"/>
+                  <div className="flex gap-2 mt-2">
+                    <Button variant="outline" onClick={handleCancel}>Annuler</Button>
+                    <Button onClick={handleSave}>Enregistrer</Button>
+                  </div>
                 </div>
               ) : (
-                `${personnel.prenom} ${personnel.nom}`
+                <>
+                  <h1 className="text-2xl font-bold">{pompier.prenom} {pompier.nom}</h1>
+                  <Badge className={`${getGradeColor(pompier.grade || '')} mt-1`} variant="outline">{pompier.grade}</Badge>
+                  <p className="text-gray-600">{pompier.caserne}</p>
+                </>
               )}
-            </CardTitle>
-            <CardDescription>
-              {isEditing ? (
-                <Select 
-                  value={editedPersonnel?.grade || ''} 
-                  onValueChange={(value) => handleInputChange('grade', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pompier">Pompier</SelectItem>
-                    <SelectItem value="Caporal">Caporal</SelectItem>
-                    <SelectItem value="Caporal-chef">Caporal-chef</SelectItem>
-                    <SelectItem value="Sergent">Sergent</SelectItem>
-                    <SelectItem value="Sergent-chef">Sergent-chef</SelectItem>
-                    <SelectItem value="Adjudant">Adjudant</SelectItem>
-                    <SelectItem value="Adjudant-chef">Adjudant-chef</SelectItem>
-                    <SelectItem value="Major">Major</SelectItem>
-                    <SelectItem value="Lieutenant">Lieutenant</SelectItem>
-                    <SelectItem value="Capitaine">Capitaine</SelectItem>
-                    <SelectItem value="Commandant">Commandant</SelectItem>
-                    <SelectItem value="Lieutenant-colonel">Lieutenant-colonel</SelectItem>
-                    <SelectItem value="Colonel">Colonel</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                personnel.grade
-              )}
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            {isEditing ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="matricule">Matricule</Label>
-                  <Input
-                    id="matricule"
-                    value={editedPersonnel?.matricule || ''}
-                    onChange={(e) => handleInputChange('matricule', e.target.value)}
-                    placeholder="Matricule"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="caserne">Caserne</Label>
-                  <Input
-                    id="caserne"
-                    value={editedPersonnel?.caserne || ''}
-                    onChange={(e) => handleInputChange('caserne', e.target.value)}
-                    placeholder="Caserne"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={editedPersonnel?.email || ''}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="Email"
-                  />
-                </div>
-                
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline" onClick={handleCancel}>
-                    Annuler
-                  </Button>
-                  <Button onClick={handleSave}>
-                    Enregistrer
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Hash className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="text-sm font-medium">Matricule:</span>
-                  </div>
-                  <p className="text-sm">{personnel.matricule || 'Non renseigné'}</p>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="text-sm font-medium">Caserne:</span>
-                  </div>
-                  <p className="text-sm">{personnel.caserne || 'Non renseigné'}</p>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="text-sm font-medium">Email:</span>
-                  </div>
-                  <p className="text-sm">{personnel.email || 'Non renseigné'}</p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
 
-        {/* Equipment Assignment Card */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Équipements Assignés</CardTitle>
-            <CardDescription>Liste des équipements assignés à ce personnel</CardDescription>
+          {!isEditing && (
+            <div className="flex gap-2 mt-4 sm:mt-0">
+              <Button onClick={handleEdit}><Pencil className="mr-2 h-4 w-4" /> Modifier</Button>
+              <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
+                <Button className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2"/> Ajouter un équipement</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Stats EPI */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold">{stats.total}</div><div className="text-sm text-gray-500">Total EPI</div></CardContent></Card>
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold text-green-600">{stats.conformes}</div><div className="text-sm text-gray-500">Conformes</div></CardContent></Card>
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold text-red-600">{stats.nonConformes}</div><div className="text-sm text-gray-500">Non conformes</div></CardContent></Card>
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold text-yellow-600">{stats.enAttente}</div><div className="text-sm text-gray-500">En attente</div></CardContent></Card>
+        </div>
+
+        {/* Équipements */}
+        <Card>
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Équipements assignés</CardTitle>
+            <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2"/> Ajouter un équipement</Button>
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="relative mb-4">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par numéro de série..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            {equipment.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Aucun équipement assigné</p>
-                <Button className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Assigner un équipement
-                </Button>
-              </div>
-            ) : filteredEquipment.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Aucun équipement ne correspond à votre recherche.</p>
+            {equipements.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {equipements.map(epi => <EPICard key={epi.id} epi={epi} />)}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredEquipment.map((item) => (
-                  <EPICard
-                    key={item.id}
-                    id={item.id}
-                    type={item.type}
-                    marque={item.marque}
-                    modele={item.modele}
-                    numero_serie={item.numero_serie}
-                    statut={item.statut}
-                    date_mise_en_service={item.date_mise_en_service}
-                    date_fin_vie={item.date_fin_vie}
-                    image={item.image}
-                  />
-                ))}
+              <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+                <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900">Aucun équipement assigné</h3>
+                <p className="mt-2 text-gray-500 mb-4">Ce pompier n'a pas encore d'équipement assigné.</p>
+                <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
+                  <Button className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2"/> Ajouter un équipement</Button>
+                </Link>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Layout>
   );
-};
-
-export default PersonnelDetail;
+}
