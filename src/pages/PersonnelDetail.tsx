@@ -1,106 +1,211 @@
 "use client";
-import Layout from '@/components/layout/Layout';
+
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useParams } from 'react-router-dom';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Pencil, Plus, Calendar, Hash, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Pencil } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+
+interface Personnel {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  caserne: string;
+  grade: string;
+  photo: string;
+  matricule: string;
+}
+
+interface Equipment {
+  id: string;
+  type: string;
+  marque: string;
+  modele: string;
+  numero_serie: string;
+  statut: string;
+  date_mise_en_service: string;
+  image: string;
+}
 
 const PersonnelDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [pompier, setPompier] = useState<any>(null);
-  const { toast } = useToast();
+  const [personnel, setPersonnel] = useState<Personnel | null>(null);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPompier = async () => {
+    const fetchPersonnelAndEquipment = async () => {
       if (!id) return;
       
-      const { data, error } = await supabase
-        .from('personnel')
-        .select('*')
-        .eq('id', id)
-        .single();
+      try {
+        // Fetch personnel details
+        const { data: personnelData, error: personnelError } = await supabase
+          .from('personnel')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les détails du personnel",
-          variant: "destructive"
-        });
-        return;
+        if (personnelError) throw personnelError;
+
+        // Fetch assigned equipment
+        const { data: equipmentData, error: equipmentError } = await supabase
+          .from('equipements')
+          .select('*')
+          .eq('personnel_id', id);
+
+        if (equipmentError) throw equipmentError;
+
+        setPersonnel(personnelData);
+        setEquipment(equipmentData || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
-
-      setPompier(data);
     };
 
-    fetchPompier();
-  }, [id, toast]);
+    fetchPersonnelAndEquipment();
+  }, [id]);
 
-  const handleEditPersonnel = (personnelId: string) => {
-    navigate(`/personnel/edit/${personnelId}`);
-  };
-
-  if (!pompier) {
-    return <div>Chargement...</div>;
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
   }
 
+  if (!personnel) {
+    return <div className="flex justify-center items-center h-screen">Personnel non trouvé</div>;
+  }
+
+  const getBadgeVariant = (statut: string) => {
+    switch (statut) {
+      case 'en_service': return 'default';
+      case 'en_reparation': return 'destructive';
+      case 'hors_service': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
   return (
-    <Layout>
     <div className="container mx-auto py-8">
-      <Card className="max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl">Détails du Personnel</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-1 relative">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="absolute top-4 right-4"
-              onClick={() => handleEditPersonnel(pompier.id)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Avatar className="h-24 w-24 mx-auto mb-4">
-                  <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
-                  <AvatarFallback>
-                    {pompier.prenom?.charAt(0)}{pompier.nom?.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <h3 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h3>
-                <p className="text-muted-foreground">Matricule: {pompier.matricule || 'Non renseigné'}</p>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Détails du Personnel</h1>
+        <Button>
+          <Pencil className="mr-2 h-4 w-4" />
+          Modifier
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Personnel Information Card */}
+        <Card className="lg:col-span-1 relative">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="absolute top-4 right-4"
+            onClick={() => console.log('Edit personnel')}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           
-          <Card className="lg:col-span-2">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium">Grade</h4>
-                  <p className="text-muted-foreground">{pompier.grade || 'Non renseigné'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium">Caserne</h4>
-                  <p className="text-muted-foreground">{pompier.caserne || 'Non renseigné'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium">Email</h4>
-                  <p className="text-muted-foreground">{pompier.email || 'Non renseigné'}</p>
-                </div>
+          <CardHeader className="text-center">
+            {personnel.photo ? (
+              <img 
+                src={personnel.photo} 
+                alt={`${personnel.prenom} ${personnel.nom}`} 
+                className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-4 flex items-center justify-center">
+                <User className="h-12 w-12 text-gray-500" />
               </div>
-            </CardContent>
-          </Card>
-        </CardContent>
-      </Card>
+            )}
+            <CardTitle>{personnel.prenom} {personnel.nom}</CardTitle>
+            <CardDescription>{personnel.grade}</CardDescription>
+          </CardHeader>
+          
+          <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Hash className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Matricule:</span>
+              </div>
+              <p className="text-sm">{personnel.matricule || 'Non renseigné'}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Caserne:</span>
+              </div>
+              <p className="text-sm">{personnel.caserne || 'Non renseigné'}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Email:</span>
+              </div>
+              <p className="text-sm">{personnel.email || 'Non renseigné'}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Equipment Assignment Card */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Équipements Assignés</CardTitle>
+            <CardDescription>Liste des équipements assignés à ce personnel</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {equipment.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Aucun équipement assigné</p>
+                <Button className="mt-4">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Assigner un équipement
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {equipment.map((item) => (
+                  <Card key={item.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{item.type}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {item.marque} {item.modele}
+                          </p>
+                        </div>
+                        <Badge variant={getBadgeVariant(item.statut)}>
+                          {item.statut.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      
+                      <div className="mt-3 flex items-center text-sm">
+                        <Hash className="h-4 w-4 mr-1 text-muted-foreground" />
+                        <span>N° Série: {item.numero_serie}</span>
+                      </div>
+                      
+                      {item.date_mise_en_service && (
+                        <div className="mt-2 flex items-center text-sm">
+                          <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
+                          <span>
+                            Mise en service: {new Date(item.date_mise_en_service).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
-    </Layout>
   );
 };
 
