@@ -61,13 +61,16 @@ const PersonnelCard: React.FC<PersonnelCardProps> = ({ personnel, onPersonnelUpd
               )}
             </div>
             
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            <div className="flex items-start">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setIsEditModalOpen(true)}
+                className="opacity-100 hover:opacity-100"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
