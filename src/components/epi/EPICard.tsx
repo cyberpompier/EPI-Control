@@ -1,18 +1,12 @@
-import { EPI } from '@/types/index';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit } from 'lucide-react';
+import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface EPICardProps {
-  epi: EPI & {
-    personnels?: {
-      id: string;
-      nom: string;
-      prenom: string;
-    } | null;
-  };
+  // on reste large pour tolérer le champ relationnel `personnel`
+  epi: any;
 }
 
 export default function EPICard({ epi }: EPICardProps) {
@@ -44,28 +38,26 @@ export default function EPICard({ epi }: EPICardProps) {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'casque':
-        return '🪖';
-      case 'veste':
-        return '🧥';
-      case 'surpantalon':
-        return '👖';
-      case 'gants':
-        return '🧤';
-      case 'rangers':
-        return '👢';
-      default:
-        return '🛡️';
+      case 'casque': return '🪖';
+      case 'veste': return '🧥';
+      case 'surpantalon': return '👖';
+      case 'gants': return '🧤';
+      case 'rangers': return '👢';
+      default: return '🛡️';
     }
   };
 
-  // Calcul de la date d'expiration
+  // propriétaire (objet OU tableau -> on prend le 1er)
+  const ownerRaw = epi?.personnel;
+  const owner = Array.isArray(ownerRaw) ? ownerRaw[0] : ownerRaw;
+  const ownerName = owner ? `${owner.prenom ?? ''} ${owner.nom ?? ''}`.trim() : null;
+
+  // Dates
   const today = new Date();
-  const expiryDate = new Date(epi.date_fin_vie);
-  const daysUntilExpiry = Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  
-  const isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
-  const isExpired = daysUntilExpiry <= 0;
+  const expiryDate = epi?.date_fin_vie ? new Date(epi.date_fin_vie) : null;
+  const daysUntilExpiry = expiryDate ? Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
 
   return (
     <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
@@ -73,27 +65,23 @@ export default function EPICard({ epi }: EPICardProps) {
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-semibold flex items-center">
             {epi.image ? (
-              <img 
-                src={epi.image} 
-                alt={epi.type} 
-                className="mr-2 w-6 h-6 object-contain"
-              />
+              <img src={epi.image} alt={epi.type} className="mr-2 w-6 h-6 object-contain" />
             ) : (
               <span className="mr-2 text-xl">{getTypeIcon(epi.type)}</span>
             )}
-            {epi.type.charAt(0).toUpperCase() + epi.type.slice(1)}
+            {epi.type?.charAt(0).toUpperCase() + epi.type?.slice(1)}
           </CardTitle>
           <Badge className={getStatusColor(epi.statut)} variant="outline">
             <span className="flex items-center">
               {getStatusIcon(epi.statut)}
               <span className="ml-1">
-                {epi.statut === 'conforme' ? 'Conforme' : 
-                 epi.statut === 'non_conforme' ? 'Non conforme' : 'En attente'}
+                {epi.statut === 'conforme' ? 'Conforme' : epi.statut === 'non_conforme' ? 'Non conforme' : 'En attente'}
               </span>
             </span>
           </Badge>
         </div>
       </CardHeader>
+
       <CardContent className="p-4">
         <div className="space-y-2">
           <div className="flex justify-between">
@@ -108,28 +96,37 @@ export default function EPICard({ epi }: EPICardProps) {
             <span className="text-sm font-medium text-gray-500">N° Série</span>
             <span className="text-sm font-mono">{epi.numero_serie}</span>
           </div>
+
+          {/* 🔹 PROPRIÉTAIRE */}
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-500">Assigné à</span>
+            {owner ? (
+              <Link to={`/personnel/${owner.id}`} className="inline-flex items-center text-sm hover:underline">
+                <User className="h-4 w-4 mr-1 text-gray-500" />
+                {ownerName || 'Sans nom'}
+              </Link>
+            ) : (
+              <span className="text-sm text-gray-500">Non assigné</span>
+            )}
+          </div>
+
           <div className="flex justify-between">
             <span className="text-sm font-medium text-gray-500">Mise en service</span>
-            <span className="text-sm">{new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR')}</span>
+            <span className="text-sm">
+              {epi.date_mise_en_service ? new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR') : '—'}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm font-medium text-gray-500">Fin de vie</span>
             <span className={`text-sm ${isExpired ? 'text-red-600 font-bold' : isExpiringSoon ? 'text-yellow-600 font-bold' : ''}`}>
-              {new Date(epi.date_fin_vie).toLocaleDateString('fr-FR')}
+              {expiryDate ? expiryDate.toLocaleDateString('fr-FR') : '—'}
               {isExpired && ' (Expiré)'}
-              {isExpiringSoon && ` (Dans ${daysUntilExpiry} jours)`}
-            </span>
-          </div>
-
-          {/* ✅ Nouveau bloc : affichage du personnel */}
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-500">Affecté à</span>
-            <span className="text-sm">
-              {epi.personnels ? `${epi.personnels.prenom} ${epi.personnels.nom}` : 'Non attribué'}
+              {isExpiringSoon && daysUntilExpiry !== null && ` (Dans ${daysUntilExpiry} jours)`}
             </span>
           </div>
         </div>
       </CardContent>
+
       <CardFooter className="p-4 bg-gray-50 border-t flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Link to={`/controles?equipement=${epi.id}`}>
