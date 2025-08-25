@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
-import Layout from '@/components/layout/Layout';
 import { showError } from '@/utils/toast';
 
 interface BarcodeScannerProps {
