@@ -1,132 +1,167 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { showError, showSuccess } from '@/utils/toast';
-import { supabase } from '@/lib/supabase';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Camera, Search } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
+import { showError, showSuccess } from '@/utils/toast';
 
-export default function EquipementsBarcode() {
-  const [scannedCode, setScannedCode] = useState('');
+const EquipementsBarcode = () => {
+  const [codeBarre, setCodeBarre] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [manualCode, setManualCode] = useState('');
-  const navigate = useNavigate();
+  const [equipement, setEquipement] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleScanSuccess = async (decodedText: string) => {
-    setScannedCode(decodedText);
+  const handleScanResult = (result: string) => {
+    setCodeBarre(result);
     setIsScanning(false);
+    searchEquipement(result);
+  };
+
+  const handleScanError = (error: string) => {
+    setIsScanning(false);
+    showError(error);
+  };
+
+  const searchEquipement = async (code: string) => {
+    if (!code) return;
     
+    setLoading(true);
     try {
-      // Rechercher l'équipement par code-barres
-      const { data, error } = await supabase
-        .from('equipements')
-        .select('*')
-        .eq('numero_serie', decodedText)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        showSuccess('Équipement trouvé !');
-        navigate(`/equipements/${data.id}`);
-      } else {
-        showError('Équipement non trouvé');
-      }
+      // Simulation de recherche d'équipement
+      // Remplacer par un appel API réel
+      setTimeout(() => {
+        setEquipement({
+          id: 1,
+          type: 'Casque F1',
+          marque: 'ABC Safety',
+          modele: 'ProTech 2000',
+          numero_serie: code,
+          date_mise_en_service: '2023-01-15',
+          date_fin_vie: '2026-01-15',
+          statut: 'en_service',
+          personnel: {
+            nom: 'Dupont',
+            prenom: 'Jean',
+            matricule: 'P001234'
+          }
+        });
+        setLoading(false);
+        showSuccess('Équipement trouvé');
+      }, 1000);
     } catch (error) {
-      console.error('Error searching equipement:', error);
-      showError('Erreur lors de la recherche de l\'équipement');
+      setLoading(false);
+      showError('Erreur lors de la recherche');
+      console.error(error);
     }
   };
 
-  const handleManualSearch = async () => {
-    if (!manualCode.trim()) {
-      showError('Veuillez entrer un code-barres');
-      return;
-    }
-
-    try {
-      // Rechercher l'équipement par code-barres
-      const { data, error } = await supabase
-        .from('equipements')
-        .select('*')
-        .eq('numero_serie', manualCode)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        showSuccess('Équipement trouvé !');
-        navigate(`/equipements/${data.id}`);
-      } else {
-        showError('Équipement non trouvé');
-      }
-    } catch (error) {
-      console.error('Error searching equipement:', error);
-      showError('Erreur lors de la recherche de l\'équipement');
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    searchEquipement(codeBarre);
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Recherche par code-barres</CardTitle>
-          <CardDescription>
-            Scannez ou entrez manuellement le code-barres d'un équipement
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Scanner un code-barres</h3>
-            
-            {!isScanning ? (
-              <div className="flex flex-col items-center space-y-4">
-                <p className="text-center text-muted-foreground">
-                  {scannedCode 
-                    ? `Dernier code scanné : ${scannedCode}` 
-                    : 'Cliquez sur le bouton pour activer le scanner'}
-                </p>
-                <Button onClick={() => setIsScanning(true)}>
-                  Activer le scanner
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="w-full h-64 rounded-md overflow-hidden border">
-                  <BarcodeScanner onResult={handleScanSuccess} />
-                </div>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsScanning(false)}
-                  className="w-full"
-                >
-                  Arrêter le scanner
-                </Button>
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des Équipements</h1>
+        </div>
+      </header>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Recherche manuelle</h3>
-            <div className="flex space-x-2">
-              <div className="flex-1">
-                <Label htmlFor="manual-code">Code-barres</Label>
-                <Input
-                  id="manual-code"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Entrez le code-barres"
-                />
-              </div>
-              <Button onClick={handleManualSearch} className="self-end">
-                Rechercher
-              </Button>
+      <div className="container mx-auto py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recherche par code-barres</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <div className="flex-1">
+                  <Label htmlFor="code-barre">Code-barres</Label>
+                  <Input
+                    id="code-barre"
+                    value={codeBarre}
+                    onChange={(e) => setCodeBarre(e.target.value)}
+                    placeholder="Saisir ou scanner le code-barres"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit" disabled={loading}>
+                    <Search className="h-4 w-4 mr-2" />
+                    Rechercher
+                  </Button>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsScanning(!isScanning)}
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    {isScanning ? 'Arrêter' : 'Scanner'}
+                  </Button>
+                </div>
+              </form>
+
+              {isScanning && (
+                <div className="border rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">Scanner un code-barres</h3>
+                  <div className="h-64 w-full relative">
+                    <BarcodeScanner 
+                      onResult={handleScanResult} 
+                      onError={handleScanError} 
+                    />
+                  </div>
+                </div>
+              )}
+
+              {equipement && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-xl font-bold">{equipement.type}</h3>
+                      <p className="text-gray-600">{equipement.marque} - {equipement.modele}</p>
+                    </div>
+                    <Badge variant={equipement.statut === 'en_service' ? 'default' : 'destructive'}>
+                      {equipement.statut === 'en_service' ? 'En service' : 'Hors service'}
+                    </Badge>
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm text-gray-500">Numéro de série</Label>
+                      <p>{equipement.numero_serie}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm text-gray-500">Date de mise en service</Label>
+                      <p>{equipement.date_mise_en_service}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm text-gray-500">Date de fin de vie</Label>
+                      <p>{equipement.date_fin_vie}</p>
+                    </div>
+                    {equipement.personnel && (
+                      <div>
+                        <Label className="text-sm text-gray-500">Assigné à</Label>
+                        <p>{equipement.personnel.prenom} {equipement.personnel.nom} ({equipement.personnel.matricule})</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
-}
+};
+
+export default EquipementsBarcode;
