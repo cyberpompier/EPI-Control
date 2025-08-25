@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Pencil, Plus, Calendar, Hash, User } from 'lucide-react';
+import { Pencil, Plus, Hash, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import EPICard from '@/components/EPICard';
 
 interface Personnel {
   id: number;
@@ -79,15 +79,6 @@ const PersonnelDetail = () => {
     return <div className="flex justify-center items-center h-screen">Personnel non trouvé</div>;
   }
 
-  const getBadgeVariant = (statut: string) => {
-    switch (statut) {
-      case 'en_service': return 'default';
-      case 'en_reparation': return 'destructive';
-      case 'hors_service': return 'secondary';
-      default: return 'outline';
-    }
-  };
-
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
@@ -145,7 +136,7 @@ const PersonnelDetail = () => {
             
             <div className="space-y-2">
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <User className="h-4 w-4 mr-2 text-muted-foreground" />
                 <span className="text-sm font-medium">Email:</span>
               </div>
               <p className="text-sm">{personnel.email || 'Non renseigné'}</p>
@@ -171,61 +162,18 @@ const PersonnelDetail = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {equipment.map((item) => (
-                  <Card key={item.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        {item.image ? (
-                          <img 
-                            src={item.image} 
-                            alt={item.type} 
-                            className="w-16 h-16 object-cover rounded-md mr-3"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-200 rounded-md mr-3 flex items-center justify-center">
-                            <Hash className="h-8 w-8 text-gray-500" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-semibold">{item.type}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {item.marque} {item.modele}
-                              </p>
-                            </div>
-                            <Badge variant={getBadgeVariant(item.statut)}>
-                              {item.statut.replace('_', ' ')}
-                            </Badge>
-                          </div>
-                          
-                          <div className="mt-2 space-y-1">
-                            <div className="flex items-center text-sm">
-                              <Hash className="h-4 w-4 mr-1 text-muted-foreground" />
-                              <span>N° Série: {item.numero_serie}</span>
-                            </div>
-                            
-                            {item.date_mise_en_service && (
-                              <div className="flex items-center text-sm">
-                                <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
-                                <span>
-                                  Mise en service: {new Date(item.date_mise_en_service).toLocaleDateString()}
-                                </span>
-                              </div>
-                            )}
-                            
-                            {item.date_fin_vie && (
-                              <div className="flex items-center text-sm">
-                                <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
-                                <span>
-                                  Fin de vie: {new Date(item.date_fin_vie).toLocaleDateString()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <EPICard
+                    key={item.id}
+                    id={item.id}
+                    type={item.type}
+                    marque={item.marque}
+                    modele={item.modele}
+                    numero_serie={item.numero_serie}
+                    statut={item.statut}
+                    date_mise_en_service={item.date_mise_en_service}
+                    date_fin_vie={item.date_fin_vie}
+                    image={item.image}
+                  />
                 ))}
               </div>
             )}
