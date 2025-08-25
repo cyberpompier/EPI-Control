@@ -1,5 +1,5 @@
 "use client";
-import Layout from '@/components/layout/Layout';
+
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -27,6 +27,7 @@ interface Equipment {
   numero_serie: string;
   statut: string;
   date_mise_en_service: string;
+  date_fin_vie: string;
   image: string;
 }
 
@@ -88,7 +89,6 @@ const PersonnelDetail = () => {
   };
 
   return (
-    <Layout>
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Détails du Personnel</h1>
@@ -174,30 +174,56 @@ const PersonnelDetail = () => {
                   <Card key={item.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{item.type}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {item.marque} {item.modele}
-                          </p>
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt={item.type} 
+                            className="w-16 h-16 object-cover rounded-md mr-3"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded-md mr-3 flex items-center justify-center">
+                            <Hash className="h-8 w-8 text-gray-500" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold">{item.type}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.marque} {item.modele}
+                              </p>
+                            </div>
+                            <Badge variant={getBadgeVariant(item.statut)}>
+                              {item.statut.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                          
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center text-sm">
+                              <Hash className="h-4 w-4 mr-1 text-muted-foreground" />
+                              <span>N° Série: {item.numero_serie}</span>
+                            </div>
+                            
+                            {item.date_mise_en_service && (
+                              <div className="flex items-center text-sm">
+                                <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
+                                <span>
+                                  Mise en service: {new Date(item.date_mise_en_service).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {item.date_fin_vie && (
+                              <div className="flex items-center text-sm">
+                                <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
+                                <span>
+                                  Fin de vie: {new Date(item.date_fin_vie).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <Badge variant={getBadgeVariant(item.statut)}>
-                          {item.statut.replace('_', ' ')}
-                        </Badge>
                       </div>
-                      
-                      <div className="mt-3 flex items-center text-sm">
-                        <Hash className="h-4 w-4 mr-1 text-muted-foreground" />
-                        <span>N° Série: {item.numero_serie}</span>
-                      </div>
-                      
-                      {item.date_mise_en_service && (
-                        <div className="mt-2 flex items-center text-sm">
-                          <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
-                          <span>
-                            Mise en service: {new Date(item.date_mise_en_service).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -207,7 +233,6 @@ const PersonnelDetail = () => {
         </Card>
       </div>
     </div>
-    </Layout>
   );
 };
 
