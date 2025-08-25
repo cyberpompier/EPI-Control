@@ -13,11 +13,20 @@ export default function Equipements() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-
   useEffect(() => {
     async function fetchEquipements() {
       setLoading(true);
-      const { data, error } = await supabase.from('equipements').select('*');
+      const { data, error } = await supabase
+        .from('equipements')
+        .select(`
+          *,
+          personnels (
+            id,
+            nom,
+            prenom
+          )
+        `);
+
       if (error) {
         showError("Erreur lors du chargement des équipements");
       } else {
