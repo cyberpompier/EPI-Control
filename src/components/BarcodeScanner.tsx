@@ -11,6 +11,7 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
   const scannerContainerId = 'barcode-scanner-container';
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const selectedDeviceIdRef = useRef<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const initializeScanner = async () => {
@@ -49,12 +50,12 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
     };
 
     const startDecoding = async (deviceId: string) => {
-      if (!codeReaderRef.current) return;
+      if (!codeReaderRef.current || !videoRef.current) return;
 
       try {
         await codeReaderRef.current.decodeFromVideoDevice(
           deviceId,
-          scannerContainerId,
+          videoRef.current,
           (result, _, controls) => {
             if (result) {
               // Arrêter le scanner après la première lecture
@@ -95,10 +96,13 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
   }, [onResult, onError]);
 
   return (
-    <div 
-      id={scannerContainerId} 
-      style={{ width: '100%', height: '100%' }}
-    />
+    <div style={{ width: '100%', height: '100%' }}>
+      <video 
+        ref={videoRef}
+        id={scannerContainerId}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+    </div>
   );
 };
 
