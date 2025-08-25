@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,10 +70,12 @@ const EquipementDetail = () => {
 
   if (!equipement) {
     return (
+      <layout>
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="text-2xl font-bold text-gray-800 mb-4">Équipement non trouvé</div>
         <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
       </div>
+      </layout>
     );
   }
 
