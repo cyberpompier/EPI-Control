@@ -6,7 +6,13 @@ import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit } from 'lucide-react
 import { Link } from 'react-router-dom';
 
 interface EPICardProps {
-  epi: EPI;
+  epi: EPI & {
+    personnels?: {
+      id: string;
+      nom: string;
+      prenom: string;
+    } | null;
+  };
 }
 
 export default function EPICard({ epi }: EPICardProps) {
@@ -112,6 +118,14 @@ export default function EPICard({ epi }: EPICardProps) {
               {new Date(epi.date_fin_vie).toLocaleDateString('fr-FR')}
               {isExpired && ' (Expiré)'}
               {isExpiringSoon && ` (Dans ${daysUntilExpiry} jours)`}
+            </span>
+          </div>
+
+          {/* ✅ Nouveau bloc : affichage du personnel */}
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-gray-500">Affecté à</span>
+            <span className="text-sm">
+              {epi.personnels ? `${epi.personnels.prenom} ${epi.personnels.nom}` : 'Non attribué'}
             </span>
           </div>
         </div>
