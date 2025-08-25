@@ -1,5 +1,5 @@
 "use client";
-
+import Layout from '@/components/layout/Layout';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +49,7 @@ const PersonnelDetail = () => {
   }
 
   return (
+    <layout>
     <div className="container mx-auto py-8">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
@@ -99,6 +100,7 @@ const PersonnelDetail = () => {
         </CardContent>
       </Card>
     </div>
+    </layout>
   );
 };
 
