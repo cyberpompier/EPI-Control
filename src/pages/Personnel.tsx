@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
 import { PompierCard } from '@/components/personnel/PompierCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,7 +102,6 @@ export default function Personnel() {
   const casernes = [...new Set(pompiers.map(p => p.caserne).filter(Boolean))];
 
   return (
-    <Layout>
       <Helmet>
         <title>Personnel | EPI Control</title>
       </Helmet>
@@ -201,6 +199,5 @@ export default function Personnel() {
           </Button>
         </Link>
       </div>
-    </Layout>
   );
 }
