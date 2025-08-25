@@ -1,20 +1,28 @@
-export default function PrivateRoute({ children }: PrivateRouteProps) {
-  const { session, loading } = useSession();
+"use client";
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
-        </div>
-      </Layout>
-    );
-  }
+import { useSession } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/navigation';
+import { ReactNode, useEffect } from 'react';
+
+interface PrivateRouteProps {
+  children: ReactNode;
+}
+
+const PrivateRoute = ({ children }: PrivateRouteProps) => {
+  const session = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!session) {
+      router.push('/login');
+    }
+  }, [session, router]);
 
   if (!session) {
-    return <Navigate to="/login" replace />;
+    return null; // Ou un composant de chargement
   }
 
-  // Ici on entoure tout le contenu avec Layout
-  return <Layout>{children}</Layout>;
-}
+  return <>{children}</>;
+};
+
+export default PrivateRoute;
