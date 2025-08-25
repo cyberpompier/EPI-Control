@@ -22,8 +22,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   type: z.string().min(1, 'Le type est requis'),
-  marque: z.string(), // Permet les valeurs vides
-  modele: z.string().min(1, 'Le modèle est requis'),
+  marque: z.string(),
+  modele: z.string(), // Permet les valeurs vides
   numero_serie: z.string().min(1, 'Le numéro de série est requis'),
   date_mise_en_service: z.string().min(1, 'La date de mise en service est requise'),
   date_fin_vie: z.string().optional(),
@@ -175,7 +175,7 @@ const EquipementEdit = () => {
             name="modele"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Modèle *</FormLabel>
+                <FormLabel>Modèle</FormLabel>
                 <FormControl>
                   <Input placeholder="Modèle de l'équipement" {...field} />
                 </FormControl>
