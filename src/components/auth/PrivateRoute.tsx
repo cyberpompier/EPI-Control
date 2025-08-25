@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from '@supabase/auth-helpers-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { ReactNode, useEffect } from 'react';
 
 interface PrivateRouteProps {
@@ -10,16 +10,16 @@ interface PrivateRouteProps {
 
 const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const session = useSession();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!session) {
-      router.push('/login');
+      navigate('/login');
     }
-  }, [session, router]);
+  }, [session, navigate]);
 
   if (!session) {
-    return null; // Ou un composant de chargement
+    return null;
   }
 
   return <>{children}</>;
