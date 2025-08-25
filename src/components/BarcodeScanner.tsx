@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/browser';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 import { showError } from '@/utils/toast';
 
 interface BarcodeScannerProps {
@@ -23,7 +23,7 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
         codeReaderRef.current = new BrowserMultiFormatReader();
         
         // Obtenir la liste des appareils vidéo
-        const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
+        const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
         
         if (videoInputDevices.length === 0) {
           throw new Error('Aucune caméra trouvée');
@@ -64,7 +64,7 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
           }
         );
       } catch (error) {
-        if (error instanceof NotFoundException) {
+        if (error.name === 'NotFoundException') {
           // Aucun code-barres trouvé, continuer à scanner
           return;
         }
@@ -79,7 +79,7 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
     // Nettoyage
     return () => {
       if (codeReaderRef.current) {
-        codeReaderRef.current.reset();
+        codeReaderRef.current.stopAsync();
       }
     };
   }, [onResult, onError]);
