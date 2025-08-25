@@ -215,29 +215,19 @@ export default function PersonnelForm() {
                     />
 
                     <FormField
-                      control={form.control}
-                      name="caserne"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Caserne</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionnez une caserne" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {casernes.map((caserne) => (
-                                <SelectItem key={caserne} value={caserne}>
-                                  {caserne}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+  control={form.control}
+  name="caserne"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Caserne</FormLabel>
+      <FormControl>
+        <Input placeholder="Entrez le nom de la caserne" {...field} />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
                   </div>
 
                   <div className="flex justify-end space-x-2 pt-6">
