@@ -1,16 +1,17 @@
 "use client";
 
+import React from 'react';
 import Header from './Header';
-import { ReactNode } from 'react';
+import Footer from './Footer';
 
 interface LayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
   headerTitle?: string;
 }
 
 const Layout = ({ children, headerTitle }: LayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-6">
         {headerTitle && (
@@ -20,6 +21,7 @@ const Layout = ({ children, headerTitle }: LayoutProps) => {
         )}
         {children}
       </main>
+      <Footer />
     </div>
   );
 };
