@@ -46,14 +46,14 @@ const PersonnelDetail = () => {
   return (
     <div className="container mx-auto py-8">
       <Card className="max-w-4xl mx-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle className="text-2xl">Détails du Personnel</CardTitle>
-          <Button variant="outline" size="icon">
-            <Pencil className="h-4 w-4" />
-          </Button>
         </CardHeader>
         <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-1">
+          <Card className="lg:col-span-1 relative">
+            <Button variant="outline" size="icon" className="absolute top-4 right-4">
+              <Pencil className="h-4 w-4" />
+            </Button>
             <CardContent className="pt-6">
               <div className="text-center">
                 <Avatar className="h-24 w-24 mx-auto mb-4">
