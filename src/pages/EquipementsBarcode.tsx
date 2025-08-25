@@ -30,7 +30,8 @@ export default function EquipementsBarcode() {
 
       if (data) {
         showSuccess('Équipement trouvé !');
-        navigate(`/equipements/${data.id}`);
+        // Utiliser le bon chemin vers la page de détail
+        navigate(`/equipement/${data.id}`);
       } else {
         showError('Équipement non trouvé');
       }
@@ -58,7 +59,8 @@ export default function EquipementsBarcode() {
 
       if (data) {
         showSuccess('Équipement trouvé !');
-        navigate(`/equipements/${data.id}`);
+        // Utiliser le bon chemin vers la page de détail
+        navigate(`/equipement/${data.id}`);
       } else {
         showError('Équipement non trouvé');
       }
