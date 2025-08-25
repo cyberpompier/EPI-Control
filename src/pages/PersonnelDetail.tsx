@@ -142,7 +142,15 @@ export default function PersonnelDetail() {
         )}
       </div>
 
+      <div className="mb-6">
+        <Link to="/personnel" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Retour au personnel
+        </Link>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        {/* Carte Personnel */}
         <Card className="lg:col-span-1">
           <CardContent className="pt-6 text-center">
             <Avatar className="h-24 w-24 mx-auto mb-4">
@@ -152,22 +160,10 @@ export default function PersonnelDetail() {
 
             {isEditing ? (
               <div className="space-y-2">
-                <input
-                  className="w-full border rounded p-1 text-center"
-                  value={editedPompier?.prenom || ''}
-                  onChange={e => handleInputChange('prenom', e.target.value)}
-                  placeholder="Prénom"
-                />
-                <input
-                  className="w-full border rounded p-1 text-center"
-                  value={editedPompier?.nom || ''}
-                  onChange={e => handleInputChange('nom', e.target.value)}
-                  placeholder="Nom"
-                />
+                <input className="w-full border rounded p-1 text-center" value={editedPompier?.prenom || ''} onChange={e => handleInputChange('prenom', e.target.value)} placeholder="Prénom" />
+                <input className="w-full border rounded p-1 text-center" value={editedPompier?.nom || ''} onChange={e => handleInputChange('nom', e.target.value)} placeholder="Nom" />
                 <Select value={editedPompier?.grade || ''} onValueChange={value => handleInputChange('grade', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un grade" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner un grade" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pompier">Pompier</SelectItem>
                     <SelectItem value="Caporal">Caporal</SelectItem>
@@ -184,24 +180,9 @@ export default function PersonnelDetail() {
                     <SelectItem value="Colonel">Colonel</SelectItem>
                   </SelectContent>
                 </Select>
-                <input
-                  className="w-full border rounded p-1 text-center"
-                  value={editedPompier?.email || ''}
-                  onChange={e => handleInputChange('email', e.target.value)}
-                  placeholder="Email"
-                />
-                <input
-                  className="w-full border rounded p-1 text-center"
-                  value={editedPompier?.caserne || ''}
-                  onChange={e => handleInputChange('caserne', e.target.value)}
-                  placeholder="Caserne"
-                />
-                <input
-                  className="w-full border rounded p-1 text-center"
-                  value={editedPompier?.matricule || ''}
-                  onChange={e => handleInputChange('matricule', e.target.value)}
-                  placeholder="Matricule"
-                />
+                <input className="w-full border rounded p-1 text-center" value={editedPompier?.email || ''} onChange={e => handleInputChange('email', e.target.value)} placeholder="Email" />
+                <input className="w-full border rounded p-1 text-center" value={editedPompier?.caserne || ''} onChange={e => handleInputChange('caserne', e.target.value)} placeholder="Caserne" />
+                <input className="w-full border rounded p-1 text-center" value={editedPompier?.matricule || ''} onChange={e => handleInputChange('matricule', e.target.value)} placeholder="Matricule" />
               </div>
             ) : (
               <>
@@ -217,9 +198,48 @@ export default function PersonnelDetail() {
           </CardContent>
         </Card>
 
-        {/* Statistiques et équipements restent identiques */}
-        {/* ... ton code existant pour stats et EPICard ici ... */}
+        {/* Statistiques EPI */}
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
+          {['total', 'conformes', 'nonConformes', 'enAttente'].map((key, idx) => (
+            <Card key={idx}>
+              <CardContent className="p-4 text-center">
+                <div className={`text-2xl font-bold ${key === 'conformes' ? 'text-green-600' : key === 'nonConformes' ? 'text-red-600' : key === 'enAttente' ? 'text-yellow-600' : ''}`}>
+                  {stats[key as keyof typeof stats]}
+                </div>
+                <div className="text-sm text-gray-500">{key === 'total' ? 'Total EPI' : key === 'conformes' ? 'Conformes' : key === 'nonConformes' ? 'Non conformes' : 'En attente'}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
+
+      {/* Équipements assignés */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Équipements assignés</CardTitle>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <FileText className="h-4 w-4 mr-2" /> Rapport complet
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {equipements.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {equipements.map(epi => <EPICard key={epi.id} epi={epi} />)}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900">Aucun équipement assigné</h3>
+              <p className="mt-2 text-gray-500 mb-4">Ce pompier n'a pas encore d'équipement assigné.</p>
+              <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
+                <Button className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2" /> Ajouter un équipement</Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </Layout>
   );
 }
