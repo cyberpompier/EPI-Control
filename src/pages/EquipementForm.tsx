@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import Layout from '@/components/layout/Layout';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -131,6 +132,7 @@ export default function EquipementForm() {
   }
 
   return (
+    <Layout>
     <div className="container mx-auto py-6">
       <Card>
         <CardHeader>
@@ -264,5 +266,6 @@ export default function EquipementForm() {
         </CardContent>
       </Card>
     </div>
+    </Layout>
   );
 }
