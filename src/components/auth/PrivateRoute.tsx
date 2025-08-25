@@ -1,28 +1,29 @@
-"use client";
-
-import { useSession } from '@supabase/auth-helpers-react';
-import { useNavigate } from 'react-router-dom';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSession } from '@/components/auth/SessionProvider';
+import Layout from '../layout/Layout';
 
 interface PrivateRouteProps {
   children: ReactNode;
 }
 
-const PrivateRoute = ({ children }: PrivateRouteProps) => {
-  const session = useSession();
-  const navigate = useNavigate();
+export default function PrivateRoute({ children }: PrivateRouteProps) {
+  const { session, loading } = useSession();
 
-  useEffect(() => {
-    if (!session) {
-      navigate('/login');
-    }
-  }, [session, navigate]);
-
-  if (!session) {
-    return null;
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
+        </div>
+      </Layout>
+    );
   }
 
-  return <>{children}</>;
-};
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
 
-export default PrivateRoute;
+  // ✅ toutes les pages protégées passent automatiquement par Layout
+  return <Layout>{children}</Layout>;
+}

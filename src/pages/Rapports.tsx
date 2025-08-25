@@ -1,5 +1,3 @@
-"use client";
-
 import Reports from './Reports';
 
 export default function Rapports() {
