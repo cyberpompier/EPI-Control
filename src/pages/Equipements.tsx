@@ -26,7 +26,6 @@ export default function Equipements() {
   }, []);
 
   return (
-    <Layout>
       <div className="p-4">
         {/* Titre et boutons d'action */}
         <div className="flex justify-between items-center mb-4">
@@ -64,6 +63,5 @@ export default function Equipements() {
           </div>
         )}
       </div>
-    </Layout>
   );
 }
