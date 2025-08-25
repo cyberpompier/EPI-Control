@@ -52,8 +52,12 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
     // Nettoyage
     return () => {
       if (codeReaderRef.current) {
-        // Utilisation de destroy à la place de reset pour éviter l'erreur TypeScript
-        codeReaderRef.current.destroy();
+        try {
+          // @ts-ignore - contournement de l'erreur TypeScript
+          codeReaderRef.current.reset();
+        } catch (error) {
+          console.warn('Erreur lors du reset du scanner:', error);
+        }
       }
     };
   }, [onResult, onError]);
