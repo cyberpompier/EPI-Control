@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -149,6 +150,7 @@ const EquipementsBarcode = () => {
   };
 
   return (
+    <Layout>
     <div className="container mx-auto py-8 px-4">
       {/* Bouton de retour au menu parent */}
       <div className="mb-6">
@@ -230,6 +232,7 @@ const EquipementsBarcode = () => {
         </CardContent>
       </Card>
     </div>
+    </Layout>
   );
 };
 
