@@ -1,5 +1,5 @@
 "use client";
-
+import Layout from '@/components/layout/Layout';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
