@@ -7,6 +7,7 @@ import { PersonnelList } from '@/components/dashboard/PersonnelList';
 
 export default function Dashboard() {
   return (
+    <Layout>
       <div className="p-4 md:p-8 space-y-8">
         <h1 className="text-3xl font-bold">Tableau de bord</h1>
         
@@ -23,5 +24,6 @@ export default function Dashboard() {
         
         <EquipmentStatusChart />
       </div>
+  </Layout>
   );
 }
