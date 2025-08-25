@@ -8,12 +8,19 @@ interface BarcodeScannerProps {
 }
 
 const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerContainerId = 'barcode-scanner-container';
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const selectedDeviceIdRef = useRef<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const initializeScanner = async () => {
       try {
+        // Récupérer les préférences sauvegardées
+        const savedDeviceId = localStorage.getItem('barcodeScannerDeviceId');
+        selectedDeviceIdRef.current = savedDeviceId;
+
+        // Créer le lecteur
         codeReaderRef.current = new BrowserMultiFormatReader();
         
         // Obtenir la liste des appareils vidéo
@@ -23,27 +30,48 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
           throw new Error('Aucune caméra trouvée');
         }
 
-        // Sélectionner la première caméra disponible
-        const deviceId = videoInputDevices[0].deviceId;
+        // Sélectionner la caméra (utiliser la préférée ou la première disponible)
+        const deviceId = savedDeviceId && videoInputDevices.some(device => device.deviceId === savedDeviceId)
+          ? savedDeviceId
+          : videoInputDevices[0].deviceId;
+
+        selectedDeviceIdRef.current = deviceId;
+        
+        // Sauvegarder le choix de la caméra
+        localStorage.setItem('barcodeScannerDeviceId', deviceId);
 
         // Démarrer la lecture
-        if (videoRef.current && codeReaderRef.current) {
-          await codeReaderRef.current.decodeFromVideoDevice(
-            deviceId,
-            videoRef.current,
-            (result, _, controls) => {
-              if (result) {
-                // Arrêter le scanner après la première lecture
-                controls.stop();
-                onResult(result.getText());
-              }
-            }
-          );
-        }
-      } catch (error: any) {
+        await startDecoding(deviceId);
+      } catch (error) {
         console.error('Erreur lors de l\'initialisation du scanner:', error);
         showError('Impossible d\'accéder à la caméra. Veuillez vérifier les permissions.');
         if (onError) onError('Impossible d\'accéder à la caméra');
+      }
+    };
+
+    const startDecoding = async (deviceId: string) => {
+      if (!codeReaderRef.current || !videoRef.current) return;
+
+      try {
+        await codeReaderRef.current.decodeFromVideoDevice(
+          deviceId,
+          videoRef.current,
+          (result, _, controls) => {
+            if (result) {
+              // Arrêter le scanner après la première lecture
+              controls.stop();
+              onResult(result.getText());
+            }
+          }
+        );
+      } catch (error) {
+        if (error.name === 'NotFoundException') {
+          // Aucun code-barres trouvé, continuer à scanner
+          return;
+        }
+        console.error('Erreur lors du décodage:', error);
+        showError('Erreur lors de la lecture du code-barres');
+        if (onError) onError('Erreur lors de la lecture du code-barres');
       }
     };
 
@@ -53,20 +81,26 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
     return () => {
       if (codeReaderRef.current) {
         try {
-          // @ts-ignore - contournement de l'erreur TypeScript
-          codeReaderRef.current.reset();
-        } catch (error) {
-          console.warn('Erreur lors du reset du scanner:', error);
+          (codeReaderRef.current as any).stopAsync();
+        } catch (e) {
+          // Si stopAsync n'existe pas, on essaie reset
+          try {
+            (codeReaderRef.current as any).reset();
+          } catch (e2) {
+            // Si reset n'existe pas non plus, on ignore
+            console.warn('Impossible d\'arrêter le scanner proprement', e2);
+          }
         }
       }
     };
   }, [onResult, onError]);
 
   return (
-    <div className="w-full h-full">
+    <div style={{ width: '100%', height: '100%' }}>
       <video 
         ref={videoRef}
-        className="w-full h-full object-cover"
+        id={scannerContainerId}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
     </div>
   );

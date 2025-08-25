@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess } from '@/utils/toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import BarcodeScanner from '@/components/BarcodeScanner';
 
 export default function EquipementsBarcode() {
@@ -15,29 +15,22 @@ export default function EquipementsBarcode() {
   const navigate = useNavigate();
 
   const handleScanSuccess = async (decodedText: string) => {
-    console.log('Code scanné:', decodedText);
     setScannedCode(decodedText);
     setIsScanning(false);
     
     try {
-      // Rechercher l'équipement par numéro de série
+      // Rechercher l'équipement par code-barres
       const { data, error } = await supabase
         .from('equipements')
         .select('*')
         .eq('numero_serie', decodedText)
         .single();
 
-      console.log('Réponse de la base de données:', { data, error });
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        showError('Équipement non trouvé');
-        return;
-      }
+      if (error) throw error;
 
       if (data) {
         showSuccess('Équipement trouvé !');
-        navigate(`/equipement/${data.id}`);
+        navigate(`/equipements/${data.id}`);
       } else {
         showError('Équipement non trouvé');
       }
@@ -47,38 +40,25 @@ export default function EquipementsBarcode() {
     }
   };
 
-  const handleScanError = (error: string) => {
-    console.error('Erreur de scan:', error);
-    showError(`Erreur de scan: ${error}`);
-  };
-
   const handleManualSearch = async () => {
     if (!manualCode.trim()) {
       showError('Veuillez entrer un code-barres');
       return;
     }
 
-    console.log('Recherche manuelle pour le code:', manualCode);
-
     try {
-      // Rechercher l'équipement par numéro de série
+      // Rechercher l'équipement par code-barres
       const { data, error } = await supabase
         .from('equipements')
         .select('*')
         .eq('numero_serie', manualCode)
         .single();
 
-      console.log('Réponse de la base de données:', { data, error });
-
-      if (error) {
-        console.error('Supabase error:', error);
-        showError('Équipement non trouvé');
-        return;
-      }
+      if (error) throw error;
 
       if (data) {
         showSuccess('Équipement trouvé !');
-        navigate(`/equipement/${data.id}`);
+        navigate(`/equipements/${data.id}`);
       } else {
         showError('Équipement non trouvé');
       }
@@ -115,7 +95,7 @@ export default function EquipementsBarcode() {
             ) : (
               <div className="space-y-4">
                 <div className="w-full h-64 rounded-md overflow-hidden border">
-                  <BarcodeScanner onResult={handleScanSuccess} onError={handleScanError} />
+                  <BarcodeScanner onResult={handleScanSuccess} />
                 </div>
                 <Button 
                   variant="outline" 
