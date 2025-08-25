@@ -101,7 +101,6 @@ export default function ControlesPage() {
   }
 
   return (
-    <Layout>
       <Helmet>
         <title>Liste des Contrôles | EPI Control</title>
       </Helmet>
@@ -180,6 +179,5 @@ export default function ControlesPage() {
           </Table>
         </CardContent>
       </Card>
-    </Layout>
   );
 }
