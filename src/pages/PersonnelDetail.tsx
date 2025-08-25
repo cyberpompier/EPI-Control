@@ -291,7 +291,9 @@ const PersonnelDetail = () => {
           <CardHeader>
             <CardTitle>Équipements Assignés</CardTitle>
             <CardDescription>Liste des équipements assignés à ce personnel</CardDescription>
-            <div className="relative pt-4">
+          </CardHeader>
+          <CardContent>
+            <div className="relative mb-4">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher par numéro de série..."
@@ -300,8 +302,6 @@ const PersonnelDetail = () => {
                 className="pl-8"
               />
             </div>
-          </CardHeader>
-          <CardContent>
             {equipment.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Aucun équipement assigné</p>
