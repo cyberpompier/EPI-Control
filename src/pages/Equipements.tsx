@@ -29,8 +29,8 @@ export default function Equipements() {
     <Layout>
       <div className="p-4">
         {/* Titre et boutons d'action */}
-        {/*<div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold"></h1>*/}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold"></h1>
           <div className="flex space-x-2">
             <Link to="/equipements/barcode">
               <Button className="bg-red-600 hover:bg-red-700">
