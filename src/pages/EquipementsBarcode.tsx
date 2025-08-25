@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Camera, Scan, Search } from 'lucide-react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { showError } from '@/utils/toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const EquipementsBarcode = () => {
   const navigate = useNavigate();
@@ -76,8 +77,8 @@ const EquipementsBarcode = () => {
               const code = result.getText();
               setScannedCode(code);
               setIsScanning(false);
-              // Rediriger vers la page de l'équipement
-              navigate(`/equipements/${code}`);
+              // Rechercher l'équipement dans la base de données
+              searchEquipment(code);
             }
           }
         );
@@ -86,6 +87,32 @@ const EquipementsBarcode = () => {
       console.error('Erreur lors du scan:', error);
       showError('Impossible d\'accéder à la caméra. Veuillez vérifier les permissions.');
       setIsScanning(false);
+    }
+  };
+
+  const searchEquipment = async (code: string) => {
+    try {
+      // Rechercher l'équipement par numéro de série
+      const { data, error } = await supabase
+        .from('equipements')
+        .select('id')
+        .eq('numero_serie', code)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        // Rediriger vers la page de détail de l'équipement
+        navigate(`/equipements/${data.id}`);
+      } else {
+        // Si aucun équipement n'est trouvé, afficher un message
+        showError('Aucun équipement trouvé avec ce code-barres');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche d\'équipement:', error);
+      showError('Erreur lors de la recherche d\'équipement');
     }
   };
 
@@ -107,9 +134,9 @@ const EquipementsBarcode = () => {
     setIsScanning(false);
   };
 
-  const handleManualSearch = () => {
+  const handleManualSearch = async () => {
     if (manualCode.trim()) {
-      navigate(`/equipements/${manualCode}`);
+      await searchEquipment(manualCode.trim());
     }
   };
 
