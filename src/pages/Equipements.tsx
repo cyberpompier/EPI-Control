@@ -1,69 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Plus, Barcode } from 'lucide-react';
-import EPICard from '@/components/epi/EPICard';
-import { supabase } from '@/lib/supabase';
-import { showError } from '@/utils/toast';
+"use client";
 
-export default function Equipements() {
-  const [equipements, setEquipements] = useState<any[]>([]);
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
+import { Search, Plus } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+const Equipements = () => {
+  const [equipements, setEquipements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchEquipements() {
-      setLoading(true);
-      const { data, error } = await supabase.from('equipements').select('*');
-      if (error) {
-        showError("Erreur lors du chargement des équipements");
-      } else {
-        setEquipements(data || []);
-      }
-      setLoading(false);
-    }
     fetchEquipements();
   }, []);
 
+  const fetchEquipements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipements')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEquipements(data);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors du chargement des équipements',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('equipements')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      // Refresh the list
+      fetchEquipements();
+      
+      toast({
+        title: 'Succès',
+        description: 'Équipement supprimé avec succès',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredEquipements = equipements.filter(equipement =>
+    equipement.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipement.marque?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipement.modele?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipement.numero_serie?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return <div className="container mx-auto py-8">Chargement...</div>;
+  }
+
   return (
-    <Layout>
-      <div className="p-4">
-        {/* Titre et boutons d'action */}
-        <div className="flex justify-between items-center mb-4">
+    <div className="container mx-auto py-8">
+      {/* Header responsive avec titre et boutons */}
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
           <h1 className="text-2xl font-bold">Liste des équipements</h1>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Link to="/equipements/barcode">
-              <Button className="bg-red-600 hover:bg-red-700">
-                <Barcode className="h-4 w-4 mr-2" />
-                Code barre
+              <Button variant="outline" className="w-full sm:w-auto">
+                Scanner un code-barre
               </Button>
             </Link>
-            <Link to="/equipements/nouveau">
-              <Button className="bg-red-600 hover:bg-red-700">
-                <Plus className="h-4 w-4 mr-2" />
+            <Link to="/equipements/new">
+              <Button className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
                 Ajouter un équipement
               </Button>
             </Link>
           </div>
         </div>
-
-        {/* Liste des équipements */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
-          </div>
-        ) : equipements.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {equipements.map((equipement) => (
-              <EPICard key={equipement.id} epi={equipement} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-gray-600">Aucun équipement trouvé.</p>
-          </div>
-        )}
+        
+        {/* Barre de recherche */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Rechercher un équipement..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
-    </Layout>
+
+      {/* Tableau des équipements */}
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Image</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Marque</TableHead>
+              <TableHead>Modèle</TableHead>
+              <TableHead>N° Série</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredEquipements.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  Aucun équipement trouvé
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredEquipements.map((equipement) => (
+                <TableRow key={equipement.id}>
+                  <TableCell>
+                    {equipement.image ? (
+                      <img 
+                        src={equipement.image} 
+                        alt={equipement.type} 
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-500 text-xs text-center">Pas d'image</span>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium">{equipement.type}</TableCell>
+                  <TableCell>{equipement.marque || '-'}</TableCell>
+                  <TableCell>{equipement.modele || '-'}</TableCell>
+                  <TableCell>{equipement.numero_serie}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      equipement.statut === 'en_service' ? 'bg-green-100 text-green-800' :
+                      equipement.statut === 'en_reparation' ? 'bg-yellow-100 text-yellow-800' :
+                      equipement.statut === 'hors_service' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {equipement.statut === 'en_service' ? 'En service' :
+                       equipement.statut === 'en_reparation' ? 'En réparation' :
+                       equipement.statut === 'hors_service' ? 'Hors service' :
+                       'En attente'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/equipements/${equipement.id}`)}
+                      >
+                        Voir
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/equipements/${equipement.id}/edit`)}
+                      >
+                        Modifier
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
-}
+};
+
+export default Equipements;
