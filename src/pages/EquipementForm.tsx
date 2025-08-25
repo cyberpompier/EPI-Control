@@ -26,8 +26,6 @@ const formSchema = z.object({
   marque: z.string().optional(),
   modele: z.string().optional(),
   numero_serie: z.string().min(1, 'Le numéro de série est requis'),
-  date_mise_en_service: z.string().optional(),
-  date_fin_vie: z.string().optional(),
   personnel_id: z.string().optional(),
   statut: z.string().min(1, 'Le statut est requis'),
 });
@@ -48,8 +46,6 @@ export default function EquipementForm() {
       marque: '',
       modele: '',
       numero_serie: '',
-      date_mise_en_service: '',
-      date_fin_vie: '',
       personnel_id: '',
       statut: 'en_attente',
     },
@@ -57,6 +53,14 @@ export default function EquipementForm() {
 
   useEffect(() => {
     fetchPompiers();
+    
+    // Définir automatiquement les dates
+    const today = new Date();
+    const tenYearsFromNow = new Date();
+    tenYearsFromNow.setFullYear(today.getFullYear() + 10);
+    
+    // On ne met pas ces valeurs dans le formulaire car elles ne sont pas affichées
+    // mais elles seront utilisées lors de la soumission
   }, []);
 
   const fetchPompiers = async () => {
@@ -88,11 +92,22 @@ export default function EquipementForm() {
     try {
       setLoading(true);
       
+      // Calculer automatiquement les dates
+      const today = new Date();
+      const tenYearsFromNow = new Date();
+      tenYearsFromNow.setFullYear(today.getFullYear() + 10);
+      
+      // Formater les dates au format YYYY-MM-DD
+      const formattedDateMiseEnService = today.toISOString().split('T')[0];
+      const formattedDateFinVie = tenYearsFromNow.toISOString().split('T')[0];
+      
       const { error } = await supabase
         .from('equipements')
         .insert({
           ...values,
           personnel_id: values.personnel_id ? parseInt(values.personnel_id) : null,
+          date_mise_en_service: formattedDateMiseEnService,
+          date_fin_vie: formattedDateFinVie,
         });
 
       if (error) throw error;
@@ -178,34 +193,6 @@ export default function EquipementForm() {
                       <FormLabel>Numéro de série</FormLabel>
                       <FormControl>
                         <Input placeholder="Numéro d'identification unique" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="date_mise_en_service"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date de mise en service</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="date_fin_vie"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date de fin de vie</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
