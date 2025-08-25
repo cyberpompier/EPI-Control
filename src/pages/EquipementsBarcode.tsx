@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess } from '@/utils/toast';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import BarcodeScanner from '@/components/BarcodeScanner';
 
 export default function EquipementsBarcode() {
@@ -19,18 +19,21 @@ export default function EquipementsBarcode() {
     setIsScanning(false);
     
     try {
-      // Rechercher l'équipement par code-barres
+      // Rechercher l'équipement par numéro de série
       const { data, error } = await supabase
         .from('equipements')
         .select('*')
         .eq('numero_serie', decodedText)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        showError('Équipement non trouvé');
+        return;
+      }
 
       if (data) {
         showSuccess('Équipement trouvé !');
-        // Utiliser le bon chemin vers la page de détail
         navigate(`/equipement/${data.id}`);
       } else {
         showError('Équipement non trouvé');
@@ -48,18 +51,21 @@ export default function EquipementsBarcode() {
     }
 
     try {
-      // Rechercher l'équipement par code-barres
+      // Rechercher l'équipement par numéro de série
       const { data, error } = await supabase
         .from('equipements')
         .select('*')
         .eq('numero_serie', manualCode)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        showError('Équipement non trouvé');
+        return;
+      }
 
       if (data) {
         showSuccess('Équipement trouvé !');
-        // Utiliser le bon chemin vers la page de détail
         navigate(`/equipement/${data.id}`);
       } else {
         showError('Équipement non trouvé');
