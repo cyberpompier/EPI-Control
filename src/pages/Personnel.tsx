@@ -102,6 +102,7 @@ export default function Personnel() {
   const casernes = [...new Set(pompiers.map(p => p.caserne).filter(Boolean))];
 
   return (
+    <Layout>
     <>
       <Helmet>
         <title>Personnel | EPI Control</title>
@@ -201,5 +202,6 @@ export default function Personnel() {
         </Link>
       </div>
     </>
+    </Layout>
   );
 }
