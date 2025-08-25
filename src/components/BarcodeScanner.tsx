@@ -79,7 +79,7 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
     // Nettoyage
     return () => {
       if (codeReaderRef.current) {
-        codeReaderRef.current.stopAsync();
+        codeReaderRef.current.stop();
       }
     };
   }, [onResult, onError]);
