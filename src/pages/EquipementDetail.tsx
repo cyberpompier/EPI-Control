@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Calendar, User, Image, Edit } from 'lucide-react';
+import { Plus, Calendar, User, Image, Edit, Scan } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { showError } from '@/utils/toast';
@@ -86,13 +86,24 @@ const EquipementDetail = () => {
     }
   };
 
+  // URL de l'image par défaut
+  const defaultImageUrl = 'https://quvdxjxszquqqcvesntn.supabase.co/storage/v1/object/public/banque%20image%20habillement/habillement/image_non_disponible.png';
+
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
-        <Button variant="outline" onClick={() => navigate('/equipements')}>
-          Retour à la liste
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Link to={`/equipement/barcode`}>
+            <Button variant="outline">
+              <Scan className="h-4 w-4 mr-2" />
+              Scanner
+            </Button>
+          </Link>
+          <Button variant="outline" onClick={() => navigate('/equipements')}>
+            Retour à la liste
+          </Button>
+        </div>
       </div>
 
       <Card className="mb-8">
@@ -155,9 +166,13 @@ const EquipementDetail = () => {
                   />
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-48 bg-gray-100 rounded-lg">
-                  <Image className="h-12 w-12 text-gray-400" />
-                  <span className="ml-2 text-gray-500">Aucune image</span>
+                <div className="flex justify-center">
+                  <img 
+                    src={defaultImageUrl} 
+                    alt="Image non disponible"
+                    className="max-w-full h-auto rounded-lg shadow-md"
+                    style={{ maxHeight: '200px' }}
+                  />
                 </div>
               )}
             </div>
