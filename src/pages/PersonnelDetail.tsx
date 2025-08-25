@@ -10,6 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Pencil } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 interface Personnel {
   id: number;
@@ -65,71 +67,75 @@ const PersonnelDetail = () => {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Détails du Personnel</h1>
-        <Button onClick={() => navigate(`/personnel/${id}/edit`)}>Retour à la liste</Button>
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-grow container mx-auto py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Détails du Personnel</h1>
+          <Button onClick={() => navigate('/personnel')}>Retour à la liste</Button>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
-          <CardContent className="pt-6 relative">
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-4 right-4"
-              onClick={() => navigate(`/personnel/${id}/edit`)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <div className="text-center">
-              <Avatar className="h-24 w-24 mx-auto mb-4">
-                <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
-                <AvatarFallback>
-                  {pompier.prenom.charAt(0)}
-                  {pompier.nom.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h2>
-              <p className="text-muted-foreground">{pompier.grade}</p>
-              <Badge className="mt-2">{pompier.caserne}</Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-1">
+            <CardContent className="pt-6 relative">
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute top-4 right-4"
+                onClick={() => navigate(`/personnel/${id}/edit`)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <div className="text-center">
+                <Avatar className="h-24 w-24 mx-auto mb-4">
+                  <AvatarImage src={pompier.photo || undefined} alt={`${pompier.prenom} ${pompier.nom}`} />
+                  <AvatarFallback>
+                    {pompier.prenom.charAt(0)}
+                    {pompier.nom.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="text-xl font-semibold">{pompier.prenom} {pompier.nom}</h2>
+                <p className="text-muted-foreground">{pompier.grade}</p>
+                <Badge className="mt-2">{pompier.caserne}</Badge>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Informations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Matricule</label>
-                <p>{pompier.matricule}</p>
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Informations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Matricule</label>
+                  <p>{pompier.matricule}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p>{pompier.email}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Caserne</label>
+                  <p>{pompier.caserne}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Grade</label>
+                  <p>{pompier.grade}</p>
+                </div>
               </div>
+              
+              <Separator className="my-6" />
+              
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Email</label>
-                <p>{pompier.email}</p>
+                <h3 className="text-lg font-semibold mb-4">Équipements assignés</h3>
+                <p className="text-muted-foreground">Aucun équipement assigné pour le moment.</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Caserne</label>
-                <p>{pompier.caserne}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Grade</label>
-                <p>{pompier.grade}</p>
-              </div>
-            </div>
-            
-            <Separator className="my-6" />
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Équipements assignés</h3>
-              <p className="text-muted-foreground">Aucun équipement assigné pour le moment.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 };
