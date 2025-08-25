@@ -1,127 +1,194 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { showError, showSuccess } from '@/utils/toast';
-import { supabase } from '@/lib/supabase';
-import BarcodeScanner from '@/components/BarcodeScanner';
+import { Switch } from '@/components/ui/switch';
+import { Camera, Scan, Search } from 'lucide-react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
+import { showError } from '@/utils/toast';
 
-export default function EquipementsBarcode() {
-  const [scannedCode, setScannedCode] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [manualCode, setManualCode] = useState('');
+const EquipementsBarcode = () => {
   const navigate = useNavigate();
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannedCode, setScannedCode] = useState<string | null>(null);
+  const [manualCode, setManualCode] = useState('');
+  const [useFrontCamera, setUseFrontCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const selectedDeviceIdRef = useRef<string | null>(null);
 
-  const handleScanSuccess = async (decodedText: string) => {
-    setScannedCode(decodedText);
-    setIsScanning(false);
+  useEffect(() => {
+    // Activer automatiquement le scanner à l'ouverture de la page
+    startScanning();
     
+    return () => {
+      stopScanning();
+    };
+  }, []);
+
+  const startScanning = async () => {
     try {
-      // Rechercher l'équipement par code-barres
-      const { data, error } = await supabase
-        .from('equipements')
-        .select('*')
-        .eq('numero_serie', decodedText)
-        .single();
+      setIsScanning(true);
+      setScannedCode(null);
+      
+      // Créer le lecteur
+      codeReaderRef.current = new BrowserMultiFormatReader();
+      
+      // Obtenir la liste des appareils vidéo
+      const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+      
+      if (videoInputDevices.length === 0) {
+        throw new Error('Aucune caméra trouvée');
+      }
 
-      if (error) throw error;
-
-      if (data) {
-        showSuccess('Équipement trouvé !');
-        navigate(`/equipements/${data.id}`);
+      // Sélectionner la caméra (arrière par défaut, avant si demandé)
+      let deviceId = '';
+      if (useFrontCamera) {
+        // Chercher la caméra frontale
+        const frontCamera = videoInputDevices.find(device => 
+          device.label.toLowerCase().includes('front') || 
+          device.label.toLowerCase().includes('avant')
+        );
+        deviceId = frontCamera ? frontCamera.deviceId : videoInputDevices[0].deviceId;
       } else {
-        showError('Équipement non trouvé');
+        // Chercher la caméra arrière
+        const backCamera = videoInputDevices.find(device => 
+          device.label.toLowerCase().includes('back') || 
+          device.label.toLowerCase().includes('arrière') ||
+          device.label.toLowerCase().includes('rear')
+        );
+        deviceId = backCamera ? backCamera.deviceId : videoInputDevices[0].deviceId;
+      }
+
+      selectedDeviceIdRef.current = deviceId;
+      
+      // Démarrer la lecture
+      if (videoRef.current && codeReaderRef.current) {
+        await codeReaderRef.current.decodeFromVideoDevice(
+          deviceId,
+          videoRef.current,
+          (result, _, controls) => {
+            if (result) {
+              // Arrêter le scanner après la première lecture
+              controls.stop();
+              const code = result.getText();
+              setScannedCode(code);
+              setIsScanning(false);
+              // Rediriger vers la page de l'équipement
+              navigate(`/equipements/${code}`);
+            }
+          }
+        );
       }
     } catch (error) {
-      console.error('Error searching equipement:', error);
-      showError('Erreur lors de la recherche de l\'équipement');
+      console.error('Erreur lors du scan:', error);
+      showError('Impossible d\'accéder à la caméra. Veuillez vérifier les permissions.');
+      setIsScanning(false);
     }
   };
 
-  const handleManualSearch = async () => {
-    if (!manualCode.trim()) {
-      showError('Veuillez entrer un code-barres');
-      return;
-    }
-
-    try {
-      // Rechercher l'équipement par code-barres
-      const { data, error } = await supabase
-        .from('equipements')
-        .select('*')
-        .eq('numero_serie', manualCode)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        showSuccess('Équipement trouvé !');
-        navigate(`/equipements/${data.id}`);
-      } else {
-        showError('Équipement non trouvé');
+  const stopScanning = () => {
+    if (codeReaderRef.current) {
+      try {
+        (codeReaderRef.current as any).stopAsync();
+      } catch (e) {
+        // Si stopAsync n'existe pas, on essaie reset
+        try {
+          (codeReaderRef.current as any).reset();
+        } catch (e2) {
+          // Si reset n'existe pas non plus, on ignore
+          console.warn('Impossible d\'arrêter le scanner proprement', e2);
+        }
       }
-    } catch (error) {
-      console.error('Error searching equipement:', error);
-      showError('Erreur lors de la recherche de l\'équipement');
+      codeReaderRef.current = null;
     }
+    setIsScanning(false);
+  };
+
+  const handleManualSearch = () => {
+    if (manualCode.trim()) {
+      navigate(`/equipements/${manualCode}`);
+    }
+  };
+
+  const toggleCamera = () => {
+    stopScanning();
+    setUseFrontCamera(!useFrontCamera);
+    setTimeout(() => {
+      startScanning();
+    }, 500);
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <Card>
+    <div className="container mx-auto py-8 px-4">
+      <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Recherche par code-barres</CardTitle>
-          <CardDescription>
-            Scannez ou entrez manuellement le code-barres d'un équipement
-          </CardDescription>
+          <CardTitle className="flex items-center">
+            <Scan className="h-5 w-5 mr-2" />
+            Scanner de codes-barres
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Scanner un code-barres</h3>
-            
-            {!isScanning ? (
-              <div className="flex flex-col items-center space-y-4">
-                <p className="text-center text-muted-foreground">
-                  {scannedCode 
-                    ? `Dernier code scanné : ${scannedCode}` 
-                    : 'Cliquez sur le bouton pour activer le scanner'}
-                </p>
-                <Button onClick={() => setIsScanning(true)}>
-                  Activer le scanner
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="w-full h-64 rounded-md overflow-hidden border">
-                  <BarcodeScanner onResult={handleScanSuccess} />
+        <CardContent>
+          <div className="space-y-6">
+            {/* Vue de la caméra */}
+            <div className="relative bg-muted rounded-lg overflow-hidden aspect-video flex items-center justify-center">
+              {isScanning ? (
+                <>
+                  <video 
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="border-2 border-white rounded-lg w-64 h-64 animate-pulse"></div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center space-y-4">
+                  <Camera className="h-12 w-12 text-muted-foreground" />
+                  <p className="text-center text-muted-foreground">
+                    {scannedCode 
+                      ? `Dernier code scanné : ${scannedCode}` 
+                      : 'Scanner un code-barres'}
+                  </p>
+                  <Button onClick={startScanning}>Activer la caméra</Button>
                 </div>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsScanning(false)}
-                  className="w-full"
-                >
-                  Arrêter le scanner
-                </Button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Recherche manuelle</h3>
-            <div className="flex space-x-2">
-              <div className="flex-1">
-                <Label htmlFor="manual-code">Code-barres</Label>
-                <Input
-                  id="manual-code"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Entrez le code-barres"
-                />
+            {/* Contrôle de la caméra */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="front-camera">Utiliser la caméra frontale</Label>
+              <Switch
+                id="front-camera"
+                checked={useFrontCamera}
+                onCheckedChange={toggleCamera}
+              />
+            </div>
+
+            {/* Séparateur */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-muted"></div>
               </div>
-              <Button onClick={handleManualSearch} className="self-end">
-                Rechercher
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Ou rechercher manuellement
+                </span>
+              </div>
+            </div>
+
+            {/* Recherche manuelle */}
+            <div className="flex space-x-2">
+              <Input
+                placeholder="Entrez le code-barres"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
+              />
+              <Button onClick={handleManualSearch}>
+                <Search className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -129,4 +196,6 @@ export default function EquipementsBarcode() {
       </Card>
     </div>
   );
-}
+};
+
+export default EquipementsBarcode;
