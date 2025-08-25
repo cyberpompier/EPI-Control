@@ -17,6 +17,8 @@ export default function PersonnelDetail() {
   const [pompier, setPompier] = useState<Pompier | null>(null);
   const [equipements, setEquipements] = useState<EPI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+
 
   useEffect(() => {
     const fetchData = async () => {
