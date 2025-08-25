@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Camera, Scan, Search } from 'lucide-react';
+import { Camera, Scan, Search, ArrowLeft } from 'lucide-react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -150,6 +150,14 @@ const EquipementsBarcode = () => {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Bouton de retour au menu parent */}
+      <div className="mb-6">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+      </div>
+      
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center">
