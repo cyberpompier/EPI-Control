@@ -24,6 +24,6 @@ export default function PrivateRoute({ children }: PrivateRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // ✅ toutes les pages protégées passent automatiquement par Layout
-  return <Layout>{children}</Layout>;
+  // ✅ Les pages protégées gèrent elles-mêmes <Layout>
+  return <>{children}</>;
 }
