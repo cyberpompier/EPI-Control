@@ -1,5 +1,5 @@
 "use client";
-
+import Layout from '@/components/layout/Layout';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -135,6 +135,7 @@ const EquipementEdit = () => {
   }
 
   return (
+    <Layout>
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">
         {id ? 'Modifier l\'Équipement' : 'Ajouter un Équipement'}
@@ -265,6 +266,7 @@ const EquipementEdit = () => {
         </form>
       </Form>
     </div>
+    </Layout>
   );
 };
 
