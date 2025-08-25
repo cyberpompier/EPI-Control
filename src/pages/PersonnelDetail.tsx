@@ -49,7 +49,7 @@ const PersonnelDetail = () => {
   }
 
   return (
-    <layout>
+    <Layout>
     <div className="container mx-auto py-8">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
@@ -100,7 +100,7 @@ const PersonnelDetail = () => {
         </CardContent>
       </Card>
     </div>
-    </layout>
+    </Layout>
   );
 };
 
