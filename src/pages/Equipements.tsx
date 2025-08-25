@@ -12,6 +12,13 @@ export default function Equipements() {
   const [equipements, setEquipements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const { data, error } = await supabase
+  .from('equipements')
+  .select(`
+    *,
+    personnels:personnel_id ( id, nom, prenom )
+  `);
+
 
   useEffect(() => {
     async function fetchEquipements() {
