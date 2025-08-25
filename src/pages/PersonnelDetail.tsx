@@ -83,6 +83,10 @@ export default function PersonnelDetail() {
     nonConformes: equipements.filter(e => e.statut === 'non_conforme').length,
     enAttente: equipements.filter(e => e.statut === 'en_attente').length
   };
+  // Ajoute cette fonction juste avant le return
+const handleEdit = () => {
+  setIsEditing(true);
+};
 
   return (
     <Layout>
