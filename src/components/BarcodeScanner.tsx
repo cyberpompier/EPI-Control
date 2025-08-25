@@ -79,7 +79,17 @@ const BarcodeScanner = ({ onResult, onError }: BarcodeScannerProps) => {
     // Nettoyage
     return () => {
       if (codeReaderRef.current) {
-        codeReaderRef.current.stop();
+        try {
+          (codeReaderRef.current as any).stopAsync();
+        } catch (e) {
+          // Si stopAsync n'existe pas, on essaie reset
+          try {
+            (codeReaderRef.current as any).reset();
+          } catch (e2) {
+            // Si reset n'existe pas non plus, on ignore
+            console.warn('Impossible d\'arrêter le scanner proprement', e2);
+          }
+        }
       }
     };
   }, [onResult, onError]);
