@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, Plus, Hash, User } from 'lucide-react';
+import { Pencil, Plus, Hash, User, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EPICard from '@/components/EPICard';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
@@ -45,6 +44,7 @@ const PersonnelDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedPersonnel, setEditedPersonnel] = useState<Personnel | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchPersonnelAndEquipment = async () => {
@@ -125,6 +125,10 @@ const PersonnelDetail = () => {
       });
     }
   };
+
+  const filteredEquipment = equipment.filter(item =>
+    item.numero_serie.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Chargement...</div>;
@@ -287,6 +291,15 @@ const PersonnelDetail = () => {
           <CardHeader>
             <CardTitle>Équipements Assignés</CardTitle>
             <CardDescription>Liste des équipements assignés à ce personnel</CardDescription>
+            <div className="relative pt-4">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par numéro de série..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {equipment.length === 0 ? (
@@ -297,9 +310,13 @@ const PersonnelDetail = () => {
                   Assigner un équipement
                 </Button>
               </div>
+            ) : filteredEquipment.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Aucun équipement ne correspond à votre recherche.</p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {equipment.map((item) => (
+                {filteredEquipment.map((item) => (
                   <EPICard
                     key={item.id}
                     id={item.id}
