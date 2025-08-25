@@ -70,12 +70,12 @@ const EquipementDetail = () => {
 
   if (!equipement) {
     return (
-      <layout>
+      <Layout>
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="text-2xl font-bold text-gray-800 mb-4">Équipement non trouvé</div>
         <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
       </div>
-      </layout>
+      </Layout>
     );
   }
 
