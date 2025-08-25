@@ -13,7 +13,6 @@ import { ArrowLeft, Mail, MapPin, Shield, Plus, FileText, Pencil } from 'lucide-
 import { getInitials } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export default function PersonnelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -148,7 +147,39 @@ export default function PersonnelDetail() {
           )}
         </div>
 
-        {/* Stats et équipements... reste le même que ton code actuel */}
+        {/* Stats EPI */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold">{stats.total}</div><div className="text-sm text-gray-500">Total EPI</div></CardContent></Card>
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold text-green-600">{stats.conformes}</div><div className="text-sm text-gray-500">Conformes</div></CardContent></Card>
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold text-red-600">{stats.nonConformes}</div><div className="text-sm text-gray-500">Non conformes</div></CardContent></Card>
+          <Card><CardContent className="text-center"><div className="text-2xl font-bold text-yellow-600">{stats.enAttente}</div><div className="text-sm text-gray-500">En attente</div></CardContent></Card>
+        </div>
+
+        {/* Équipements */}
+        <Card>
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Équipements assignés</CardTitle>
+            <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2"/> Ajouter un équipement</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {equipements.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {equipements.map(epi => <EPICard key={epi.id} epi={epi} />)}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+                <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900">Aucun équipement assigné</h3>
+                <p className="mt-2 text-gray-500 mb-4">Ce pompier n'a pas encore d'équipement assigné.</p>
+                <Link to={`/equipements/nouveau?pompier=${pompier.id}`}>
+                  <Button className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-2"/> Ajouter un équipement</Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
