@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
 import { PompierCard } from '@/components/personnel/PompierCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,7 +102,7 @@ export default function Personnel() {
   const casernes = [...new Set(pompiers.map(p => p.caserne).filter(Boolean))];
 
   return (
-    <Layout>
+    <>
       <Helmet>
         <title>Personnel | EPI Control</title>
       </Helmet>
@@ -140,7 +139,7 @@ export default function Personnel() {
             <SelectContent>
               <SelectItem value="all">Tous les grades</SelectItem>
               {grades.map(grade => (
-                <SelectItem key={grade} value={grade!}>{grade}</SelectItem>
+                <SelectItem key={grade!} value={grade!}>{grade}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -152,7 +151,7 @@ export default function Personnel() {
             <SelectContent>
               <SelectItem value="all">Toutes les casernes</SelectItem>
               {casernes.map(caserne => (
-                <SelectItem key={caserne} value={caserne!}>{caserne}</SelectItem>
+                <SelectItem key={caserne!} value={caserne!}>{caserne}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -201,6 +200,6 @@ export default function Personnel() {
           </Button>
         </Link>
       </div>
-    </Layout>
+    </>
   );
 }
