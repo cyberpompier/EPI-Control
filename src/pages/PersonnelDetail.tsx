@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import EPICard from '@/components/epi/EPICard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pencil, Plus, Hash, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
