@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import PersonnelTable from '@/components/personnel/PersonnelTable';
-import AddPersonnelForm from '@/components/personnel/AddPersonnelForm';
+import PersonnelTable from '../components/PersonnelTable';
+import AddPersonnelForm from '../components/AddPersonnelForm';
 import {
   Dialog,
   DialogContent,
