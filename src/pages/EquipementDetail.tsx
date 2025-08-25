@@ -48,9 +48,9 @@ const EquipementDetail = () => {
 
         setEquipement(equipementData);
         setControles(controlesData || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Erreur lors du chargement des données:', error);
-        showError('Erreur lors du chargement des données');
+        showError(`Erreur lors du chargement des données: ${error.message || error}`);
       } finally {
         setLoading(false);
       }
@@ -94,7 +94,7 @@ const EquipementDetail = () => {
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
         <div className="flex flex-wrap gap-2">
-          <Link to={`/equipements/barcode`}>
+          <Link to={`/equipement/barcode`}>
             <Button variant="outline">
               <Scan className="h-4 w-4 mr-2" />
               Scanner
