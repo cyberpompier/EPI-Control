@@ -1,59 +1,70 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+"use client";
+
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface SessionContextType {
-  session: Session | null;
-  user: User | null;
+  session: any;
   loading: boolean;
+  userRole: string | null;
+  user: any; // Add user property
 }
 
-const SessionContext = createContext<SessionContextType>({
-  session: null,
-  user: null,
-  loading: true,
-});
+const SessionContext = createContext<SessionContextType | undefined>(undefined);
+
+export const SessionProvider = ({ children }: { children: ReactNode }) => {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null); // Add user state
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user || null); // Set user from session
+      setLoading(false);
+      
+      if (session?.user) {
+        // Fetch user role from profiles table
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (!error && data) {
+          setUserRole(data.role);
+        }
+      }
+    };
+
+    fetchSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user || null); // Update user when session changes
+      if (!session) {
+        setUserRole(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return (
+    <SessionContext.Provider value={{ session, loading, userRole, user }}>
+      {children}
+    </SessionContext.Provider>
+  );
+};
 
 export const useSession = () => {
   const context = useContext(SessionContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useSession must be used within a SessionProvider');
   }
   return context;
 };
-
-interface SessionProviderProps {
-  children: React.ReactNode;
-}
-
-export function SessionProvider({ children }: SessionProviderProps) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return (
-    <SessionContext.Provider value={{ session, user, loading }}>
-      {children}
-    </SessionContext.Provider>
-  );
-}

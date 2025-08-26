@@ -1,99 +1,114 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Menu, X, LogOut, User, BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { showSuccess } from '@/utils/toast';
-import { useSession } from '@/components/auth/SessionProvider';
+"use client";
 
-export default function Header() {
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { 
+  Menu, 
+  X, 
+  Home, 
+  Users, 
+  Shield, 
+  FileText, 
+  User, 
+  LogOut 
+} from 'lucide-react';
+import { useSession } from '@/components/auth/SessionProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
+
+const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user } = useSession();
+  const { session } = useSession(); // Fixed: use session instead of user
   const isMobile = useIsMobile();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    showSuccess('Déconnexion réussie');
-    navigate('/login');
+    // TODO: Implement logout functionality
+    console.log('Logout functionality needs to be implemented');
   };
 
+  const navItems = [
+    { name: 'Accueil', path: '/', icon: Home },
+    { name: 'Personnel', path: '/personnel', icon: Users },
+    { name: 'Équipements', path: '/epi', icon: Shield },
+    { name: 'Contrôles', path: '/controles', icon: FileText },
+  ];
+
   return (
-    <header className="bg-red-700 text-white shadow-md sticky top-0 z-40">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link to="/dashboard" className="flex items-center space-x-2">
-          <img src="/logo-pompier.svg" alt="Logo Pompiers" className="h-10 w-10" />
-          <span className="font-bold text-xl">EPI Control</span>
-        </Link>
-
-        {isMobile ? (
-          <>
-            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </Button>
-
-            {isMenuOpen && (
-              <div className="absolute top-16 left-0 right-0 bg-red-700 z-50 shadow-lg">
-                <nav className="flex flex-col p-4">
-                  <Link to="/dashboard" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Tableau de bord
-                  </Link>
-                  <Link to="/controles" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Contrôles
-                  </Link>
-                  <Link to="/equipements" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Équipements
-                  </Link>
-                  <Link to="/personnel" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Personnel
-                  </Link>
-                  <Link to="/reports" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Rapports
-                  </Link>
-                  <Link to="/notifications" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Notifications
-                  </Link>
-                  <Link to="/profile" className="py-2 px-4 hover:bg-red-800 rounded" onClick={() => setIsMenuOpen(false)}>
-                    Mon profil
-                  </Link>
-                  <Button variant="ghost" className="justify-start py-2 px-4 hover:bg-red-800 rounded text-white" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" /> Déconnexion
-                  </Button>
-                </nav>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center space-x-4">
-            <nav className="flex items-center space-x-4">
-              <Link to="/dashboard" className="hover:text-gray-200">Tableau de bord</Link>
-              <Link to="/controles" className="hover:text-gray-200">Contrôles</Link>
-              <Link to="/equipements" className="hover:text-gray-200">Équipements</Link>
-              <Link to="/personnel" className="hover:text-gray-200">Personnel</Link>
-              <Link to="/reports" className="hover:text-gray-200 flex items-center">
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Rapports
-              </Link>
-            </nav>
-            
-            <Link to="/notifications" className="relative">
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 bg-yellow-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+    <header className="border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="text-xl font-bold">
+              FireCheck
             </Link>
-            
-            <div className="flex items-center space-x-2">
-              <Link to="/profile" className="flex items-center hover:text-gray-200">
-                <User size={20} className="mr-1" />
-                <span>{user?.email?.split('@')[0] || 'Utilisateur'}</span>
-              </Link>
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white hover:text-gray-200">
-                <LogOut size={18} />
-              </Button>
-            </div>
           </div>
+
+          {isMobile ? (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X /> : <Menu />}
+            </Button>
+          ) : (
+            <nav className="flex space-x-4">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button 
+                    key={item.path}
+                    variant={location.pathname === item.path ? "default" : "ghost"}
+                    asChild
+                  >
+                    <Link to={item.path}>
+                      <Icon className="mr-2 h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  </Button>
+                );
+              })}
+            </nav>
+          )}
+
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/profile">
+                <User className="h-5 w-5" />
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {isMenuOpen && isMobile && (
+          <nav className="pb-4 flex flex-col space-y-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button 
+                  key={item.path}
+                  variant={location.pathname === item.path ? "default" : "ghost"}
+                  asChild
+                  className="justify-start"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Link to={item.path}>
+                    <Icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                </Button>
+              );
+            })}
+          </nav>
         )}
       </div>
     </header>
   );
-}
+};
+
+export default Header;

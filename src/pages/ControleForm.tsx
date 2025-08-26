@@ -1,160 +1,104 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useSession } from '@/components/auth/SessionProvider';
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { showSuccess, showError } from '@/utils/toast';
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { EPI } from '@/types/epi';
+import ControleForm from '@/components/controle/ControleForm';
+import { useSession } from '@/components/auth/SessionProvider';
 
-export default function ControleForm() {
-  const { id } = useParams();
+const ControleFormPage = () => {
   const navigate = useNavigate();
-  const { user } = useSession();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    resultat: 'conforme' as 'conforme' | 'non_conforme',
-    observations: '',
-    actions_correctives: '',
-    date_prochaine_verification: ''
-  });
+  const { session } = useSession(); // Fixed: use session instead of user
+  const { toast } = useToast();
+  const { epiId } = useParams<{ epiId: string }>();
+  const [epi, setEpi] = useState<EPI | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.currentTarget;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleResultatChange = (value: string) => {
-    setFormData(prev => ({ ...prev, resultat: value as 'conforme' | 'non_conforme' }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      showError('Vous devez être connecté pour effectuer un contrôle');
-      return;
+  useEffect(() => {
+    if (epiId) {
+      fetchEPI();
     }
+  }, [epiId]);
 
-    setIsLoading(true);
+  const fetchEPI = async () => {
     try {
-      const { error } = await supabase
-        .from('controles')
-        .insert({
-          equipement_id: id,
-          controleur_id: user.id,
-          resultat: formData.resultat,
-          observations: formData.observations,
-          actions_correctives: formData.resultat === 'non_conforme' ? formData.actions_correctives : null,
-          date_prochaine_verification: formData.date_prochaine_verification || null
-        });
+      const { data, error } = await supabase
+        .from('equipements')
+        .select('*')
+        .eq('id', epiId)
+        .single();
 
       if (error) throw error;
-
-      // Mise à jour du statut de l'équipement
-      const { error: updateError } = await supabase
-        .from('equipements')
-        .update({ statut: formData.resultat })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
-      showSuccess('Contrôle enregistré avec succès');
-      navigate('/equipements');
+      setEpi(data);
     } catch (error) {
-      console.error('Erreur lors de l\'enregistrement du contrôle:', error);
-      showError('Erreur lors de l\'enregistrement du contrôle');
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger l'équipement",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSubmit = async (formData: any) => {
+    try {
+      setIsLoading(true);
+      
+      // Add controleur_id to the form data
+      const controleData = {
+        ...formData,
+        controleur_id: session?.user?.id // Use session.user.id instead of user.id
+      };
+
+      const { error } = await supabase
+        .from('controles')
+        .insert(controleData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Contrôle enregistré avec succès"
+      });
+
+      navigate('/controles');
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer le contrôle",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate('/epi');
+  };
+
+  if (isLoading) {
+    return <div className="p-4">Chargement...</div>;
+  }
+
+  if (!epi) {
+    return <div className="p-4">Équipement non trouvé</div>;
+  }
+
   return (
-    <Layout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Nouveau contrôle</h1>
-        <p className="text-gray-600">Effectuez un contrôle sur l'équipement sélectionné</p>
-      </div>
-
-      <Card>
-        <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle>Informations du contrôle</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label className="text-base font-medium">Résultat du contrôle</Label>
-              <RadioGroup 
-                value={formData.resultat} 
-                onValueChange={handleResultatChange}
-                className="flex gap-6 mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="conforme" id="conforme" />
-                  <Label htmlFor="conforme" className="flex items-center gap-2">
-                    <CheckCircle className="text-green-600" />
-                    Conforme
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="non_conforme" id="non_conforme" />
-                  <Label htmlFor="non_conforme" className="flex items-center gap-2">
-                    <AlertTriangle className="text-red-600" />
-                    Non conforme
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="observations">Observations</Label>
-              <Textarea
-                id="observations"
-                name="observations"
-                value={formData.observations}
-                onChange={handleInputChange}
-                placeholder="Décrivez les observations du contrôle..."
-                rows={4}
-              />
-            </div>
-
-            {formData.resultat === 'non_conforme' && (
-              <div className="space-y-2">
-                <Label htmlFor="actions_correctives">Actions correctives</Label>
-                <Textarea
-                  id="actions_correctives"
-                  name="actions_correctives"
-                  value={formData.actions_correctives}
-                  onChange={handleInputChange}
-                  placeholder="Décrivez les actions correctives à entreprendre..."
-                  rows={3}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="date_prochaine_verification">Date de prochaine vérification</Label>
-              <Input
-                type="date"
-                id="date_prochaine_verification"
-                name="date_prochaine_verification"
-                value={formData.date_prochaine_verification}
-                onChange={handleInputChange}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={() => navigate('/equipements')}>Annuler</Button>
-            <Button type="submit" disabled={isLoading} className="bg-red-600 hover:bg-red-700">
-              {isLoading ? "Enregistrement..." : "Enregistrer le contrôle"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </Layout>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Nouveau contrôle</h1>
+      <ControleForm 
+        epi={epi} 
+        onSubmit={handleSubmit} 
+        onCancel={handleCancel} 
+      />
+    </div>
   );
-}
+};
+
+export default ControleFormPage;
