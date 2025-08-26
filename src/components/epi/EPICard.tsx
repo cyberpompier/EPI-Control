@@ -1,151 +1,170 @@
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+"use client";
+
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { 
+  CheckCircle, 
+  AlertTriangle, 
+  XCircle, 
+  Calendar,
+  Wrench,
+  User
+} from 'lucide-react';
 
-interface EPICardProps {
-  // on reste large pour tolérer le champ relationnel `personnel`
-  epi: any;
+interface EPI {
+  id: string;
+  type: string;
+  marque: string;
+  modele: string;
+  numero_serie: string;
+  date_mise_en_service: string;
+  date_fin_vie: string;
+  statut: 'en_service' | 'en_reparation' | 'hors_service';
+  image: string;
+  personnel_id?: number;
 }
 
-export default function EPICard({ epi }: EPICardProps) {
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'conforme':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'non_conforme':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'en_attente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+interface EPICardProps {
+  epi: EPI;
+  onUpdateStatus?: (id: string, newStatus: EPI['statut']) => void;
+}
+
+const EPICard = ({ epi, onUpdateStatus }: EPICardProps) => {
+  const getStatusColor = (status: EPI['statut']) => {
+    switch (status) {
+      case 'en_service':
+        return 'bg-green-100 text-green-800 border-green-800';
+      case 'en_reparation':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-800';
+      case 'hors_service':
+        return 'bg-red-100 text-red-800 border-red-800';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-800';
     }
   };
 
-  const getStatusIcon = (statut: string) => {
-    switch (statut) {
-      case 'conforme':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'non_conforme':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'en_attente':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+  const getStatusIcon = (status: EPI['statut']) => {
+    switch (status) {
+      case 'en_service':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'en_reparation':
+        return <Wrench className="h-4 w-4" />;
+      case 'hors_service':
+        return <XCircle className="h-4 w-4" />;
       default:
-        return null;
+        return <AlertTriangle className="h-4 w-4" />;
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'casque': return '🪖';
-      case 'veste': return '🧥';
-      case 'surpantalon': return '👖';
-      case 'gants': return '🧤';
-      case 'rangers': return '👢';
-      default: return '🛡️';
+  const getStatusText = (status: EPI['statut']) => {
+    switch (status) {
+      case 'en_service':
+        return 'En service';
+      case 'en_reparation':
+        return 'En réparation';
+      case 'hors_service':
+        return 'Hors service';
+      default:
+        return status;
     }
   };
 
-  // propriétaire (objet OU tableau -> on prend le 1er)
-  const ownerRaw = epi?.personnel;
-  const owner = Array.isArray(ownerRaw) ? ownerRaw[0] : ownerRaw;
-  const ownerName = owner ? `${owner.prenom ?? ''} ${owner.nom ?? ''}`.trim() : null;
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Non spécifiée';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
 
-  // Dates
-  const today = new Date();
-  const expiryDate = epi?.date_fin_vie ? new Date(epi.date_fin_vie) : null;
-  const daysUntilExpiry = expiryDate ? Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
-  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
-  const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
+  const handleStatusUpdate = (newStatus: EPI['statut']) => {
+    if (onUpdateStatus) {
+      onUpdateStatus(epi.id, newStatus);
+    }
+  };
 
   return (
-    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-      <CardHeader className="p-4 bg-gray-50 border-b">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-semibold flex items-center">
-            {epi.image ? (
-              <img src={epi.image} alt={epi.type} className="mr-2 w-6 h-6 object-contain" />
-            ) : (
-              <span className="mr-2 text-xl">{getTypeIcon(epi.type)}</span>
-            )}
-            {epi.type?.charAt(0).toUpperCase() + epi.type?.slice(1)}
-          </CardTitle>
-          <Badge className={getStatusColor(epi.statut)} variant="outline">
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex justify-between items-start">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold">{epi.type}</h3>
+            <p className="text-sm text-gray-500">{epi.marque} - {epi.modele}</p>
+          </div>
+          <Badge className={`${getStatusColor(epi.statut)} border`} variant="outline">
             <span className="flex items-center">
               {getStatusIcon(epi.statut)}
               <span className="ml-1">
-                {epi.statut === 'conforme' ? 'Conforme' : epi.statut === 'non_conforme' ? 'Non conforme' : 'En attente'}
+                {getStatusText(epi.statut)}
               </span>
             </span>
           </Badge>
-        </div>
+        </CardTitle>
       </CardHeader>
-
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-500">Marque</span>
-            <span className="text-sm">{epi.marque}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-500">Modèle</span>
-            <span className="text-sm">{epi.modele}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-500">N° Série</span>
-            <span className="text-sm font-mono">{epi.numero_serie}</span>
-          </div>
-
-          {/* 🔹 PROPRIÉTAIRE */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-500">Assigné à</span>
-            {owner ? (
-              <Link to={`/personnel/${owner.id}`} className="inline-flex items-center text-sm hover:underline">
-                <User className="h-4 w-4 mr-1 text-gray-500" />
-                {ownerName || 'Sans nom'}
-              </Link>
-            ) : (
-              <span className="text-sm text-gray-500">Non assigné</span>
-            )}
-          </div>
-
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-500">Mise en service</span>
-            <span className="text-sm">
-              {epi.date_mise_en_service ? new Date(epi.date_mise_en_service).toLocaleDateString('fr-FR') : '—'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm font-medium text-gray-500">Fin de vie</span>
-            <span className={`text-sm ${isExpired ? 'text-red-600 font-bold' : isExpiringSoon ? 'text-yellow-600 font-bold' : ''}`}>
-              {expiryDate ? expiryDate.toLocaleDateString('fr-FR') : '—'}
-              {isExpired && ' (Expiré)'}
-              {isExpiringSoon && daysUntilExpiry !== null && ` (Dans ${daysUntilExpiry} jours)`}
-            </span>
+      <CardContent>
+        <div className="flex items-center mb-3">
+          <img 
+            src={epi.image || 'https://placehold.co/100x100?text=Image+non+disponible'} 
+            alt={epi.type} 
+            className="w-16 h-16 object-cover rounded-md mr-4"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://placehold.co/100x100?text=Image+non+disponible';
+            }}
+          />
+          <div className="flex-1">
+            <p className="text-sm font-medium">N° série: {epi.numero_serie}</p>
+            <p className="text-sm text-gray-500 flex items-center">
+              <User className="h-4 w-4 mr-1" />
+              {epi.personnel_id ? `Assigné #${epi.personnel_id}` : 'Non assigné'}
+            </p>
           </div>
         </div>
+        
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm">
+            <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+            <span>Mise en service: {formatDate(epi.date_mise_en_service)}</span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+            <span>Fin de vie: {formatDate(epi.date_fin_vie)}</span>
+          </div>
+        </div>
+
+        {onUpdateStatus && (
+          <div className="flex space-x-2">
+            <Button 
+              size="sm" 
+              variant={epi.statut === 'en_service' ? 'default' : 'outline'}
+              onClick={() => handleStatusUpdate('en_service')}
+              className="flex-1"
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              En service
+            </Button>
+            <Button 
+              size="sm" 
+              variant={epi.statut === 'en_reparation' ? 'default' : 'outline'}
+              onClick={() => handleStatusUpdate('en_reparation')}
+              className="flex-1"
+            >
+              <Wrench className="h-4 w-4 mr-1" />
+              Réparation
+            </Button>
+            <Button 
+              size="sm" 
+              variant={epi.statut === 'hors_service' ? 'default' : 'outline'}
+              onClick={() => handleStatusUpdate('hors_service')}
+              className="flex-1"
+            >
+              <XCircle className="h-4 w-4 mr-1" />
+              Hors service
+            </Button>
+          </div>
+        )}
       </CardContent>
-
-      <CardFooter className="p-4 bg-gray-50 border-t flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <Link to={`/controles?equipement=${epi.id}`}>
-            <Button variant="outline" size="sm" className="text-gray-600">
-              <Clipboard className="h-4 w-4 mr-1" /> Historique
-            </Button>
-          </Link>
-          <Link to={`/equipements/${epi.id}/modifier`}>
-            <Button variant="outline" size="icon" aria-label="Modifier l'équipement">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-        <Link to={`/controle/${epi.id}`}>
-          <Button size="sm" className="bg-red-600 hover:bg-red-700">
-            Contrôler
-          </Button>
-        </Link>
-      </CardFooter>
     </Card>
   );
-}
+};
+
+export default EPICard;
