@@ -1,175 +1,288 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-interface Personnel {
-  id: number;
-  nom: string;
-  prenom: string;
-}
-
-interface EPI {
-  id: string;
-  type: string;
-  marque: string | null;
-  modele: string | null;
-  numero_serie: string;
-  statut: string;
-  date_mise_en_service: string | null;
-  personnel_id: number | null;
-  personnel: Personnel | null;
-  image?: string | null;
-}
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Plus, Calendar, User, Image, Edit, Scan } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { showError } from '@/utils/toast';
 
 const EquipementDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [epi, setEpi] = useState<EPI | null>(null);
+  const [equipement, setEquipement] = useState<any>(null);
+  const [controles, setControles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      fetchEquipment();
-    }
+    if (!id) return;
+    
+    const fetchEquipement = async () => {
+      try {
+        // Récupérer les détails de l'équipement
+        const { data: equipementData, error: equipementError } = await supabase
+          .from('equipements')
+          .select(`
+            *,
+            personnel:personnel_id (nom, prenom, photo)
+          `)
+          .eq('id', id)
+          .single();
+
+        if (equipementError) throw equipementError;
+
+        // Récupérer les contrôles associés
+        const { data: controlesData, error: controlesError } = await supabase
+          .from('controles')
+          .select(`
+            *,
+            controleur:controleur_id (nom, prenom)
+          `)
+          .eq('equipement_id', id)
+          .order('date_controle', { ascending: false });
+
+        if (controlesError) throw controlesError;
+
+        setEquipement(equipementData);
+        setControles(controlesData || []);
+      } catch (error: any) {
+        console.error('Erreur lors du chargement des données:', error);
+        showError(`Erreur lors du chargement des données: ${error.message || error}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEquipement();
   }, [id]);
-
-  const fetchEquipment = async () => {
-    const { data, error } = await supabase
-      .from('equipements')
-      .select(`
-        *,
-        personnel (id, nom, prenom)
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      toast.error("Erreur lors du chargement de l'équipement");
-      console.error(error);
-    } else {
-      setEpi(data);
-    }
-    setLoading(false);
-  };
 
   if (loading) {
     return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!equipement) {
+    return (
       <Layout>
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <div className="text-2xl font-bold text-gray-800 mb-4">Chargement...</div>
-          <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="text-2xl font-bold text-gray-800 mb-4">Équipement non trouvé</div>
+        <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
+      </div>
       </Layout>
     );
   }
 
-  if (!epi) {
-    return (
-      <Layout>
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <div className="text-2xl font-bold text-gray-800 mb-4">Équipement non trouvé</div>
-          <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
-        </div>
-      </Layout>
-    );
-  }
+  const getStatusColor = (statut: string) => {
+    switch (statut) {
+      case 'en_service': return 'bg-green-100 text-green-800';
+      case 'en_reparation': return 'bg-yellow-100 text-yellow-800';
+      case 'hors_service': return 'bg-red-100 text-red-800';
+      case 'en_attente': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // URL de l'image par défaut
+  const defaultImageUrl = 'https://quvdxjxszquqqcvesntn.supabase.co/storage/v1/object/public/banque%20image%20habillement/habillement/image_non_disponible.png';
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/equipements')}
-            className="flex items-center"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
+        <div className="flex flex-wrap gap-2">
+          <Link to={`/equipements/barcode`}>
+            <Button variant="outline">
+              <Scan className="h-4 w-4 mr-2" />
+              Scanner
+            </Button>
+          </Link>
+          <Button variant="outline" onClick={() => navigate('/equipements')}>
+            Retour à la liste
           </Button>
-          <h1 className="text-2xl font-bold">Détails de l'Équipement</h1>
         </div>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{epi.type}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                {epi.image ? (
-                  <img 
-                    src={epi.image} 
-                    alt={epi.type} 
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-500">Pas d'image disponible</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Informations</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="font-medium">Type:</span>
-                      <span>{epi.type}</span>
-                    </div>
-                    
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="font-medium">Numéro de série:</span>
-                      <span>{epi.numero_serie}</span>
-                    </div>
-                    
-                    {epi.marque && (
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="font-medium">Marque:</span>
-                        <span>{epi.marque}</span>
-                      </div>
-                    )}
-                    
-                    {epi.modele && (
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="font-medium">Modèle:</span>
-                        <span>{epi.modele}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex justify-between border-b pb-2">
-                      <span className="font-medium">Statut:</span>
-                      <span className="capitalize">{epi.statut.replace('_', ' ')}</span>
-                    </div>
-                    
-                    {epi.date_mise_en_service && (
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="font-medium">Date de mise en service:</span>
-                        <span>{new Date(epi.date_mise_en_service).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    
-                    {epi.personnel && (
-                      <div className="flex justify-between border-b pb-2">
-                        <span className="font-medium">Assigné à:</span>
-                        <span>{epi.personnel.prenom} {epi.personnel.nom}</span>
-                      </div>
-                    )}
-                  </div>
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="text-center md:text-left">
+              <CardTitle className="text-2xl mx-auto">{equipement.type}</CardTitle>
+              <p className="text-gray-600">Numéro de série: {equipement.numero_serie}</p>
+              <p className="text-gray-600">
+                Assigné à: {equipement.personnel 
+                  ? `${equipement.personnel.prenom} ${equipement.personnel.nom}`
+                  : 'Non assigné'}
+              </p>
+            </div>
+            <Badge className={getStatusColor(equipement.statut)}>
+              {equipement.statut.replace('_', ' ')}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Informations générales</h3>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <span className="font-medium w-32">Marque:</span>
+                  <span>{equipement.marque || 'Non spécifiée'}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-medium w-32">Modèle:</span>
+                  <span>{equipement.modele || 'Non spécifié'}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-medium w-32">Date de mise en service:</span>
+                  <span>
+                    {equipement.date_mise_en_service 
+                      ? format(new Date(equipement.date_mise_en_service), 'dd MMMM yyyy', { locale: fr })
+                      : 'Non spécifiée'}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-medium w-32">Date de fin de vie:</span>
+                  <span>
+                    {equipement.date_fin_vie 
+                      ? format(new Date(equipement.date_fin_vie), 'dd MMMM yyyy', { locale: fr })
+                      : 'Non spécifiée'}
+                  </span>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Images</h3>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <p className="text-sm font-medium mb-2">Photo de l'équipement</p>
+                  {equipement.image ? (
+                    <div className="flex justify-center">
+                      <img 
+                        src={equipement.image} 
+                        alt={equipement.type}
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex justify-center">
+                      <img 
+                        src={defaultImageUrl} 
+                        alt="Image non disponible"
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {equipement.personnel && equipement.personnel.photo && (
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-2">Photo du personnel</p>
+                    <div className="flex justify-center">
+                      <img 
+                        src={equipement.personnel.photo} 
+                        alt={`${equipement.personnel.prenom} ${equipement.personnel.nom}`}
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap gap-4 mb-6">
+        <Link to={`/equipements/${equipement.id}/modifier`}>
+          <Button variant="outline">
+            <Edit className="h-4 w-4 mr-2" />
+            Modifier
+          </Button>
+        </Link>
+        <Link to={`/controle/${equipement.id}`}>
+          <Button className="bg-red-600 hover:bg-red-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau contrôle
+          </Button>
+        </Link>
       </div>
-    </Layout>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Calendar className="h-5 w-5 mr-2" />
+            Historique des contrôles
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {controles.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Aucun contrôle enregistré pour cet équipement
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {controles.map((controle) => (
+                <div key={controle.id} className="border rounded-lg p-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
+                    <div className="flex items-center mb-2 md:mb-0">
+                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="font-medium">
+                        {format(new Date(controle.date_controle), 'dd MMMM yyyy', { locale: fr })}
+                      </span>
+                    </div>
+                    <Badge 
+                      className={
+                        controle.resultat === 'conforme' 
+                          ? 'bg-green-100 text-green-800' 
+                          : controle.resultat === 'non_conforme' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                      }
+                    >
+                      {controle.resultat.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center mb-2">
+                    <User className="h-4 w-4 mr-2 text-gray-500" />
+                    <span>
+                      Contrôlé par {controle.controleur?.prenom} {controle.controleur?.nom}
+                    </span>
+                  </div>
+                  
+                  {controle.observations && (
+                    <div className="mb-2">
+                      <span className="font-medium">Observations:</span>
+                      <p className="ml-2 text-gray-700">{controle.observations}</p>
+                    </div>
+                  )}
+                  
+                  {controle.actions_correctives && (
+                    <div>
+                      <span className="font-medium">Actions correctives:</span>
+                      <p className="ml-2 text-gray-700">{controle.actions_correctives}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  </Layout>
   );
 };
 
