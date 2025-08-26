@@ -1,288 +1,344 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Plus, Calendar, User, Image, Edit, Scan } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { showError } from '@/utils/toast';
+import { Calendar, User, Image as ImageIcon, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Personnel {
+  id: number;
+  nom: string;
+  prenom: string;
+}
+
+interface EPI {
+  id?: string;
+  type: string;
+  marque: string | null;
+  modele: string | null;
+  numero_serie: string;
+  statut: string;
+  date_mise_en_service: string | null;
+  personnel_id: number | null;
+  personnel: Personnel | null;
+  image?: string | null;
+  date_fin_vie?: string | null;
+  observations?: string | null;
+}
 
 const EquipementDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [equipement, setEquipement] = useState<any>(null);
-  const [controles, setControles] = useState<any[]>([]);
+  const isNew = id === 'new';
+  
+  const [formData, setFormData] = useState<EPI>({
+    type: '',
+    marque: null,
+    modele: null,
+    numero_serie: '',
+    statut: 'en_attente',
+    date_mise_en_service: null,
+    personnel_id: null,
+    personnel: null,
+    image: null,
+    date_fin_vie: null,
+    observations: null
+  });
+  
+  const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    fetchPersonnel();
     
-    const fetchEquipement = async () => {
-      try {
-        // Récupérer les détails de l'équipement
-        const { data: equipementData, error: equipementError } = await supabase
+    if (!isNew && id) {
+      fetchEquipment();
+    } else {
+      setLoading(false);
+    }
+  }, [id, isNew]);
+
+  const fetchPersonnel = async () => {
+    const { data, error } = await supabase
+      .from('personnel')
+      .select('id, nom, prenom')
+      .order('nom');
+    
+    if (error) {
+      toast.error("Erreur lors du chargement du personnel");
+      console.error(error);
+    } else {
+      setPersonnelList(data || []);
+    }
+  };
+
+  const fetchEquipment = async () => {
+    if (!id || id === 'new') return;
+    
+    const { data, error } = await supabase
+      .from('equipements')
+      .select(`
+        *,
+        personnel (id, nom, prenom)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      toast.error("Erreur lors du chargement de l'équipement");
+      console.error(error);
+    } else {
+      setFormData({
+        ...data,
+        personnel_id: data.personnel?.id || null,
+        personnel: data.personnel || null
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleChange = (field: keyof EPI, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (isNew) {
+        // Création d'un nouvel équipement
+        const { data, error } = await supabase
           .from('equipements')
-          .select(`
-            *,
-            personnel:personnel_id (nom, prenom, photo)
-          `)
-          .eq('id', id)
+          .insert([{
+            type: formData.type,
+            marque: formData.marque,
+            modele: formData.modele,
+            numero_serie: formData.numero_serie,
+            statut: formData.statut,
+            date_mise_en_service: formData.date_mise_en_service,
+            personnel_id: formData.personnel_id,
+            date_fin_vie: formData.date_fin_vie,
+            observations: formData.observations
+          }])
+          .select()
           .single();
 
-        if (equipementError) throw equipementError;
+        if (error) throw error;
 
-        // Récupérer les contrôles associés
-        const { data: controlesData, error: controlesError } = await supabase
-          .from('controles')
-          .select(`
-            *,
-            controleur:controleur_id (nom, prenom)
-          `)
-          .eq('equipement_id', id)
-          .order('date_controle', { ascending: false });
+        toast.success("Équipement créé avec succès");
+        navigate(`/equipements/${data.id}`);
+      } else {
+        // Mise à jour d'un équipement existant
+        const { data, error } = await supabase
+          .from('equipements')
+          .update({
+            type: formData.type,
+            marque: formData.marque,
+            modele: formData.modele,
+            numero_serie: formData.numero_serie,
+            statut: formData.statut,
+            date_mise_en_service: formData.date_mise_en_service,
+            personnel_id: formData.personnel_id,
+            date_fin_vie: formData.date_fin_vie,
+            observations: formData.observations
+          })
+          .eq('id', id)
+          .select()
+          .single();
 
-        if (controlesError) throw controlesError;
+        if (error) throw error;
 
-        setEquipement(equipementData);
-        setControles(controlesData || []);
-      } catch (error: any) {
-        console.error('Erreur lors du chargement des données:', error);
-        showError(`Erreur lors du chargement des données: ${error.message || error}`);
-      } finally {
-        setLoading(false);
+        toast.success("Équipement mis à jour avec succès");
       }
-    };
+    } catch (error) {
+      console.error('Error saving equipment:', error);
+      toast.error(isNew 
+        ? "Erreur lors de la création de l'équipement" 
+        : "Erreur lors de la mise à jour de l'équipement"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    fetchEquipement();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
-  if (!equipement) {
+  if (loading && !isNew) {
     return (
       <Layout>
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="text-2xl font-bold text-gray-800 mb-4">Équipement non trouvé</div>
-        <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
-      </div>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <div className="text-2xl font-bold text-gray-800 mb-4">Chargement...</div>
+          <Button onClick={() => navigate('/equipements')}>Retour à la liste</Button>
+        </div>
       </Layout>
     );
   }
 
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'en_service': return 'bg-green-100 text-green-800';
-      case 'en_reparation': return 'bg-yellow-100 text-yellow-800';
-      case 'hors_service': return 'bg-red-100 text-red-800';
-      case 'en_attente': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // URL de l'image par défaut
-  const defaultImageUrl = 'https://quvdxjxszquqqcvesntn.supabase.co/storage/v1/object/public/banque%20image%20habillement/habillement/image_non_disponible.png';
-
   return (
     <Layout>
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link to={`/equipements/barcode`}>
-            <Button variant="outline">
-              <Scan className="h-4 w-4 mr-2" />
-              Scanner
-            </Button>
-          </Link>
-          <Button variant="outline" onClick={() => navigate('/equipements')}>
-            Retour à la liste
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/equipements')}
+            className="flex items-center"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Retour
+          </Button>
+          <h1 className="text-2xl font-bold">
+            {isNew ? 'Nouvel Équipement' : 'Détails de l\'Équipement'}
+          </h1>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </div>
-      </div>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="text-center md:text-left">
-              <CardTitle className="text-2xl mx-auto">{equipement.type}</CardTitle>
-              <p className="text-gray-600">Numéro de série: {equipement.numero_serie}</p>
-              <p className="text-gray-600">
-                Assigné à: {equipement.personnel 
-                  ? `${equipement.personnel.prenom} ${equipement.personnel.nom}`
-                  : 'Non assigné'}
-              </p>
-            </div>
-            <Badge className={getStatusColor(equipement.statut)}>
-              {equipement.statut.replace('_', ' ')}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Informations générales</h3>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <span className="font-medium w-32">Marque:</span>
-                  <span>{equipement.marque || 'Non spécifiée'}</span>
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations de l'Équipement</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="type">Type *</Label>
+                  <Input
+                    id="type"
+                    value={formData.type}
+                    onChange={(e) => handleChange('type', e.target.value)}
+                    required
+                  />
                 </div>
-                <div className="flex items-center">
-                  <span className="font-medium w-32">Modèle:</span>
-                  <span>{equipement.modele || 'Non spécifié'}</span>
+                
+                <div>
+                  <Label htmlFor="numero_serie">Numéro de série *</Label>
+                  <Input
+                    id="numero_serie"
+                    value={formData.numero_serie}
+                    onChange={(e) => handleChange('numero_serie', e.target.value)}
+                    required
+                  />
                 </div>
-                <div className="flex items-center">
-                  <span className="font-medium w-32">Date de mise en service:</span>
-                  <span>
-                    {equipement.date_mise_en_service 
-                      ? format(new Date(equipement.date_mise_en_service), 'dd MMMM yyyy', { locale: fr })
-                      : 'Non spécifiée'}
-                  </span>
+                
+                <div>
+                  <Label htmlFor="marque">Marque</Label>
+                  <Input
+                    id="marque"
+                    value={formData.marque || ''}
+                    onChange={(e) => handleChange('marque', e.target.value)}
+                  />
                 </div>
-                <div className="flex items-center">
-                  <span className="font-medium w-32">Date de fin de vie:</span>
-                  <span>
-                    {equipement.date_fin_vie 
-                      ? format(new Date(equipement.date_fin_vie), 'dd MMMM yyyy', { locale: fr })
-                      : 'Non spécifiée'}
-                  </span>
+                
+                <div>
+                  <Label htmlFor="modele">Modèle</Label>
+                  <Input
+                    id="modele"
+                    value={formData.modele || ''}
+                    onChange={(e) => handleChange('modele', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="statut">Statut</Label>
+                  <Select 
+                    value={formData.statut} 
+                    onValueChange={(value) => handleChange('statut', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en_service">En service</SelectItem>
+                      <SelectItem value="en_reparation">En réparation</SelectItem>
+                      <SelectItem value="hors_service">Hors service</SelectItem>
+                      <SelectItem value="en_attente">En attente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="date_mise_en_service">Date de mise en service</Label>
+                  <div className="relative">
+                    <Input
+                      id="date_mise_en_service"
+                      type="date"
+                      value={formData.date_mise_en_service || ''}
+                      onChange={(e) => handleChange('date_mise_en_service', e.target.value)}
+                    />
+                    <Calendar className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="date_fin_vie">Date de fin de vie</Label>
+                  <div className="relative">
+                    <Input
+                      id="date_fin_vie"
+                      type="date"
+                      value={formData.date_fin_vie || ''}
+                      onChange={(e) => handleChange('date_fin_vie', e.target.value)}
+                    />
+                    <Calendar className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="personnel">Assigné à</Label>
+                  <Select 
+                    value={formData.personnel_id?.toString() || 'none'} 
+                    onValueChange={(value) => handleChange('personnel_id', value === 'none' ? null : parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un personnel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Non assigné</SelectItem>
+                      {personnelList.map((person) => (
+                        <SelectItem key={person.id} value={person.id.toString()}>
+                          {person.prenom} {person.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="observations">Observations</Label>
+                  <Textarea
+                    id="observations"
+                    value={formData.observations || ''}
+                    onChange={(e) => handleChange('observations', e.target.value)}
+                    rows={3}
+                  />
                 </div>
               </div>
             </div>
             
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Images</h3>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <p className="text-sm font-medium mb-2">Photo de l'équipement</p>
-                  {equipement.image ? (
-                    <div className="flex justify-center">
-                      <img 
-                        src={equipement.image} 
-                        alt={equipement.type}
-                        className="max-w-full h-auto rounded-lg shadow-md"
-                        style={{ maxHeight: '200px' }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex justify-center">
-                      <img 
-                        src={defaultImageUrl} 
-                        alt="Image non disponible"
-                        className="max-w-full h-auto rounded-lg shadow-md"
-                        style={{ maxHeight: '200px' }}
-                      />
-                    </div>
-                  )}
+            {formData.image && (
+              <div className="mt-6">
+                <Label>Image</Label>
+                <div className="mt-2">
+                  <img 
+                    src={formData.image} 
+                    alt="Équipement" 
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
                 </div>
-                
-                {equipement.personnel && equipement.personnel.photo && (
-                  <div className="flex-1">
-                    <p className="text-sm font-medium mb-2">Photo du personnel</p>
-                    <div className="flex justify-center">
-                      <img 
-                        src={equipement.personnel.photo} 
-                        alt={`${equipement.personnel.prenom} ${equipement.personnel.nom}`}
-                        className="max-w-full h-auto rounded-lg shadow-md"
-                        style={{ maxHeight: '200px' }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-wrap gap-4 mb-6">
-        <Link to={`/equipements/${equipement.id}/modifier`}>
-          <Button variant="outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Modifier
-          </Button>
-        </Link>
-        <Link to={`/controle/${equipement.id}`}>
-          <Button className="bg-red-600 hover:bg-red-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau contrôle
-          </Button>
-        </Link>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Historique des contrôles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {controles.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Aucun contrôle enregistré pour cet équipement
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {controles.map((controle) => (
-                <div key={controle.id} className="border rounded-lg p-4">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
-                    <div className="flex items-center mb-2 md:mb-0">
-                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="font-medium">
-                        {format(new Date(controle.date_controle), 'dd MMMM yyyy', { locale: fr })}
-                      </span>
-                    </div>
-                    <Badge 
-                      className={
-                        controle.resultat === 'conforme' 
-                          ? 'bg-green-100 text-green-800' 
-                          : controle.resultat === 'non_conforme' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                      }
-                    >
-                      {controle.resultat.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center mb-2">
-                    <User className="h-4 w-4 mr-2 text-gray-500" />
-                    <span>
-                      Contrôlé par {controle.controleur?.prenom} {controle.controleur?.nom}
-                    </span>
-                  </div>
-                  
-                  {controle.observations && (
-                    <div className="mb-2">
-                      <span className="font-medium">Observations:</span>
-                      <p className="ml-2 text-gray-700">{controle.observations}</p>
-                    </div>
-                  )}
-                  
-                  {controle.actions_correctives && (
-                    <div>
-                      <span className="font-medium">Actions correctives:</span>
-                      <p className="ml-2 text-gray-700">{controle.actions_correctives}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  </Layout>
+    </Layout>
   );
 };
 
