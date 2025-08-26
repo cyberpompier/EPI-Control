@@ -5,37 +5,39 @@ import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit, User } from 'lucide
 import { Link } from 'react-router-dom';
 
 interface EPICardProps {
-  // on reste large pour tolérer le champ relationnel `personnel`
-  epi: any;
+  epi: any; // reste large pour tolérer la jointure avec `personnel`
 }
 
 export default function EPICard({ epi }: EPICardProps) {
-  const getStatusColor = (statut: string) => {
-    switch (statut) {
-      case 'conforme':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'non_conforme':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'en_attente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
+  // 🔹 Config centralisée pour les statuts
+  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: JSX.Element }> = {
+    conforme: {
+      label: "Conforme",
+      color: "bg-green-100 text-green-800 border-green-200",
+      icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+    },
+    non_conforme: {
+      label: "Non conforme",
+      color: "bg-red-100 text-red-800 border-red-200",
+      icon: <AlertTriangle className="h-4 w-4 text-red-600" />,
+    },
+    en_attente: {
+      label: "En attente",
+      color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      icon: <Clock className="h-4 w-4 text-yellow-600" />,
+    },
+    default: {
+      label: "Inconnu",
+      color: "bg-gray-100 text-gray-800 border-gray-200",
+      icon: <AlertTriangle className="h-4 w-4 text-gray-600" />,
+    },
   };
 
-  const getStatusIcon = (statut: string) => {
-    switch (statut) {
-      case 'conforme':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'non_conforme':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'en_attente':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      default:
-        return null;
-    }
-  };
+  // 🔹 Statut courant (fallback sur "default")
+  const statusKey = epi.statut?.toLowerCase() || "default";
+  const status = STATUS_CONFIG[statusKey] || STATUS_CONFIG.default;
 
+  // 🔹 Icônes de type d’équipement
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'casque': return '🪖';
@@ -47,12 +49,12 @@ export default function EPICard({ epi }: EPICardProps) {
     }
   };
 
-  // propriétaire (objet OU tableau -> on prend le 1er)
+  // 🔹 Propriétaire (relationnel ou null)
   const ownerRaw = epi?.personnel;
   const owner = Array.isArray(ownerRaw) ? ownerRaw[0] : ownerRaw;
   const ownerName = owner ? `${owner.prenom ?? ''} ${owner.nom ?? ''}`.trim() : null;
 
-  // Dates
+  // 🔹 Gestion des dates
   const today = new Date();
   const expiryDate = epi?.date_fin_vie ? new Date(epi.date_fin_vie) : null;
   const daysUntilExpiry = expiryDate ? Math.floor((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
@@ -71,12 +73,10 @@ export default function EPICard({ epi }: EPICardProps) {
             )}
             {epi.type?.charAt(0).toUpperCase() + epi.type?.slice(1)}
           </CardTitle>
-          <Badge className={getStatusColor(epi.statut)} variant="outline">
+          <Badge className={status.color} variant="outline">
             <span className="flex items-center">
-              {getStatusIcon(epi.statut)}
-              <span className="ml-1">
-                {epi.statut === 'conforme' ? 'Conforme' : epi.statut === 'non_conforme' ? 'Non conforme' : 'En attente'}
-              </span>
+              {status.icon}
+              <span className="ml-1">{status.label}</span>
             </span>
           </Badge>
         </div>
@@ -97,7 +97,7 @@ export default function EPICard({ epi }: EPICardProps) {
             <span className="text-sm font-mono">{epi.numero_serie}</span>
           </div>
 
-          {/* 🔹 PROPRIÉTAIRE */}
+          {/* 🔹 Propriétaire */}
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-500">Assigné à</span>
             {owner ? (
