@@ -35,7 +35,7 @@ const EquipmentStatusChart = () => {
           .select('type, statut');
         
         console.log('Equipment data fetched count:', equipements?.length);
-        console.log('Sample equipment data:', equipements?.slice(0, 5));
+        console.log('Sample equipment data:', equipements?.slice(0, 10));
         console.log('Error:', error);
         
         if (error) {
@@ -50,14 +50,40 @@ const EquipmentStatusChart = () => {
           return;
         }
         
+        // Compter les statuts pour vérifier les données
+        const statusCount = {
+          en_service: 0,
+          en_reparation: 0,
+          hors_service: 0,
+          unknown: 0
+        };
+        
+        equipements.forEach(item => {
+          switch (item.statut) {
+            case 'en_service':
+              statusCount.en_service += 1;
+              break;
+            case 'en_reparation':
+              statusCount.en_reparation += 1;
+              break;
+            case 'hors_service':
+              statusCount.hors_service += 1;
+              break;
+            default:
+              statusCount.unknown += 1;
+              console.log('Unknown status found:', item.statut, 'for type:', item.type);
+              break;
+          }
+        });
+        
+        console.log('Status counts:', statusCount);
+        
         // Traiter les données pour les regrouper par type et statut
         const processedData: Record<string, EquipmentStatusData> = {};
         
         equipements.forEach(item => {
           const type = item.type || 'Non spécifié';
           const statut = item.statut;
-          
-          console.log('Processing item:', { type, statut });
           
           if (!processedData[type]) {
             processedData[type] = {
@@ -66,30 +92,25 @@ const EquipmentStatusChart = () => {
               en_reparation: 0,
               hors_service: 0
             };
-            console.log('Created new entry for type:', type);
           }
           
           switch (statut) {
             case 'en_service':
               processedData[type].en_service += 1;
-              console.log(`Incremented en_service for ${type}:`, processedData[type].en_service);
               break;
             case 'en_reparation':
               processedData[type].en_reparation += 1;
-              console.log(`Incremented en_reparation for ${type}:`, processedData[type].en_reparation);
               break;
             case 'hors_service':
               processedData[type].hors_service += 1;
-              console.log(`Incremented hors_service for ${type}:`, processedData[type].hors_service);
               break;
             default:
-              console.log('Unknown status:', statut);
               // Pour les statuts non reconnus
               break;
           }
         });
         
-        // Convertir l'objet en tableau et limiter à 10 types pour une meilleure lisibilité
+        // Convertir l'objet en tableau
         const result = Object.values(processedData)
           .filter(item => (item.en_service + item.en_reparation + item.hors_service) > 0)
           .sort((a, b) => (b.en_service + b.en_reparation + b.hors_service) - (a.en_service + a.en_reparation + a.hors_service))
