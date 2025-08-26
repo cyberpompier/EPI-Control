@@ -28,12 +28,26 @@ const EquipmentStatusChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching equipment data...');
         // Récupérer tous les équipements
         const { data: equipements, error } = await supabase
           .from('equipements')
           .select('type, statut');
         
-        if (error) throw error;
+        console.log('Equipment data fetched:', equipements);
+        console.log('Error:', error);
+        
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+        
+        if (!equipements) {
+          console.log('No equipment data returned');
+          setChartData([]);
+          setLoading(false);
+          return;
+        }
         
         // Traiter les données pour les regrouper par type et statut
         const processedData: Record<string, EquipmentStatusData> = {};
@@ -44,7 +58,7 @@ const EquipmentStatusChart = () => {
           
           if (!processedData[type]) {
             processedData[type] = {
-              name: type,
+              name: type || 'Non spécifié',
               en_service: 0,
               en_reparation: 0,
               hors_service: 0
@@ -61,16 +75,20 @@ const EquipmentStatusChart = () => {
             case 'hors_service':
               processedData[type].hors_service += 1;
               break;
+            default:
+              // Pour les statuts non reconnus
+              break;
           }
         });
         
         // Convertir l'objet en tableau
         const result = Object.values(processedData);
+        console.log('Processed data:', result);
         setChartData(result);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching equipment data:', err);
-        setError('Erreur lors du chargement des données');
+        setError(`Erreur lors du chargement des données: ${err.message || err}`);
         setLoading(false);
       }
     };
@@ -95,6 +113,18 @@ const EquipmentStatusChart = () => {
         <h2 className="text-xl font-bold mb-4">Statut des Équipements</h2>
         <div className="h-80 flex items-center justify-center">
           <p className="text-red-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si aucune donnée n'est présente
+  if (chartData.length === 0) {
+    return (
+      <div className="p-4 bg-white rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">Statut des Équipements</h2>
+        <div className="h-80 flex items-center justify-center">
+          <p>Aucune donnée disponible</p>
         </div>
       </div>
     );
