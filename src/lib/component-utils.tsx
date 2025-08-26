@@ -1,10 +1,4 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
 import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 export function getStatusColor(statut: string) {
   switch (statut) {
@@ -34,14 +28,4 @@ export function getStatusIcon(statut: string) {
     default:
       return <Clock className="w-4 h-4" />;
   }
-}
-
-export function getInitials(name: string | null | undefined): string {
-  if (!name) return 'U';
-  
-  const words = name.trim().split(' ');
-  if (words.length === 1) {
-    return words[0].substring(0, 2).toUpperCase();
-  }
-  return (words[0][0] + (words[1][0] || '')).toUpperCase();
 }

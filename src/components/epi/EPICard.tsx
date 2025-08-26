@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Calendar, User } from 'lucide-react';
 import { EPIDetailsDialog } from './EPIDetailsDialog';
-import { getStatusColor, getStatusIcon } from '@/lib/utils.tsx';
+import { getStatusColor, getStatusIcon } from '@/lib/component-utils';
 
-// ... rest of the component code remains the same
 interface Personnel {
   id: number;
   nom: string;
