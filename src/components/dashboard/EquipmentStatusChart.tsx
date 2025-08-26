@@ -11,6 +11,7 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts';
+import { createClient } from '@/integrations/supabase/client';
 
 interface EquipmentStatusData {
   name: string;
@@ -21,21 +22,85 @@ interface EquipmentStatusData {
 
 const EquipmentStatusChart = () => {
   const [chartData, setChartData] = useState<EquipmentStatusData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, this data would come from an API
-    // For now, we'll use mock data
-    const mockData: EquipmentStatusData[] = [
-      { name: 'Casques', en_service: 45, en_reparation: 3, hors_service: 2 },
-      { name: 'Gants', en_service: 120, en_reparation: 8, hors_service: 5 },
-      { name: 'Vestes', en_service: 78, en_reparation: 4, hors_service: 3 },
-      { name: 'Bottes', en_service: 65, en_reparation: 2, hors_service: 1 },
-      { name: 'Lunettes', en_service: 95, en_reparation: 5, hors_service: 2 },
-      { name: 'Harnais', en_service: 40, en_reparation: 1, hors_service: 0 },
-    ];
+    const fetchData = async () => {
+      try {
+        const supabase = createClient();
+        
+        // Récupérer tous les équipements
+        const { data: equipements, error } = await supabase
+          .from('equipements')
+          .select('type, statut');
+        
+        if (error) throw error;
+        
+        // Traiter les données pour les regrouper par type et statut
+        const processedData: Record<string, EquipmentStatusData> = {};
+        
+        equipements.forEach(item => {
+          const type = item.type;
+          const statut = item.statut;
+          
+          if (!processedData[type]) {
+            processedData[type] = {
+              name: type,
+              en_service: 0,
+              en_reparation: 0,
+              hors_service: 0
+            };
+          }
+          
+          switch (statut) {
+            case 'en_service':
+              processedData[type].en_service += 1;
+              break;
+            case 'en_reparation':
+              processedData[type].en_reparation += 1;
+              break;
+            case 'hors_service':
+              processedData[type].hors_service += 1;
+              break;
+          }
+        });
+        
+        // Convertir l'objet en tableau
+        const result = Object.values(processedData);
+        setChartData(result);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching equipment data:', err);
+        setError('Erreur lors du chargement des données');
+        setLoading(false);
+      }
+    };
     
-    setChartData(mockData);
+    fetchData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="p-4 bg-white rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">Statut des Équipements</h2>
+        <div className="h-80 flex items-center justify-center">
+          <p>Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-white rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">Statut des Équipements</h2>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-red-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
