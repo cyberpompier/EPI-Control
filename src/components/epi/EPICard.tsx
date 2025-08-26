@@ -4,7 +4,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Wrench, XCircle, Clock, Pencil, Shield } from "lucide-react";
+import { CheckCircle, Wrench, XCircle, Clock, Pencil, Shield, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { EPI } from "@/types";
 import { toDbStatus, toLabel } from "@/utils/epiStatus";
@@ -90,14 +90,32 @@ const EPICard: React.FC<Props> = ({ epi }) => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/equipements/${epi.id}/edit`)}
-          >
-            <Pencil className="mr-2 h-4 w-4" />
-            Éditer
-          </Button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/equipements/${epi.id}/edit`)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Éditer
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/equipements/${epi.id}/controler`)}
+            >
+              <Wrench className="mr-2 h-4 w-4" />
+              Contrôler
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/equipements/${epi.id}/historique`)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              Historique
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
