@@ -18,7 +18,6 @@ interface EquipmentStatusData {
   en_service: number;
   en_reparation: number;
   hors_service: number;
-  en_attente: number;
 }
 
 const EquipmentStatusChart = () => {
@@ -56,7 +55,6 @@ const EquipmentStatusChart = () => {
           en_service: 0,
           en_reparation: 0,
           hors_service: 0,
-          en_attente: 0,
           unknown: 0
         };
         
@@ -70,9 +68,6 @@ const EquipmentStatusChart = () => {
               break;
             case 'hors_service':
               statusCount.hors_service += 1;
-              break;
-            case 'en_attente':
-              statusCount.en_attente += 1;
               break;
             default:
               statusCount.unknown += 1;
@@ -95,8 +90,7 @@ const EquipmentStatusChart = () => {
               name: type,
               en_service: 0,
               en_reparation: 0,
-              hors_service: 0,
-              en_attente: 0
+              hors_service: 0
             };
           }
           
@@ -110,9 +104,6 @@ const EquipmentStatusChart = () => {
             case 'hors_service':
               processedData[type].hors_service += 1;
               break;
-            case 'en_attente':
-              processedData[type].en_attente += 1;
-              break;
             default:
               // Pour les statuts non reconnus
               break;
@@ -121,8 +112,8 @@ const EquipmentStatusChart = () => {
         
         // Convertir l'objet en tableau
         const result = Object.values(processedData)
-          .filter(item => (item.en_service + item.en_reparation + item.hors_service + item.en_attente) > 0)
-          .sort((a, b) => (b.en_service + b.en_reparation + b.hors_service + b.en_attente) - (a.en_service + a.en_reparation + a.hors_service + a.en_attente))
+          .filter(item => (item.en_service + item.en_reparation + item.hors_service) > 0)
+          .sort((a, b) => (b.en_service + b.en_reparation + b.hors_service) - (a.en_service + a.en_reparation + a.hors_service))
           .slice(0, 10);
         
         console.log('Final processed data (top 10):', result);
@@ -228,12 +219,6 @@ const EquipmentStatusChart = () => {
               dataKey="hors_service" 
               name="Hors service" 
               fill="#EF4444" 
-              radius={[4, 4, 0, 0]} 
-            />
-            <Bar 
-              dataKey="en_attente" 
-              name="En attente" 
-              fill="#3B82F6" 
               radius={[4, 4, 0, 0]} 
             />
           </BarChart>
