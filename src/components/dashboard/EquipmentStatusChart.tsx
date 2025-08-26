@@ -11,7 +11,7 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts';
-import { createClient } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EquipmentStatusData {
   name: string;
@@ -28,8 +28,6 @@ const EquipmentStatusChart = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const supabase = createClient();
-        
         // Récupérer tous les équipements
         const { data: equipements, error } = await supabase
           .from('equipements')
