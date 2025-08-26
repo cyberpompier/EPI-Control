@@ -3,7 +3,9 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Wrench, XCircle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Wrench, XCircle, Clock, Pencil, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { EPI } from "@/types";
 import { toDbStatus, toLabel } from "@/utils/epiStatus";
 
@@ -11,7 +13,7 @@ type Props = {
   epi: EPI;
 };
 
-// Garde les classes/couleurs d'origine
+// Conserver les couleurs d'origine
 function getStatusColor(status: string) {
   switch (status) {
     case "en_service":
@@ -26,7 +28,7 @@ function getStatusColor(status: string) {
   }
 }
 
-// Garde les icônes d'origine
+// Conserver les icônes d'origine
 function getStatusIcon(status: string) {
   switch (status) {
     case "en_service":
@@ -42,7 +44,7 @@ function getStatusIcon(status: string) {
 }
 
 const EPICard: React.FC<Props> = ({ epi }) => {
-  // Normaliser uniquement pour la logique, sans impacter le rendu visuel
+  const navigate = useNavigate();
   const normalizedStatus = toDbStatus(String(epi.statut));
 
   return (
@@ -65,9 +67,38 @@ const EPICard: React.FC<Props> = ({ epi }) => {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 text-sm text-muted-foreground space-y-1">
-        {epi.marque && <p>Marque: {epi.marque}</p>}
-        {epi.numero_serie && <p>N° série: {epi.numero_serie}</p>}
+
+      <CardContent className="pt-0 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-16 w-16 flex-shrink-0 rounded-md overflow-hidden bg-muted">
+              {epi.image ? (
+                <img
+                  src={epi.image}
+                  alt={`${epi.type}${epi.modele ? ` ${epi.modele}` : ""}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                  <Shield className="h-6 w-6" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-1 truncate">
+              {epi.marque && <p className="truncate">Marque: {epi.marque}</p>}
+              {epi.numero_serie && <p className="truncate">N° série: {epi.numero_serie}</p>}
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/equipements/${epi.id}/edit`)}
+          >
+            <Pencil className="mr-2 h-4 w-4" />
+            Éditer
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
