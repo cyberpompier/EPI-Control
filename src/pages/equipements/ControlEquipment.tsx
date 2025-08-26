@@ -23,7 +23,7 @@ export default function ControlEquipment() {
   const [resultat, setResultat] = useState("conforme");
   const [observations, setObservations] = useState("");
   const [actions, setActions] = useState("");
-  const [dateProchaine, setDateProchaine] = useState<string>(""); // YYYY-MM-DD
+  const [dateProchaine, setDateProchaine] = useState<string>("");
   const [photosStr, setPhotosStr] = useState("");
 
   const photosArray = useMemo(() => {
@@ -42,42 +42,39 @@ export default function ControlEquipment() {
 
   useEffect(() => {
     if (!id) return;
-    supabase
-      .from("equipements")
-      .select("id,type,modele,numero_serie,image")
-      .eq("id", id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) setError(error.message);
-        else setEquip(data as Equipement);
-      });
+    (async () => {
+      const { data, error } = await supabase
+        .from("equipements")
+        .select("id,type,modele,numero_serie,image")
+        .eq("id", id)
+        .single();
+      if (error) setError(error.message);
+      else setEquip(data as Equipement);
+    })();
   }, [id]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !sessionUserId) return;
     setSaving(true);
     setError(null);
 
-    supabase
-      .from("controles")
-      .insert([
-        {
-          equipement_id: id,
-          controleur_id: sessionUserId,
-          resultat,
-          observations: observations || null,
-          actions_correctives: actions || null,
-          date_prochaine_verification: dateProchaine || null,
-          photos: photosArray.length ? photosArray : null,
-          // date_controle par défaut CURRENT_DATE côté DB
-        },
-      ])
-      .then(({ error }) => {
-        if (error) setError(error.message);
-        else window.location.href = `/equipements/${id}/historique`;
-      })
-      .finally(() => setSaving(false));
+    const { error } = await supabase.from("controles").insert([
+      {
+        equipement_id: id,
+        controleur_id: sessionUserId,
+        resultat,
+        observations: observations || null,
+        actions_correctives: actions || null,
+        date_prochaine_verification: dateProchaine || null,
+        photos: photosArray.length ? photosArray : null,
+      },
+    ]);
+
+    if (error) setError(error.message);
+    else window.location.href = `/equipements/${id}/historique`;
+
+    setSaving(false);
   };
 
   if (!id) return <div className="p-6">Identifiant d’équipement manquant.</div>;

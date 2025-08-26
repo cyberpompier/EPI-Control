@@ -29,28 +29,29 @@ export default function EditEquipment() {
     setLoading(true);
     setError(null);
 
-    supabase
-      .from("equipements")
-      .select("*")
-      .eq("id", id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          setError(error.message);
-        } else {
-          setEquip(data as Equipement);
-        }
-      })
-      .finally(() => setLoading(false));
+    (async () => {
+      const { data, error } = await supabase
+        .from("equipements")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setEquip(data as Equipement);
+      }
+      setLoading(false);
+    })();
   }, [id]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!equip) return;
     setSaving(true);
     setError(null);
 
-    supabase
+    const { error } = await supabase
       .from("equipements")
       .update({
         type: equip.type,
@@ -62,15 +63,14 @@ export default function EditEquipment() {
         statut: equip.statut,
         image: equip.image,
       })
-      .eq("id", equip.id)
-      .then(({ error }) => {
-        if (error) {
-          setError(error.message);
-        } else {
-          navigate(`/equipements/${equip.id}/historique`);
-        }
-      })
-      .finally(() => setSaving(false));
+      .eq("id", equip.id);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      navigate(`/equipements/${equip.id}/historique`);
+    }
+    setSaving(false);
   };
 
   if (!id) {
