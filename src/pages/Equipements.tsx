@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { EPICard } from '@/components/epi/EPICard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ interface EPI {
 }
 
 const Equipements = () => {
+  const navigate = useNavigate();
   const [epis, setEpis] = useState<EPI[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -84,7 +86,7 @@ const Equipements = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h1 className="text-3xl font-bold">Gestion des Équipements</h1>
-          <Button className="w-full md:w-auto">
+          <Button className="w-full md:w-auto" onClick={() => navigate('/equipements/new')}>
             <Plus className="w-4 h-4 mr-2" />
             Nouvel Équipement
           </Button>
