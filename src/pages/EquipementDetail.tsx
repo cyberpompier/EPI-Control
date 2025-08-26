@@ -93,6 +93,7 @@ const EquipementDetail = () => {
   const defaultImageUrl = 'https://quvdxjxszquqqcvesntn.supabase.co/storage/v1/object/public/banque%20image%20habillement/habillement/image_non_disponible.png';
 
   return (
+    <Layout>
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Détails de l'équipement</h1>
@@ -281,6 +282,7 @@ const EquipementDetail = () => {
         </CardContent>
       </Card>
     </div>
+  </Layout>
   );
 };
 
