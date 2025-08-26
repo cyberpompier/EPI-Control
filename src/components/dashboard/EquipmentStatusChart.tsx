@@ -130,6 +130,8 @@ const EquipmentStatusChart = () => {
     );
   }
 
+  console.log('Rendering chart with data:', chartData);
+
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-4">Statut des Équipements</h2>
@@ -151,6 +153,9 @@ const EquipmentStatusChart = () => {
               fontSize={12}
               tickLine={false}
               axisLine={false}
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
             <YAxis
               stroke="#888888"
