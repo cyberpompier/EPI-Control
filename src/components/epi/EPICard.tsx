@@ -11,6 +11,7 @@ type Props = {
   epi: EPI;
 };
 
+// Garde les classes/couleurs d'origine
 function getStatusColor(status: string) {
   switch (status) {
     case "en_service":
@@ -25,6 +26,7 @@ function getStatusColor(status: string) {
   }
 }
 
+// Garde les icônes d'origine
 function getStatusIcon(status: string) {
   switch (status) {
     case "en_service":
@@ -40,25 +42,28 @@ function getStatusIcon(status: string) {
 }
 
 const EPICard: React.FC<Props> = ({ epi }) => {
+  // Normaliser uniquement pour la logique, sans impacter le rendu visuel
   const normalizedStatus = toDbStatus(String(epi.statut));
 
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between text-base">
-          <span className="truncate">
-            {epi.type}
-            {epi.modele ? ` — ${epi.modele}` : ""}
-          </span>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">
+            <span className="truncate">
+              {epi.type}
+              {epi.modele ? ` — ${epi.modele}` : ""}
+            </span>
+          </CardTitle>
           <Badge className={getStatusColor(normalizedStatus)} variant="outline">
             <span className="flex items-center">
               {getStatusIcon(normalizedStatus)}
               <span className="ml-1">
-                {toLabel(normalizedStatus)}
+                {toLabel(String(epi.statut))}
               </span>
             </span>
           </Badge>
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="pt-0 text-sm text-muted-foreground space-y-1">
         {epi.marque && <p>Marque: {epi.marque}</p>}
