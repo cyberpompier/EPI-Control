@@ -162,13 +162,14 @@ const PersonnelForm = () => {
                 <div>
                   <Label htmlFor="caserne">Caserne</Label>
                   <Select 
-                    value={formData.caserne || ''} 
-                    onValueChange={(value) => handleSelectChange('caserne', value)}
+                    value={formData.caserne || 'none'} 
+                    onValueChange={(value) => handleSelectChange('caserne', value === 'none' ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner une caserne" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">-- Aucune --</SelectItem>
                       <SelectItem value="Centre">Centre</SelectItem>
                       <SelectItem value="Nord">Nord</SelectItem>
                       <SelectItem value="Sud">Sud</SelectItem>
@@ -181,13 +182,14 @@ const PersonnelForm = () => {
                 <div>
                   <Label htmlFor="grade">Grade</Label>
                   <Select 
-                    value={formData.grade || ''} 
-                    onValueChange={(value) => handleSelectChange('grade', value)}
+                    value={formData.grade || 'none'} 
+                    onValueChange={(value) => handleSelectChange('grade', value === 'none' ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un grade" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">-- Aucun --</SelectItem>
                       <SelectItem value="Pompier">Pompier</SelectItem>
                       <SelectItem value="Caporal">Caporal</SelectItem>
                       <SelectItem value="Sergent">Sergent</SelectItem>

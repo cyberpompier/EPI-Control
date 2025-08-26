@@ -209,14 +209,14 @@ export function EPIDetailsDialog({ isOpen, onClose, epi, onUpdate }: EPIDetailsD
             <div>
               <Label htmlFor="personnel">Assigné à</Label>
               <Select 
-                value={formData.personnel_id?.toString() || ''} 
-                onValueChange={(value) => handleChange('personnel_id', parseInt(value))}
+                value={formData.personnel_id?.toString() || 'none'} 
+                onValueChange={(value) => handleChange('personnel_id', value === 'none' ? null : parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un personnel" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Non assigné</SelectItem>
+                  <SelectItem value="none">Non assigné</SelectItem>
                   {personnelList.map((person) => (
                     <SelectItem key={person.id} value={person.id.toString()}>
                       {person.prenom} {person.nom}
