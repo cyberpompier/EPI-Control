@@ -35,3 +35,13 @@ export function getStatusIcon(statut: string) {
       return <Clock className="w-4 h-4" />;
   }
 }
+
+export function getInitials(name: string | null | undefined): string {
+  if (!name) return 'U';
+  
+  const words = name.trim().split(' ');
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+  return (words[0][0] + (words[1][0] || '')).toUpperCase();
+}
