@@ -14,6 +14,7 @@ import EquipementDetail from '@/pages/EquipementDetail';
 import Controles from '@/pages/Controles';
 import ControleDetail from '@/pages/ControleDetail';
 import Habillement from '@/pages/Habillement';
+import HabillementDetail from '@/pages/HabillementDetail';
 import NotFound from '@/pages/NotFound';
 
 function App() {
@@ -28,12 +29,11 @@ function App() {
           <Route path="/personnel/new" element={<PersonnelForm />} />
           <Route path="/personnel/:id" element={<PersonnelForm />} />
           <Route path="/equipements" element={<Equipements />} />
-          <Route path="/equipements/new" element={<EquipementDetail />} />
           <Route path="/equipements/:id" element={<EquipementDetail />} />
           <Route path="/controles" element={<Controles />} />
           <Route path="/controles/:id" element={<ControleDetail />} />
           <Route path="/habillement" element={<Habillement />} />
-          <Route path="/habillement/:id" element={<Habillement />} />
+          <Route path="/habillement/:id" element={<HabillementDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
