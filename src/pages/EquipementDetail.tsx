@@ -280,7 +280,6 @@ const EquipementDetail = () => {
         </CardContent>
       </Card>
     </div>
-    </Layout>
   );
 };
 
