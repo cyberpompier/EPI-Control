@@ -34,7 +34,7 @@ const EquipmentStatusChart = () => {
           .from('equipements')
           .select('type, statut');
         
-        console.log('Equipment data fetched:', equipements);
+        console.log('Equipment data fetched:', equipements?.length);
         console.log('Error:', error);
         
         if (error) {
@@ -81,9 +81,12 @@ const EquipmentStatusChart = () => {
           }
         });
         
-        // Convertir l'objet en tableau
-        const result = Object.values(processedData);
-        console.log('Processed data:', result);
+        // Convertir l'objet en tableau et limiter à 10 types pour une meilleure lisibilité
+        const result = Object.values(processedData)
+          .sort((a, b) => (b.en_service + b.en_reparation + b.hors_service) - (a.en_service + a.en_reparation + a.hors_service))
+          .slice(0, 10);
+        
+        console.log('Processed data (top 10):', result);
         setChartData(result);
         setLoading(false);
       } catch (err) {
@@ -133,9 +136,9 @@ const EquipmentStatusChart = () => {
   console.log('Rendering chart with data:', chartData);
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
+    <div className="p-4 bg-white rounded-lg shadow w-full">
       <h2 className="text-xl font-bold mb-4">Statut des Équipements</h2>
-      <div className="h-80">
+      <div className="h-96 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
@@ -143,7 +146,7 @@ const EquipmentStatusChart = () => {
               top: 20,
               right: 30,
               left: 20,
-              bottom: 50,
+              bottom: 100,
             }}
           >
             <CartesianGrid strokeDasharray="3 3" />
@@ -155,7 +158,8 @@ const EquipmentStatusChart = () => {
               axisLine={false}
               angle={-45}
               textAnchor="end"
-              height={60}
+              height={80}
+              interval={0}
             />
             <YAxis
               stroke="#888888"
@@ -191,7 +195,7 @@ const EquipmentStatusChart = () => {
         </ResponsiveContainer>
       </div>
       <div className="mt-4 text-sm text-gray-500">
-        <p>Visualisation du statut actuel de tous les équipements</p>
+        <p>Visualisation du statut actuel des équipements (top 10 types)</p>
       </div>
     </div>
   );
