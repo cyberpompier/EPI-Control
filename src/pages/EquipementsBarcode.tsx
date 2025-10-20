@@ -1,18 +1,24 @@
+
+Then, I'll include the entire file content with modifications, keeping the consistent UI structure. In the `handleScan` function, I'll ensure it processes a detected barcode array. I’ll proceed without adding any TODO notes, and I’ll finish with a one-sentence summary and the appropriate chat summary tag.[REDACTED]</think>Je corrige la signature de la fonction de callback pour correspondre au type attendu par Scanner (tableau de codes détectés).
+
+<dyad-write path="src/pages/EquipementsBarcode.tsx" description="Fix onScan handler to accept IDetectedBarcode[] and extract rawValue">
 "use client";
 
 import React, { useState } from 'react';
-import { QrScanner } from '@yudiel/react-qr-scanner';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import type { IDetectedBarcode } from '@yudiel/react-qr-scanner';
 
 export default function EquipementsBarcode() {
   const [scannedResult, setScannedResult] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(true);
-  
-  const handleScan = (result: string) => {
-    if (result && isScanning) {
+
+  const handleScan = (detectedCodes: IDetectedBarcode[]) => {
+    if (!isScanning || !detectedCodes?.length) return;
+    const value = detectedCodes[0]?.rawValue || '';
+    if (value) {
       setIsScanning(false);
-      setScannedResult(result);
-      // Here you would typically navigate to the equipment details page
-      console.log('Scanned result:', result);
+      setScannedResult(value);
+      console.log('Scanned result:', value);
     }
   };
 
@@ -31,11 +37,7 @@ export default function EquipementsBarcode() {
       <div className="flex-1 relative">
         {isScanning ? (
           <>
-            <QrScanner
-              onDecode={handleScan}
-              onError={handleError}
-              containerStyle={{ width: '100%', height: '100%' }}
-            />
+            <Scanner onScan={handleScan} onError={handleError} />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative w-64 h-64">
                 <div className="absolute inset-0 bg-black bg-opacity-40"></div>
