@@ -2,10 +2,25 @@
 
 import React, { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import type { IDetectedBarcode } from '@yudiel/react-qr-scanner';
 
 export default function EquipementsBarcode() {
   const [scannedResult, setScannedResult] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(true);
+
+  const handleScan = (codes: IDetectedBarcode[]) => {
+    if (!isScanning || !codes?.length) return;
+    const value = codes[0]?.rawValue;
+    if (value) {
+      setIsScanning(false);
+      setScannedResult(value);
+      console.log('Scanned result:', value);
+    }
+  };
+
+  const handleError = (error: Error) => {
+    console.error('Scanner error:', error);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -19,19 +34,9 @@ export default function EquipementsBarcode() {
         {isScanning ? (
           <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
             <Scanner
-              onScan={(codes) => {
-                if (!isScanning) return;
-                const value = codes?.[0]?.rawValue;
-                if (value) {
-                  setIsScanning(false);
-                  setScannedResult(value);
-                  console.log('Scanned result:', value);
-                }
-              }}
-              onError={(error) => {
-                console.error('Scanner error:', error);
-              }}
-              components={{ audio: false, torch: true, zoom: true }}
+              onScan={handleScan}
+              onError={handleError}
+              components={{ torch: true, zoom: true }}
               styles={{
                 container: { width: '100%', height: '100%' },
                 video: { width: '100%', height: '100%', objectFit: 'cover' },
