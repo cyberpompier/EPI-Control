@@ -5,6 +5,9 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
+import EPICardEditor from './EPICardEditor';
 import { createClient } from '@supabase/supabase-js';
 
 type Equipement = {
@@ -41,10 +44,17 @@ const formatFullName = (p?: Pick<Personnel, 'prenom' | 'nom'> | null) =>
 
 const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
   const [owner, setOwner] = useState<Personnel | null>(null);
+  const [localEpi, setLocalEpi] = useState<Equipement>(epi);
+  const [openEdit, setOpenEdit] = useState(false);
+
+  useEffect(() => {
+    setLocalEpi(epi);
+  }, [epi]);
+
   const ownerId = useMemo(() => {
-    if (epi?.personnel_id === null || epi?.personnel_id === undefined) return null;
-    return typeof epi.personnel_id === 'string' ? epi.personnel_id : String(epi.personnel_id);
-  }, [epi?.personnel_id]);
+    if (localEpi?.personnel_id === null || localEpi?.personnel_id === undefined) return null;
+    return typeof localEpi.personnel_id === 'string' ? localEpi.personnel_id : String(localEpi.personnel_id);
+  }, [localEpi?.personnel_id]);
 
   useEffect(() => {
     if (!ownerId) {
@@ -71,6 +81,20 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
 
   return (
     <Card className="relative overflow-hidden">
+      {/* Bouton Éditer */}
+      <div className="absolute left-2 top-2 z-10">
+        <Button
+          size="icon"
+          variant="secondary"
+          aria-label="Éditer l’équipement"
+          onClick={() => setOpenEdit(true)}
+          className="h-8 w-8"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Badge Propriétaire */}
       <div className="absolute right-2 top-2 z-10">
         {owner ? (
           <Link
@@ -97,14 +121,14 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
 
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
-          <span className="truncate">{epi.type || epi.modele || 'Équipement'}</span>
+          <span className="truncate">{localEpi.type || localEpi.modele || 'Équipement'}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        {epi.image ? (
+        {localEpi.image ? (
           <img
-            src={epi.image}
-            alt={epi.type || epi.modele || 'Image EPI'}
+            src={localEpi.image}
+            alt={localEpi.type || localEpi.modele || 'Image EPI'}
             className="w-full h-40 object-cover rounded-md border"
           />
         ) : (
@@ -114,32 +138,40 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
         )}
 
         <div className="text-sm grid grid-cols-2 gap-x-4 gap-y-1">
-          {epi.marque ? (
+          {localEpi.marque ? (
             <>
               <span className="text-muted-foreground">Marque</span>
-              <span className="font-medium">{epi.marque}</span>
+              <span className="font-medium">{localEpi.marque}</span>
             </>
           ) : null}
-          {epi.modele ? (
+          {localEpi.modele ? (
             <>
               <span className="text-muted-foreground">Modèle</span>
-              <span className="font-medium">{epi.modele}</span>
+              <span className="font-medium">{localEpi.modele}</span>
             </>
           ) : null}
-          {epi.numero_serie ? (
+          {localEpi.numero_serie ? (
             <>
               <span className="text-muted-foreground">N° série</span>
-              <span className="font-medium">{epi.numero_serie}</span>
+              <span className="font-medium">{localEpi.numero_serie}</span>
             </>
           ) : null}
-          {epi.statut ? (
+          {localEpi.statut ? (
             <>
               <span className="text-muted-foreground">Statut</span>
-              <span className="font-medium">{epi.statut}</span>
+              <span className="font-medium">{localEpi.statut}</span>
             </>
           ) : null}
         </div>
       </CardContent>
+
+      {/* Dialog d'édition */}
+      <EPICardEditor
+        open={openEdit}
+        onOpenChange={setOpenEdit}
+        epi={localEpi}
+        onSaved={(updated) => setLocalEpi(updated)}
+      />
     </Card>
   );
 };
