@@ -45,22 +45,30 @@ export default function EquipementEdit() {
   useEffect(() => {
     if (!id) return;
     let mounted = true;
-    setLoading(true);
-    supabase
-      .from("equipements")
-      .select("id, numero_serie, personnel_id")
-      .eq("id", id)
-      .single()
-      .then(({ data, error }) => {
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("equipements")
+          .select("id, numero_serie, personnel_id")
+          .eq("id", id)
+          .single();
+
         if (!mounted) return;
         if (error) throw error;
+
         const e = data as Equipement;
         form.reset({
           numero_serie: e?.numero_serie ?? "",
           personnel_id: e?.personnel_id ?? null,
         });
-      })
-      .finally(() => mounted && setLoading(false));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
 
     return () => {
       mounted = false;
@@ -119,7 +127,7 @@ export default function EquipementEdit() {
                 )}
               />
 
-              {/* Menu déroulant: Assigner au personnel (AJOUTÉ ICI) */}
+              {/* Menu déroulant: Assigner au personnel */}
               <PersonnelSelectField />
             </CardContent>
 

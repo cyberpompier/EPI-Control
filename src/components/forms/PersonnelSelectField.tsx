@@ -29,18 +29,24 @@ export default function PersonnelSelectField() {
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
-    supabase
-      .from("personnel")
-      .select("id, nom, prenom, matricule, caserne")
-      .order("nom", { ascending: true })
-      .then(({ data, error }) => {
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("personnel")
+          .select("id, nom, prenom, matricule, caserne")
+          .order("nom", { ascending: true });
+
         if (!mounted) return;
         if (error) throw error;
         setOptions(data ?? []);
-      })
-      .finally(() => mounted && setLoading(false));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
 
+    load();
     return () => {
       mounted = false;
     };
@@ -64,10 +70,10 @@ export default function PersonnelSelectField() {
             }
             onValueChange={(v) => {
               if (v === "none") {
-                form.setValue("personnel_id", null, { shouldDirty: true });
+                (form as any).setValue("personnel_id", null, { shouldDirty: true });
               } else {
                 const parsed = Number(v);
-                form.setValue("personnel_id", Number.isFinite(parsed) ? parsed : null, {
+                (form as any).setValue("personnel_id", Number.isFinite(parsed) ? parsed : null, {
                   shouldDirty: true,
                 });
               }
