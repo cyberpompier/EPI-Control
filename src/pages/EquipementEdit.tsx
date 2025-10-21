@@ -29,7 +29,7 @@ import {
 const formSchema = z.object({
   type: z.string().min(1, 'Le type est requis'),
   marque: z.string(),
-  modele: z.string(), // Permet les valeurs vides
+  modele: z.string(),
   numero_serie: z.string().min(1, 'Le numéro de série est requis'),
   personnel_id: z.string().optional(),
   date_mise_en_service: z.string().min(1, 'La date de mise en service est requise'),
@@ -89,7 +89,6 @@ const EquipementEdit = () => {
       });
       setPersonnels([]);
     } else {
-      // Cast id en string pour le Select
       setPersonnels((data || []).map((p: any) => ({ id: String(p.id), nom: p.nom, prenom: p.prenom })));
     }
     setLoadingPersonnels(false);
@@ -238,7 +237,7 @@ const EquipementEdit = () => {
               )}
             />
 
-            {/* Champ d'affectation du personnel - ajouté juste au-dessus de la date de mise en service */}
+            {/* Champ d'affectation du personnel */}
             <FormField
               control={form.control}
               name="personnel_id"
@@ -246,7 +245,7 @@ const EquipementEdit = () => {
                 <FormItem>
                   <FormLabel>Affectation du personnel</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(v) => field.onChange(v === '_none' ? '' : v)}
                     value={field.value ?? ''}
                     disabled={loadingPersonnels}
                   >
@@ -256,7 +255,7 @@ const EquipementEdit = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Non assigné</SelectItem>
+                      <SelectItem value="_none">Non assigné</SelectItem>
                       {personnels.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {(p.prenom || '') + ' ' + (p.nom || '')}
@@ -291,13 +290,13 @@ const EquipementEdit = () => {
                 control={form.control}
                 name="date_fin_vie"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de fin de vie</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                <FormItem>
+                  <FormLabel>Date de fin de vie</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
                 )}
               />
             </div>
