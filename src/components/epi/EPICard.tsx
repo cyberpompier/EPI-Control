@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database'; // If not present, remove this import and types usage.
 
 type Equipement = {
   id: string;
@@ -44,7 +43,6 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
   const [owner, setOwner] = useState<Personnel | null>(null);
   const ownerId = useMemo(() => {
     if (epi?.personnel_id === null || epi?.personnel_id === undefined) return null;
-    // Normaliser en string pour bigint
     return typeof epi.personnel_id === 'string' ? epi.personnel_id : String(epi.personnel_id);
   }, [epi?.personnel_id]);
 
@@ -61,7 +59,6 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
       .then(({ data, error }) => {
         if (error) throw error;
         if (data) {
-          // Normaliser l'id en string
           const id = typeof data.id === 'string' ? data.id : String(data.id);
           setOwner({ id, nom: data.nom ?? null, prenom: data.prenom ?? null, photo: data.photo ?? null });
         } else {
@@ -74,7 +71,6 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
 
   return (
     <Card className="relative overflow-hidden">
-      {/* Badge propriétaire en overlay (coin supérieur droit) */}
       <div className="absolute right-2 top-2 z-10">
         {owner ? (
           <Link
@@ -99,7 +95,6 @@ const EPICard: React.FC<EPICardProps> = ({ epi, assigneeName }) => {
         )}
       </div>
 
-      {/* Contenu de la carte EPI */}
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <span className="truncate">{epi.type || epi.modele || 'Équipement'}</span>
