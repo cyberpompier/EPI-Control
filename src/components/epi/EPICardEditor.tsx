@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
 type Equipement = {
@@ -21,6 +22,12 @@ type Equipement = {
   [key: string]: any;
 };
 
+type PersonnelOption = {
+  id: string;
+  nom?: string | null;
+  prenom?: string | null;
+};
+
 type EPICardEditorProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,6 +38,7 @@ type EPICardEditorProps = {
 const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, onSaved }) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [personnels, setPersonnels] = useState<PersonnelOption[]>([]);
 
   const [form, setForm] = useState({
     type: epi.type || "",
@@ -39,8 +47,10 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
     numero_serie: epi.numero_serie || "",
     statut: epi.statut || "",
     image: epi.image || "",
+    personnel_id: epi.personnel_id ? String(epi.personnel_id) : "",
   });
 
+  // Re-initialiser le formulaire à l'ouverture
   useEffect(() => {
     if (open) {
       setForm({
@@ -50,9 +60,36 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
         numero_serie: epi.numero_serie || "",
         statut: epi.statut || "",
         image: epi.image || "",
+        personnel_id: epi.personnel_id ? String(epi.personnel_id) : "",
       });
     }
   }, [open, epi]);
+
+  // Charger la liste du personnel quand le dialog s'ouvre
+  useEffect(() => {
+    if (!open) return;
+    supabase
+      .from("personnel")
+      .select("id, nom, prenom")
+      .order("nom", { ascending: true })
+      .then(({ data, error }) => {
+        if (error) {
+          toast({
+            title: "Erreur de chargement du personnel",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        const options: PersonnelOption[] =
+          (data || []).map((p: any) => ({
+            id: typeof p.id === "string" ? p.id : String(p.id),
+            nom: p.nom ?? null,
+            prenom: p.prenom ?? null,
+          })) || [];
+        setPersonnels(options);
+      });
+  }, [open, toast]);
 
   const onChange = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -60,13 +97,15 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
 
   const handleSave = async () => {
     setSaving(true);
-    const payload = {
+    const payload: any = {
       type: form.type || null,
       marque: form.marque || null,
       modele: form.modele || null,
       numero_serie: form.numero_serie || null,
       statut: form.statut || null,
       image: form.image || null,
+      // transmettre null si "Non assigné"
+      personnel_id: form.personnel_id === "" ? null : form.personnel_id,
     };
 
     const { data, error } = await supabase
@@ -97,6 +136,9 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
       onOpenChange(false);
     }
   };
+
+  const displayName = (p: PersonnelOption) =>
+    [p.prenom, p.nom].filter(Boolean).join(" ").trim() || p.id;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,6 +172,26 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
           <div className="grid gap-2">
             <Label htmlFor="image">URL image</Label>
             <Input id="image" value={form.image} onChange={onChange("image")} placeholder="https://..." />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Propriétaire (personnel)</Label>
+            <Select
+              value={form.personnel_id}
+              onValueChange={(v) => setForm((prev) => ({ ...prev, personnel_id: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un personnel (ou laisser vide)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Non assigné</SelectItem>
+                {personnels.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {displayName(p)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
