@@ -3,8 +3,7 @@
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { createClient } from "@supabase/supabase-js";
-import supabaseClient from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 type Person = {
   id: number;
@@ -20,7 +19,6 @@ type OwnerSelectProps = {
 
 const OwnerSelect: React.FC<OwnerSelectProps> = ({ epiId, value, onChange }) => {
   const { toast } = useToast();
-  const supabase = (supabaseClient as ReturnType<typeof createClient>);
   const [loading, setLoading] = React.useState(false);
   const [people, setPeople] = React.useState<Person[]>([]);
   const [ready, setReady] = React.useState(false);
@@ -40,9 +38,15 @@ const OwnerSelect: React.FC<OwnerSelectProps> = ({ epiId, value, onChange }) => 
         .from("personnel")
         .select("id, nom, prenom")
         .order("nom", { ascending: true });
+
       if (!active) return;
+
       if (error) {
-        toast({ title: "Erreur", description: "Impossible de charger la liste du personnel.", variant: "destructive" });
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger la liste du personnel.",
+          variant: "destructive",
+        });
       } else {
         setPeople((data ?? []) as Person[]);
       }
@@ -52,7 +56,7 @@ const OwnerSelect: React.FC<OwnerSelectProps> = ({ epiId, value, onChange }) => 
     return () => {
       active = false;
     };
-  }, [supabase, toast]);
+  }, [toast]);
 
   const handleChange = async (val: string) => {
     if (loading) return;
@@ -95,27 +99,21 @@ const OwnerSelect: React.FC<OwnerSelectProps> = ({ epiId, value, onChange }) => 
   };
 
   // Détermine si la valeur actuelle correspond à une personne connue; sinon, bascule en "none" visuellement
-  const knownIds = React.useMemo(() => new Set(people.map(p => String(p.id))), [people]);
+  const knownIds = React.useMemo(() => new Set(people.map((p) => String(p.id))), [people]);
   const displayValue = knownIds.has(internal) ? internal : "none";
 
   const currentLabel = React.useMemo(() => {
     if (displayValue === "none") return "Non assigné";
-    const p = people.find(x => String(x.id) === displayValue);
+    const p = people.find((x) => String(x.id) === displayValue);
     if (!p) return "Propriétaire";
     return `${p.prenom ?? ""} ${p.nom ?? ""}`.trim() || "Propriétaire";
   }, [displayValue, people]);
 
   return (
     <div className="min-w-[180px]">
-      <Select
-        value={displayValue}
-        onValueChange={handleChange}
-        disabled={!ready || loading}
-      >
+      <Select value={displayValue} onValueChange={handleChange} disabled={!ready || loading}>
         <SelectTrigger className="h-8 w-full">
-          <SelectValue placeholder="Propriétaire">
-            {currentLabel}
-          </SelectValue>
+          <SelectValue placeholder="Propriétaire">{currentLabel}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="none">Non assigné</SelectItem>
