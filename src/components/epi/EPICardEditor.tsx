@@ -50,7 +50,6 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
     personnel_id: epi.personnel_id ? String(epi.personnel_id) : "",
   });
 
-  // Re-initialiser le formulaire à l'ouverture
   useEffect(() => {
     if (open) {
       setForm({
@@ -65,7 +64,6 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
     }
   }, [open, epi]);
 
-  // Charger la liste du personnel quand le dialog s'ouvre
   useEffect(() => {
     if (!open) return;
     supabase
@@ -104,7 +102,6 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
       numero_serie: form.numero_serie || null,
       statut: form.statut || null,
       image: form.image || null,
-      // transmettre null si "Non assigné"
       personnel_id: form.personnel_id === "" ? null : form.personnel_id,
     };
 
@@ -139,6 +136,9 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
 
   const displayName = (p: PersonnelOption) =>
     [p.prenom, p.nom].filter(Boolean).join(" ").trim() || p.id;
+
+  // Valeur affichée dans le Select: 'none' si non assigné (state vide), sinon l'id
+  const selectValue = form.personnel_id === "" ? "none" : form.personnel_id;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,14 +177,16 @@ const EPICardEditor: React.FC<EPICardEditorProps> = ({ open, onOpenChange, epi, 
           <div className="grid gap-2">
             <Label>Propriétaire (personnel)</Label>
             <Select
-              value={form.personnel_id}
-              onValueChange={(v) => setForm((prev) => ({ ...prev, personnel_id: v }))}
+              value={selectValue}
+              onValueChange={(v) =>
+                setForm((prev) => ({ ...prev, personnel_id: v === "none" ? "" : v }))
+              }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un personnel (ou laisser vide)" />
+                <SelectValue placeholder="Sélectionner un personnel" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Non assigné</SelectItem>
+                <SelectItem value="none">Non assigné</SelectItem>
                 {personnels.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {displayName(p)}
