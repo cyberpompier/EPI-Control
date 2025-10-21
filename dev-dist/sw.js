@@ -73,7 +73,7 @@ define(['./workbox-86c9b217'], (function (workbox) { 'use strict';
   workbox.clientsClaim();
 
   /**
-   * The precacheAndRoute() method efficiently caches and responds to
+   * The  precacheAndRoute() method efficiently caches and responds to
    * requests for URLs in the manifest.
    * See https://goo.gl/S9QRab
    */
@@ -82,7 +82,7 @@ define(['./workbox-86c9b217'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.rcmbiddqi2o"
+    "revision": "0.farsod9acao"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
