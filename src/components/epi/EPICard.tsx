@@ -11,7 +11,6 @@ type EPICardProps = {
   assigneeName?: string; // nom complet du personnel (optionnel, prioritaire)
 } & AnyRecord;
 
-// Mappe le statut vers une variante de badge (style proche de la page équipement)
 const getStatusVariant = (status?: string) => {
   switch ((status || '').toLowerCase()) {
     case 'en_service':
@@ -26,6 +25,46 @@ const getStatusVariant = (status?: string) => {
   }
 };
 
+const getAssigneeName = (src: AnyRecord, explicit?: string) => {
+  if (explicit && explicit.trim().length > 0) return explicit.trim();
+
+  // Champs fréquents à plat
+  const first =
+    src.personnel_prenom ??
+    src.prenom ??
+    src.first_name ??
+    src.firstname ??
+    '';
+  const last =
+    src.personnel_nom ??
+    src.nom ??
+    src.last_name ??
+    src.lastname ??
+    '';
+  const joined = [first, last].filter(Boolean).join(' ').trim();
+  if (joined.length > 0) return joined;
+
+  // Champs combinés possibles
+  const combined =
+    src.assigneeName ??
+    src.assignee_name ??
+    src.assignee ??
+    '';
+  if (typeof combined === 'string' && combined.trim().length > 0) {
+    return combined.trim();
+  }
+
+  // Objet imbriqué (ex: personnel)
+  if (src.personnel && typeof src.personnel === 'object') {
+    const pFirst = src.personnel.prenom ?? src.personnel.first_name ?? '';
+    const pLast = src.personnel.nom ?? src.personnel.last_name ?? '';
+    const nested = [pFirst, pLast].filter(Boolean).join(' ').trim();
+    if (nested.length > 0) return nested;
+  }
+
+  return '';
+};
+
 const EPICard: React.FC<EPICardProps> = (props) => {
   const item: AnyRecord = props.epi ?? props;
 
@@ -35,19 +74,9 @@ const EPICard: React.FC<EPICardProps> = (props) => {
   const numero_serie: string | undefined = item.numero_serie ?? item.serial ?? '';
   const statut: string | undefined = item.statut ?? '';
   const image: string | undefined = item.image ?? '';
-  const personnel_id: string | number | null | undefined = item.personnel_id ?? null;
 
-  // Essayez d'afficher un nom si disponible (priorité à la prop assigneeName)
-  const computedName =
-    props.assigneeName ||
-    [item.personnel_prenom, item.personnel_nom].filter(Boolean).join(' ').trim();
-
-  const displayAssignee =
-    computedName && computedName.length > 0
-      ? computedName
-      : personnel_id
-      ? `ID ${personnel_id}`
-      : 'Non assigné';
+  const assignee = getAssigneeName(item, props.assigneeName);
+  const displayAssignee = assignee || 'Non assigné';
 
   return (
     <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
@@ -59,13 +88,11 @@ const EPICard: React.FC<EPICardProps> = (props) => {
             {modele ? <span className="text-gray-500 font-normal">— {modele}</span> : null}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {/* Statut */}
             {statut ? (
               <Badge variant={getStatusVariant(statut) as any} className="capitalize">
                 {statut.replace('_', ' ')}
               </Badge>
             ) : null}
-            {/* Assigné à */}
             <Badge variant="secondary" className="flex items-center gap-1">
               <User className="h-3.5 w-3.5" />
               <span>Assigné à:</span>
