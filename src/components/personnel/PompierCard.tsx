@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import AssignedEPIList from './AssignedEPIList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { PackageOpen } from 'lucide-react';
 
 type Pompier = {
@@ -18,8 +18,15 @@ type Pompier = {
   [key: string]: any;
 };
 
+type EpiCount = {
+  total: number;
+  conformes: number;
+  nonConformes: number;
+};
+
 type PompierCardProps = {
   pompier: Pompier;
+  epiCount?: EpiCount; // optional to align with usage in Personnel.tsx
 };
 
 const PompierCard: React.FC<PompierCardProps> = ({ pompier }) => {
@@ -27,7 +34,6 @@ const PompierCard: React.FC<PompierCardProps> = ({ pompier }) => {
   const fullName = [pompier.prenom, pompier.nom].filter(Boolean).join(' ').trim();
 
   const openDialog = (e: React.MouseEvent) => {
-    // Empêche la navigation du Link parent pour pouvoir ouvrir le dialog.
     e.preventDefault();
     e.stopPropagation();
     setOpen(true);
@@ -72,4 +78,5 @@ const PompierCard: React.FC<PompierCardProps> = ({ pompier }) => {
   );
 };
 
+export { PompierCard };
 export default PompierCard;

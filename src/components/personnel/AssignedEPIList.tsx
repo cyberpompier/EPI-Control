@@ -42,8 +42,8 @@ const AssignedEPIList: React.FC<AssignedEPIListProps> = ({ personnelId, assignee
       .then(({ data, error }) => {
         if (error) throw error;
         setEpis(data ?? []);
-      })
-      .finally(() => setLoading(false));
+        setLoading(false);
+      });
   }, [personnelId]);
 
   if (loading) {
