@@ -16,46 +16,34 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const formSchema = z.object({
   type: z.string().min(1, 'Le type est requis'),
   marque: z.string(),
-  modele: z.string(),
+  modele: z.string(), // Permet les valeurs vides
   numero_serie: z.string().min(1, 'Le numéro de série est requis'),
-  personnel_id: z.string().optional(),
   date_mise_en_service: z.string().min(1, 'La date de mise en service est requise'),
   date_fin_vie: z.string().optional(),
   statut: z.string().min(1, 'Le statut est requis'),
 });
 
-type EquipementFormValues = z.infer<typeof formSchema>;
-
 const EquipementEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [equipement, setEquipement] = useState<any>(null);
+  const [equipement, setEquipement] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [personnels, setPersonnels] = useState<Array<{ id: string; nom: string | null; prenom: string | null }>>([]);
-  const [loadingPersonnels, setLoadingPersonnels] = useState<boolean>(true);
 
-  const form = useForm<EquipementFormValues>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: '',
       marque: '',
       modele: '',
       numero_serie: '',
-      personnel_id: '',
       date_mise_en_service: '',
       date_fin_vie: '',
       statut: 'en_attente',
@@ -63,36 +51,10 @@ const EquipementEdit = () => {
   });
 
   useEffect(() => {
-    fetchPersonnels();
-  }, []);
-
-  useEffect(() => {
     if (id) {
       fetchEquipement();
-    } else {
-      setLoading(false);
     }
   }, [id]);
-
-  const fetchPersonnels = async () => {
-    setLoadingPersonnels(true);
-    const { data, error } = await supabase
-      .from('personnel')
-      .select('id, nom, prenom')
-      .order('nom', { ascending: true });
-
-    if (error) {
-      toast({
-        title: 'Erreur',
-        description: "Impossible de charger la liste du personnel.",
-        variant: 'destructive',
-      });
-      setPersonnels([]);
-    } else {
-      setPersonnels((data || []).map((p: any) => ({ id: String(p.id), nom: p.nom, prenom: p.prenom })));
-    }
-    setLoadingPersonnels(false);
-  };
 
   const fetchEquipement = async () => {
     try {
@@ -110,12 +72,11 @@ const EquipementEdit = () => {
         marque: data.marque || '',
         modele: data.modele || '',
         numero_serie: data.numero_serie || '',
-        personnel_id: data.personnel_id ? String(data.personnel_id) : '',
         date_mise_en_service: data.date_mise_en_service || '',
         date_fin_vie: data.date_fin_vie || '',
         statut: data.statut || 'en_attente',
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Erreur',
         description: 'Erreur lors du chargement de l\'équipement',
@@ -126,16 +87,16 @@ const EquipementEdit = () => {
     }
   };
 
-  const onSubmit = async (values: EquipementFormValues) => {
+  const onSubmit = async (values) => {
     try {
       const equipementData = {
         ...values,
-        personnel_id: values.personnel_id && values.personnel_id !== '' ? values.personnel_id : null,
         date_mise_en_service: values.date_mise_en_service || null,
         date_fin_vie: values.date_fin_vie || null,
       };
 
       if (id) {
+        // Update existing equipement
         const { error } = await supabase
           .from('equipements')
           .update(equipementData)
@@ -147,6 +108,7 @@ const EquipementEdit = () => {
           description: 'Équipement mis à jour avec succès',
         });
       } else {
+        // Create new equipement
         const { error } = await supabase
           .from('equipements')
           .insert(equipementData);
@@ -159,7 +121,7 @@ const EquipementEdit = () => {
       }
       
       navigate('/equipements');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Erreur',
         description: error.message,
@@ -174,21 +136,78 @@ const EquipementEdit = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6">
-          {id ? 'Modifier l\'Équipement' : 'Ajouter un Équipement'}
-        </h1>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-6">
+        {id ? 'Modifier l\'Équipement' : 'Ajouter un Équipement'}
+      </h1>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type d'équipement *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ex: Casque, Bottes, Gants..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="marque"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Marque</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ex: MSA, Bristol, Haix..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="modele"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Modèle</FormLabel>
+                <FormControl>
+                  <Input placeholder="Modèle de l'équipement" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="numero_serie"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Numéro de série *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Numéro de série unique" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="type"
+              name="date_mise_en_service"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type d'équipement *</FormLabel>
+                  <FormLabel>Date de mise en service *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Casque, Bottes, Gants..." {...field} />
+                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -197,99 +216,8 @@ const EquipementEdit = () => {
 
             <FormField
               control={form.control}
-              name="marque"
+              name="date_fin_vie"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Marque</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: MSA, Bristol, Haix..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="modele"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Modèle</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Modèle de l'équipement" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="numero_serie"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Numéro de série *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Numéro de série unique" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Champ d'affectation du personnel */}
-            <FormField
-              control={form.control}
-              name="personnel_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Affectation du personnel</FormLabel>
-                  <Select
-                    onValueChange={(v) => field.onChange(v === '_none' ? '' : v)}
-                    value={field.value ?? ''}
-                    disabled={loadingPersonnels}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={loadingPersonnels ? 'Chargement...' : 'Sélectionner un personnel (optionnel)'} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="_none">Non assigné</SelectItem>
-                      {personnels.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {(p.prenom || '') + ' ' + (p.nom || '')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Permet d’assigner cet EPI à un membre du personnel.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="date_mise_en_service"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de mise en service *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="date_fin_vie"
-                render={({ field }) => (
                 <FormItem>
                   <FormLabel>Date de fin de vie</FormLabel>
                   <FormControl>
@@ -297,47 +225,47 @@ const EquipementEdit = () => {
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="statut"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Statut *</FormLabel>
-                  <FormControl>
-                    <select 
-                      {...field} 
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="en_attente">En attente</option>
-                      <option value="en_service">En service</option>
-                      <option value="en_reparation">En réparation</option>
-                      <option value="hors_service">Hors service</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
               )}
             />
+          </div>
 
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/equipements')}
-              >
-                Annuler
-              </Button>
-              <Button type="submit">
-                {id ? 'Mettre à jour' : 'Ajouter'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
+          <FormField
+            control={form.control}
+            name="statut"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Statut *</FormLabel>
+                <FormControl>
+                  <select 
+                    {...field} 
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="en_attente">En attente</option>
+                    <option value="en_service">En service</option>
+                    <option value="en_reparation">En réparation</option>
+                    <option value="hors_service">Hors service</option>
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/equipements')}
+            >
+              Annuler
+            </Button>
+            <Button type="submit">
+              {id ? 'Mettre à jour' : 'Ajouter'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
     </Layout>
   );
 };
