@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import supabase from "../../integrations/supabase/client";
+import { supabase } from "../../integrations/supabase/client";
 
 type AssignedOwnerProps = {
   numeroSerie?: string | null;
   personnelId?: number | string | null;
   className?: string;
-  showSerial?: boolean; // permet éventuellement de masquer l'affichage du N° si besoin
+  showSerial?: boolean;
 };
 
 const AssignedOwner: React.FC<AssignedOwnerProps> = ({
@@ -24,7 +24,6 @@ const AssignedOwner: React.FC<AssignedOwnerProps> = ({
     let isMounted = true;
 
     const run = async () => {
-      // Si rien à résoudre, on sort
       if (!personnelId && !numeroSerie) {
         if (isMounted) {
           setFullName(null);
@@ -38,7 +37,6 @@ const AssignedOwner: React.FC<AssignedOwnerProps> = ({
       let foundPersonnelId: number | string | null = personnelId ?? null;
       let serial = numeroSerie ?? null;
 
-      // Si on n'a pas de personnelId, on résout via equipements.numero_serie
       if (!foundPersonnelId && numeroSerie) {
         const { data: equip, error: equipError } = await supabase
           .from("equipements")
@@ -46,15 +44,14 @@ const AssignedOwner: React.FC<AssignedOwnerProps> = ({
           .eq("numero_serie", numeroSerie)
           .maybeSingle();
 
-        if (equipError) {
-          console.error("Erreur récupération équipement:", equipError);
-        } else {
+        if (!equipError) {
           foundPersonnelId = equip?.personnel_id ?? null;
           serial = equip?.numero_serie ?? numeroSerie;
+        } else {
+          console.error("Erreur récupération équipement:", equipError);
         }
       }
 
-      // Si on a un personnel_id, aller chercher le nom/prénom
       if (foundPersonnelId) {
         const { data: person, error: personError } = await supabase
           .from("personnel")
@@ -82,7 +79,6 @@ const AssignedOwner: React.FC<AssignedOwnerProps> = ({
         return;
       }
 
-      // Aucun personnel trouvé
       if (isMounted) {
         setFullName(null);
         setResolvedSerial(serial);
