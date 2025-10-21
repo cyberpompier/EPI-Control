@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import supabase from "../../integrations/supabase/client";
+import { supabase } from "../../integrations/supabase/client";
 
 type OwnerNameProps = {
   personnelId?: number | null;
@@ -13,27 +13,44 @@ const OwnerName: React.FC<OwnerNameProps> = ({ personnelId, className }) => {
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
+    let active = true;
+
     if (!personnelId) {
       setDisplayName(null);
       return;
     }
+
     setLoading(true);
-    supabase
-      .from("personnel")
-      .select("nom, prenom")
-      .eq("id", personnelId)
-      .maybeSingle()
-      .then(({ data, error }) => {
+
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("personnel")
+          .select("nom, prenom")
+          .eq("id", personnelId)
+          .maybeSingle();
+
+        if (!active) return;
+
         if (error || !data) {
           setDisplayName("Inconnu");
           return;
         }
+
         const prenom = (data as any).prenom ?? "";
         const nom = (data as any).nom ?? "";
         const full = `${prenom} ${nom}`.trim();
         setDisplayName(full || `#${personnelId}`);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      active = false;
+    };
   }, [personnelId]);
 
   if (!personnelId) {
@@ -41,11 +58,7 @@ const OwnerName: React.FC<OwnerNameProps> = ({ personnelId, className }) => {
   }
 
   if (loading && !displayName) {
-    return (
-      <span className={className ?? "text-sm text-gray-500"}>
-        Chargement…
-      </span>
-    );
+    return <span className={className ?? "text-sm text-gray-500"}>Chargement…</span>;
   }
 
   return (
