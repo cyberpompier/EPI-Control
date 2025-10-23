@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clipboard, AlertTriangle, CheckCircle, Clock, Edit, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 interface EPICardProps {
   // on reste large pour tolérer le champ relationnel `personnel`
@@ -50,7 +52,25 @@ export default function EPICard({ epi }: EPICardProps) {
   // propriétaire (objet OU tableau -> on prend le 1er)
   const ownerRaw = epi?.personnel;
   const owner = Array.isArray(ownerRaw) ? ownerRaw[0] : ownerRaw;
-  const ownerName = owner ? `${owner.prenom ?? ''} ${owner.nom ?? ''}`.trim() : null;
+  const [resolvedOwner, setResolvedOwner] = useState<any>(owner ?? null);
+
+  useEffect(() => {
+    // Si pas d'objet personnel fourni mais on a un personnel_id, on va chercher nom/prenom
+    if (!owner && epi?.personnel_id != null) {
+      supabase
+        .from('personnel')
+        .select('id, nom, prenom')
+        .eq('id', epi.personnel_id)
+        .single()
+        .then(({ data }) => {
+          if (data) setResolvedOwner(data);
+        });
+    } else {
+      setResolvedOwner(owner ?? null);
+    }
+  }, [epi?.personnel_id, owner]);
+
+  const ownerName = resolvedOwner ? `${resolvedOwner.prenom ?? ''} ${resolvedOwner.nom ?? ''}`.trim() : null;
 
   // Dates
   const today = new Date();
@@ -100,8 +120,8 @@ export default function EPICard({ epi }: EPICardProps) {
           {/* 🔹 PROPRIÉTAIRE */}
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-500">Assigné à</span>
-            {owner ? (
-              <Link to={`/personnel/${owner.id}`} className="inline-flex items-center text-sm hover:underline">
+            {resolvedOwner ? (
+              <Link to={`/personnel/${String(resolvedOwner.id)}`} className="inline-flex items-center text-sm hover:underline">
                 <User className="h-4 w-4 mr-1 text-gray-500" />
                 {ownerName || 'Sans nom'}
               </Link>
