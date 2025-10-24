@@ -9,7 +9,7 @@ type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 type StatCardProps = {
   title: string;
   value?: string | number;
-  icon?: React.ReactNode | IconComponent; // accepte élément JSX, composant fonction ou forwardRef
+  icon?: React.ReactNode | IconComponent; // accepter soit un élément JSX, soit un composant d'icône
   color?: 'red' | 'green' | 'blue' | 'yellow' | 'gray';
 };
 
@@ -48,22 +48,14 @@ function renderIcon(icon: StatCardProps['icon'], color?: StatCardProps['color'])
   };
   const colorClass = color ? colorMap[color] : 'text-muted-foreground';
 
-  // Déjà un élément React => on le clone pour ajouter la classe si possible
-  if (React.isValidElement(icon)) {
-    const prev = (icon.props as any)?.className ?? '';
-    return React.cloneElement(icon as React.ReactElement, {
-      className: `${prev} h-4 w-4 ${colorClass}`.trim(),
-    });
+  // Si on reçoit un composant (ex: Shield), on l'instancie
+  if (typeof icon === 'function') {
+    const IconComp = icon as IconComponent;
+    return <IconComp className={`h-4 w-4 ${colorClass}`} />;
   }
 
-  // Si on reçoit un composant (function) OU un forwardRef (objet avec $$typeof/render)
-  if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null)) {
-    // Utiliser createElement pour couvrir les cas forwardRef
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return React.createElement(icon as any, { className: `h-4 w-4 ${colorClass}` });
-  }
-
-  return null;
+  // Sinon, on suppose que c'est déjà un ReactNode prêt à être rendu
+  return icon;
 }
 
 export default function StatCard({ title, value, icon, color }: StatCardProps) {
