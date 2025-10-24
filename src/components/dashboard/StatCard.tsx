@@ -57,9 +57,40 @@ const NonConformesTotal: React.FC = () => {
   return <>{count !== null ? count : '—'}</>;
 };
 
+const EPIAVerifierTotal: React.FC = () => {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Récupérer tous les contrôles avec leur date de prochaine vérification
+      const { data, error } = await supabase
+        .from('controles')
+        .select('equipement_id, date_prochaine_verification')
+        .not('date_prochaine_verification', 'is', null)
+        .lt('date_prochaine_verification', today);
+
+      if (error) {
+        console.error('Erreur lors du comptage des EPI à vérifier:', error);
+        return;
+      }
+
+      // Compter les équipements uniques nécessitant une vérification
+      const uniqueEquipements = new Set(data?.map(item => item.equipement_id) || []);
+      setCount(uniqueEquipements.size);
+    };
+
+    load();
+  }, []);
+
+  return <>{count !== null ? count : '—'}</>;
+};
+
 export default function StatCard({ title, value, icon, color }: StatCardProps) {
   const shouldShowConformes = title.toLowerCase().includes('conforme') && !title.toLowerCase().includes('non');
   const shouldShowNonConformes = title.toLowerCase().includes('non') && title.toLowerCase().includes('conforme');
+  const shouldShowEPIAVerifier = title.toLowerCase().includes('epi') && title.toLowerCase().includes('vérifier');
 
   const colorMap: Record<NonNullable<StatCardProps['color']>, string> = {
     red: 'bg-red-50 border-red-200',
@@ -120,6 +151,7 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
         <div className={`text-3xl font-bold ${textColorClass}`}>
           {shouldShowConformes ? <ConformesTotal /> : 
            shouldShowNonConformes ? <NonConformesTotal /> : 
+           shouldShowEPIAVerifier ? <EPIAVerifierTotal /> :
            value}
         </div>
       </CardContent>

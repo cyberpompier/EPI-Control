@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Package, Users } from 'lucide-react';
+import { CheckCircle, XCircle, Package, Users, AlertTriangle } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,6 +38,11 @@ export default function StatsCards() {
       color: 'red' as const,
     },
     {
+      title: 'EPI à Vérifier',
+      icon: AlertTriangle,
+      color: 'yellow' as const,
+    },
+    {
       title: 'Total Équipements',
       value: totalEquipements,
       icon: Package,
@@ -52,7 +57,7 @@ export default function StatsCards() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       {statItems.map((item, index) => (
         <StatCard 
           key={index} 
