@@ -1,214 +1,235 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, AlertTriangle, Calendar, User } from 'lucide-react';
 
-type EPIAVerifier = {
-  equipement_id: string;
+type Equipement = {
+  id: string;
   type: string;
+  marque: string | null;
+  modele: string | null;
   numero_serie: string;
-  date_prochaine_verification: string;
-  personnel_nom?: string;
-  personnel_prenom?: string;
-  jours_retard: number;
+  date_mise_en_service: string | null;
+  date_fin_vie: string | null;
+  statut: string;
+  image: string | null;
+  personnel_id: number | null;
+};
+
+type Personnel = {
+  id: number;
+  nom: string;
+  prenom: string;
 };
 
 export default function EPIAVerifier() {
   const navigate = useNavigate();
-  const [epiList, setEpiList] = useState<EPIAVerifier[]>([]);
+  const [equipements, setEquipements] = useState<Equipement[]>([]);
+  const [personnel, setPersonnel] = useState<Record<number, Personnel>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadEPIAVerifier();
+    loadEquipementsAVerifier();
   }, []);
 
-  const loadEPIAVerifier = async () => {
+  const loadEquipementsAVerifier = async () => {
     setIsLoading(true);
-    const today = new Date().toISOString().split('T')[0];
-
     try {
-      // Récupérer les contrôles avec date de vérification dépassée
-      const { data: controles, error: controlesError } = await supabase
-        .from('controles')
-        .select('equipement_id, date_prochaine_verification')
-        .not('date_prochaine_verification', 'is', null)
-        .lt('date_prochaine_verification', today);
+      // Charger les équipements dont la date de fin de vie approche (dans les 30 prochains jours)
+      const today = new Date();
+      const in30Days = new Date();
+      in30Days.setDate(today.getDate() + 30);
 
-      if (controlesError) {
-        console.error('Erreur lors du chargement des contrôles:', controlesError);
-        setIsLoading(false);
-        return;
-      }
-
-      // Obtenir les équipements uniques
-      const uniqueEquipementIds = [...new Set(controles?.map(c => c.equipement_id) || [])];
-
-      if (uniqueEquipementIds.length === 0) {
-        setEpiList([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Récupérer les détails des équipements
-      const { data: equipements, error: equipError } = await supabase
+      const { data: equipData, error: equipError } = await supabase
         .from('equipements')
-        .select('id, type, numero_serie, personnel_id')
-        .in('id', uniqueEquipementIds);
+        .select('*')
+        .not('date_fin_vie', 'is', null)
+        .lte('date_fin_vie', in30Days.toISOString().split('T')[0])
+        .order('date_fin_vie');
 
-      if (equipError) {
-        console.error('Erreur lors du chargement des équipements:', equipError);
-        setIsLoading(false);
-        return;
-      }
+      if (equipError) throw equipError;
 
-      // Récupérer les informations du personnel
-      const personnelIds = equipements
-        ?.filter(e => e.personnel_id)
-        .map(e => e.personnel_id) || [];
+      setEquipements(equipData || []);
 
-      let personnelMap: Record<number, { nom: string; prenom: string }> = {};
-
+      // Charger les informations du personnel
+      const personnelIds = [...new Set(equipData?.map(e => e.personnel_id).filter(Boolean) as number[])];
+      
       if (personnelIds.length > 0) {
-        const { data: personnel, error: persError } = await supabase
+        const { data: personnelData, error: personnelError } = await supabase
           .from('personnel')
           .select('id, nom, prenom')
           .in('id', personnelIds);
 
-        if (!persError && personnel) {
-          personnelMap = personnel.reduce((acc, p) => {
-            acc[p.id] = { nom: p.nom, prenom: p.prenom };
-            return acc;
-          }, {} as Record<number, { nom: string; prenom: string }>);
-        }
+        if (personnelError) throw personnelError;
+
+        const personnelMap: Record<number, Personnel> = {};
+        personnelData?.forEach(p => {
+          personnelMap[p.id] = p;
+        });
+        setPersonnel(personnelMap);
       }
-
-      // Combiner les données
-      const epiData: EPIAVerifier[] = equipements?.map(equip => {
-        const controle = controles?.find(c => c.equipement_id === equip.id);
-        const dateVerif = controle?.date_prochaine_verification || '';
-        const joursRetard = Math.floor(
-          (new Date().getTime() - new Date(dateVerif).getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        const personnel = equip.personnel_id ? personnelMap[equip.personnel_id] : null;
-
-        return {
-          equipement_id: equip.id,
-          type: equip.type,
-          numero_serie: equip.numero_serie,
-          date_prochaine_verification: dateVerif,
-          personnel_nom: personnel?.nom,
-          personnel_prenom: personnel?.prenom,
-          jours_retard: joursRetard,
-        };
-      }) || [];
-
-      // Trier par nombre de jours de retard (du plus urgent au moins urgent)
-      epiData.sort((a, b) => b.jours_retard - a.jours_retard);
-
-      setEpiList(epiData);
     } catch (error) {
-      console.error('Erreur inattendue:', error);
+      console.error('Erreur lors du chargement des équipements:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR');
   };
 
-  const getUrgenceBadge = (joursRetard: number) => {
-    if (joursRetard > 90) {
-      return <Badge variant="destructive">Très urgent ({joursRetard}j)</Badge>;
-    } else if (joursRetard > 30) {
-      return <Badge className="bg-orange-500">Urgent ({joursRetard}j)</Badge>;
-    } else {
-      return <Badge className="bg-yellow-500">À vérifier ({joursRetard}j)</Badge>;
+  const getDaysUntilExpiry = (dateString: string | null) => {
+    if (!dateString) return null;
+    const today = new Date();
+    const expiryDate = new Date(dateString);
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getUrgencyBadge = (daysUntilExpiry: number | null) => {
+    if (daysUntilExpiry === null) return null;
+    
+    if (daysUntilExpiry < 0) {
+      return <Badge className="bg-red-600 text-white">Expiré</Badge>;
+    } else if (daysUntilExpiry <= 7) {
+      return <Badge className="bg-orange-600 text-white">Urgent ({daysUntilExpiry}j)</Badge>;
+    } else if (daysUntilExpiry <= 30) {
+      return <Badge className="bg-yellow-600 text-white">Bientôt ({daysUntilExpiry}j)</Badge>;
     }
+    return null;
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/dashboard')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour au tableau de bord
-        </Button>
-      </div>
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/dashboard')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour
+            </Button>
+            <h1 className="text-3xl font-bold">EPI à vérifier</h1>
+          </div>
+          <Badge variant="destructive" className="text-lg px-4 py-2">
+            <AlertTriangle className="mr-2 h-5 w-5" />
+            {equipements.length} EPI
+          </Badge>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-yellow-600" />
-            EPI nécessitant une vérification
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">Chargement...</div>
-          ) : epiList.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Aucun EPI ne nécessite de vérification pour le moment.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Numéro de série</TableHead>
-                  <TableHead>Personnel</TableHead>
-                  <TableHead>Date de vérification prévue</TableHead>
-                  <TableHead>Urgence</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {epiList.map((epi) => (
-                  <TableRow key={epi.equipement_id}>
-                    <TableCell className="font-medium">{epi.type}</TableCell>
-                    <TableCell>{epi.numero_serie}</TableCell>
-                    <TableCell>
-                      {epi.personnel_prenom && epi.personnel_nom
-                        ? `${epi.personnel_prenom} ${epi.personnel_nom}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell>{formatDate(epi.date_prochaine_verification)}</TableCell>
-                    <TableCell>{getUrgenceBadge(epi.jours_retard)}</TableCell>
-                    <TableCell>
+        {isLoading ? (
+          <div className="text-center py-8">Chargement...</div>
+        ) : equipements.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-muted-foreground text-lg">
+                Aucun EPI à vérifier pour le moment.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {equipements.map((equip) => {
+              const daysUntilExpiry = getDaysUntilExpiry(equip.date_fin_vie);
+              const assignedPerson = equip.personnel_id ? personnel[equip.personnel_id] : null;
+
+              return (
+                <Card key={equip.id} className="border-2 hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        {equip.image ? (
+                          <img 
+                            src={equip.image} 
+                            alt={equip.type}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                            <AlertTriangle className="h-6 w-6 text-gray-500" />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-lg">{equip.type}</h3>
+                        </div>
+                      </div>
+                      {getUrgencyBadge(daysUntilExpiry)}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2 text-sm">
+                      {equip.marque && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Marque</span>
+                          <span className="font-medium">{equip.marque}</span>
+                        </div>
+                      )}
+                      {equip.modele && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Modèle</span>
+                          <span className="font-medium">{equip.modele}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">N° Série</span>
+                        <span className="font-mono font-medium text-xs">{equip.numero_serie}</span>
+                      </div>
+                      {assignedPerson && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Assigné à</span>
+                          <span className="font-medium flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {assignedPerson.prenom} {assignedPerson.nom}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Fin de vie
+                        </span>
+                        <span className="font-bold text-red-600">
+                          {formatDate(equip.date_fin_vie)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-3 border-t">
                       <Button
                         size="sm"
-                        onClick={() => navigate(`/controle/${epi.equipement_id}`)}
-                        className="bg-red-600 hover:bg-red-700"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => navigate(`/equipement/${equip.id}`)}
                       >
-                        Effectuer un contrôle
+                        Voir détails
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                      <Button
+                        size="sm"
+                        className="flex-1 bg-red-600 hover:bg-red-700"
+                        onClick={() => navigate(`/controle/${equip.id}`)}
+                      >
+                        Contrôler
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }
