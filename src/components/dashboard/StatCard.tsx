@@ -34,8 +34,32 @@ const ConformesTotal: React.FC = () => {
   return <>{count !== null ? count : '—'}</>;
 };
 
+const NonConformesTotal: React.FC = () => {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { count, error } = await supabase
+        .from('controles')
+        .select('id', { count: 'exact', head: true })
+        .eq('resultat', 'non_conforme');
+
+      if (error) {
+        console.error('Erreur lors du comptage des contrôles non conformes:', error);
+        return;
+      }
+      setCount(count ?? 0);
+    };
+
+    load();
+  }, []);
+
+  return <>{count !== null ? count : '—'}</>;
+};
+
 export default function StatCard({ title, value, icon, color }: StatCardProps) {
-  const shouldShowConformes = title.toLowerCase().includes('conforme');
+  const shouldShowConformes = title.toLowerCase().includes('conforme') && !title.toLowerCase().includes('non');
+  const shouldShowNonConformes = title.toLowerCase().includes('non') && title.toLowerCase().includes('conforme');
 
   const colorMap: Record<NonNullable<StatCardProps['color']>, string> = {
     red: 'text-red-600',
@@ -73,7 +97,9 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">
-          {shouldShowConformes ? <ConformesTotal /> : value}
+          {shouldShowConformes ? <ConformesTotal /> : 
+           shouldShowNonConformes ? <NonConformesTotal /> : 
+           value}
         </div>
       </CardContent>
     </Card>
