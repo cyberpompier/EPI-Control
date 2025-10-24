@@ -3,13 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-
-type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+import { LucideIcon } from 'lucide-react';
 
 type StatCardProps = {
   title: string;
   value?: string | number;
-  icon?: React.ReactNode | IconComponent;
+  icon?: LucideIcon | React.ReactNode;
   color?: 'red' | 'green' | 'blue' | 'yellow' | 'gray';
 };
 
@@ -36,8 +35,8 @@ const ConformesTotal: React.FC = () => {
   return <>{count !== null ? count : '—'}</>;
 };
 
-function renderIcon(icon: StatCardProps['icon'], color?: StatCardProps['color']) {
-  if (!icon) return null;
+export default function StatCard({ title, value, icon, color }: StatCardProps) {
+  const shouldShowConformes = title.toLowerCase().includes('conforme');
 
   const colorMap: Record<NonNullable<StatCardProps['color']>, string> = {
     red: 'text-red-600',
@@ -48,23 +47,25 @@ function renderIcon(icon: StatCardProps['icon'], color?: StatCardProps['color'])
   };
   const colorClass = color ? colorMap[color] : 'text-muted-foreground';
 
-  if (typeof icon === 'function') {
-    const IconComp = icon as IconComponent;
-    return <IconComp className={`h-4 w-4 ${colorClass}`} />;
-  }
-
-  return icon;
-}
-
-export default function StatCard({ title, value, icon, color }: StatCardProps) {
-  // Détecter si cette carte doit afficher les contrôles conformes
-  const shouldShowConformes = title.toLowerCase().includes('conforme');
+  // Rendre l'icône correctement
+  const renderIcon = () => {
+    if (!icon) return null;
+    
+    // Si c'est un composant Lucide (fonction), l'instancier
+    if (typeof icon === 'function') {
+      const Icon = icon as LucideIcon;
+      return <Icon className={`h-4 w-4 ${colorClass}`} />;
+    }
+    
+    // Sinon c'est déjà un ReactNode
+    return icon;
+  };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {renderIcon(icon, color)}
+        {renderIcon()}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">
