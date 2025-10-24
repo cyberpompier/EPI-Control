@@ -1,178 +1,179 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Badge } from '../components/ui/badge';
-import { supabase } from '../integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { showError } from '@/utils/toast';
 
-type Controle = {
+interface Controle {
   id: string;
-  equipement_id: string;
-  controleur_id: string;
   date_controle: string;
-  resultat: string;
-  observations?: string | null;
-  actions_correctives?: string | null;
-  date_prochaine_verification?: string | null;
-  created_at?: string | null;
-};
-
-function formatDate(d?: string | null) {
-  if (!d) return '-';
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return '-';
-  return dt.toLocaleDateString();
+  resultat: 'conforme' | 'non_conforme' | 'en_attente';
+  date_prochaine_verification: string;
+  equipements: {
+    id: string;
+    type: string;
+    marque: string;
+    modele: string;
+  } | null;
+  profiles: {
+    nom: string;
+    prenom: string;
+  } | null;
 }
 
-function isUpcoming(dateStr?: string | null) {
-  if (!dateStr) return false;
-  const today = new Date();
-  const target = new Date(dateStr);
-  if (isNaN(target.getTime())) return false;
-
-  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const t1 = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
-
-  const diffDays = Math.ceil((t1 - t0) / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 && diffDays <= 30;
-}
-
-export default function Controles() {
+export default function ControlesPage() {
   const [controles, setControles] = useState<Controle[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [equipmentTypes, setEquipmentTypes] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
+    const fetchControles = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('controles')
-        .select('*')
-        .order('date_prochaine_verification', { ascending: true });
+      try {
+        const searchParams = new URLSearchParams(location.search);
+        const equipmentId = searchParams.get('equipement');
 
-      if (!active) return;
+        let query = supabase
+          .from('controles')
+          .select(`
+            id,
+            date_controle,
+            resultat,
+            date_prochaine_verification,
+            equipements ( id, type, marque, modele ),
+            profiles ( nom, prenom )
+          `)
+          .order('date_controle', { ascending: false });
 
-      if (error) {
-        console.error('Erreur chargement contrôles:', error);
-        setControles([]);
-        setEquipmentTypes({});
-        setLoading(false);
-        return;
-      }
-
-      const controlesData = data || [];
-      setControles(controlesData);
-
-      const ids = Array.from(
-        new Set(controlesData.map((c) => c.equipement_id).filter(Boolean))
-      );
-
-      if (ids.length > 0) {
-        const { data: eqs, error: eqErr } = await supabase
-          .from('equipements')
-          .select('id, type')
-          .in('id', ids as string[]);
-
-        if (!active) return;
-
-        if (eqErr) {
-          console.error('Erreur chargement équipements:', eqErr);
-          setEquipmentTypes({});
-        } else {
-          const map: Record<string, string> = {};
-          (eqs || []).forEach((e: { id: string; type: string }) => {
-            map[e.id] = e.type;
-          });
-          setEquipmentTypes(map);
+        if (equipmentId) {
+          query = query.eq('equipement_id', equipmentId);
         }
-      } else {
-        setEquipmentTypes({});
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        setControles((data as unknown as Controle[]) || []);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des contrôles:', error);
+        showError('Impossible de charger les contrôles.');
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
-    load();
-    return () => {
-      active = false;
-    };
-  }, []);
 
-  const upcomingCount = useMemo(
-    () => controles.filter((c) => isUpcoming(c.date_prochaine_verification)).length,
-    [controles]
-  );
+    fetchControles();
+  }, [location.search]);
+
+  const getResultBadge = (resultat: string) => {
+    switch (resultat) {
+      case 'conforme':
+        return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">Conforme</Badge>;
+      case 'non_conforme':
+        return <Badge variant="destructive">Non Conforme</Badge>;
+      case 'en_attente':
+        return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white">En attente</Badge>;
+      default:
+        return <Badge variant="outline">{resultat}</Badge>;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-700"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Tableau de bord — Contrôles</h1>
-          <div className="text-sm text-gray-500">
-            {controles.length} élément{controles.length > 1 ? 's' : ''} • {upcomingCount} contrôle{upcomingCount > 1 ? 's' : ''} à venir
-          </div>
+    <Layout>
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Liste des Contrôles</h1>
+          <p className="text-gray-600">Consultez et gérez l'historique des contrôles d'équipements.</p>
         </div>
-      </header>
-
-      <main className="flex-1">
-        <div className="mx-auto max-w-6xl p-4 md:p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contrôles</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="py-10 text-center text-gray-500">Chargement…</div>
-              ) : controles.length === 0 ? (
-                <div className="py-10 text-center text-gray-500">Aucun contrôle trouvé</div>
+        <Link to="/equipements">
+          <Button className="bg-red-600 hover:bg-red-700 mt-4 sm:mt-0">
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau Contrôle
+          </Button>
+        </Link>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Historique des contrôles</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Équipement</TableHead>
+                <TableHead>Contrôleur</TableHead>
+                <TableHead>Date du contrôle</TableHead>
+                <TableHead>Résultat</TableHead>
+                <TableHead>Prochaine vérification</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {controles.length > 0 ? (
+                controles.map((controle) => (
+                  <TableRow key={controle.id}>
+                    <TableCell>
+                      {controle.equipements
+                        ? `${controle.equipements.marque} ${controle.equipements.modele} (${controle.equipements.type})`
+                        : 'Équipement non trouvé'}
+                    </TableCell>
+                    <TableCell>
+                      {controle.profiles
+                        ? `${controle.profiles.prenom} ${controle.profiles.nom}`
+                        : 'Contrôleur inconnu'}
+                    </TableCell>
+                    <TableCell>{formatDate(controle.date_controle)}</TableCell>
+                    <TableCell>{getResultBadge(controle.resultat)}</TableCell>
+                    <TableCell>{formatDate(controle.date_prochaine_verification)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="icon" asChild>
+                          <Link to={`/controles/${controle.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button variant="outline" size="icon" asChild>
+                          <Link to={`/controles/${controle.id}/modifier`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button variant="destructive" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Équipement</TableHead>
-                      <TableHead className="whitespace-nowrap">Date contrôle</TableHead>
-                      <TableHead className="whitespace-nowrap">Prochaine vérification</TableHead>
-                      <TableHead className="whitespace-nowrap">Résultat</TableHead>
-                      <TableHead className="whitespace-nowrap">Statut</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {controles.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="text-sm">
-                          {equipmentTypes[c.equipement_id] ?? '—'}
-                        </TableCell>
-                        <TableCell className="text-sm">{formatDate(c.date_controle)}</TableCell>
-                        <TableCell className="text-sm">{formatDate(c.date_prochaine_verification)}</TableCell>
-                        <TableCell className="text-sm">{c.resultat || '-'}</TableCell>
-                        <TableCell className="text-sm">
-                          {isUpcoming(c.date_prochaine_verification) ? (
-                            <Badge
-                              variant="secondary"
-                              className="bg-amber-100 text-amber-800 border border-amber-200"
-                              title="La prochaine vérification est dans 30 jours ou moins"
-                            >
-                              Contrôle à venir
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center h-24">
+                    Aucun contrôle trouvé.
+                  </TableCell>
+                </TableRow>
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      <footer className="border-t">
-        <div className="mx-auto max-w-6xl px-4 py-4 text-sm text-gray-500">
-          © {new Date().getFullYear()} — Contrôles
-        </div>
-      </footer>
-    </div>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </Layout>
   );
 }
