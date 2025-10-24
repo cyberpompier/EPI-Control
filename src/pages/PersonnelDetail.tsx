@@ -8,15 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, MapPin, Award, Hash, Edit } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { ArrowLeft, Mail, MapPin, Award, Hash, Edit, ClipboardCheck, History, User } from 'lucide-react';
 
 type Pompier = {
   id: number;
@@ -36,6 +28,7 @@ type Equipement = {
   modele: string | null;
   numero_serie: string;
   date_mise_en_service: string | null;
+  date_fin_vie: string | null;
   statut: string;
   image: string | null;
 };
@@ -98,15 +91,19 @@ export default function PersonnelDetail() {
   };
 
   const getStatutBadge = (statut: string) => {
-    const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-      en_service: { label: 'En service', variant: 'default' },
-      en_attente: { label: 'En attente', variant: 'secondary' },
-      en_maintenance: { label: 'En maintenance', variant: 'outline' },
-      reforme: { label: 'Réformé', variant: 'destructive' },
+    const statusMap: Record<string, { label: string; className: string }> = {
+      en_service: { label: 'En service', className: 'bg-green-100 text-green-800 border-green-200' },
+      en_attente: { label: 'En attente', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+      en_maintenance: { label: 'En maintenance', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      reforme: { label: 'Réformé', className: 'bg-red-100 text-red-800 border-red-200' },
     };
 
-    const status = statusMap[statut] || { label: statut, variant: 'secondary' };
-    return <Badge variant={status.variant}>{status.label}</Badge>;
+    const status = statusMap[statut] || { label: statut, className: 'bg-gray-100 text-gray-800 border-gray-200' };
+    return (
+      <Badge className={`${status.className} border`}>
+        {status.label}
+      </Badge>
+    );
   };
 
   if (!pompier) {
@@ -202,40 +199,97 @@ export default function PersonnelDetail() {
                 Aucun EPI attribué à ce pompier.
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Marque</TableHead>
-                    <TableHead>Modèle</TableHead>
-                    <TableHead>Numéro de série</TableHead>
-                    <TableHead>Date de mise en service</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {equipements.map((equip) => (
-                    <TableRow key={equip.id}>
-                      <TableCell className="font-medium">{equip.type}</TableCell>
-                      <TableCell>{equip.marque || '—'}</TableCell>
-                      <TableCell>{equip.modele || '—'}</TableCell>
-                      <TableCell className="font-mono text-sm">{equip.numero_serie}</TableCell>
-                      <TableCell>{formatDate(equip.date_mise_en_service)}</TableCell>
-                      <TableCell>{getStatutBadge(equip.statut)}</TableCell>
-                      <TableCell>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {equipements.map((equip) => (
+                  <Card key={equip.id} className="border-2">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          {equip.image ? (
+                            <img 
+                              src={equip.image} 
+                              alt={equip.type}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                              <Award className="h-6 w-6 text-gray-500" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-lg">{equip.type}</h3>
+                          </div>
+                        </div>
+                        {getStatutBadge(equip.statut)}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2 text-sm">
+                        {equip.marque && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Marque</span>
+                            <span className="font-medium">{equip.marque}</span>
+                          </div>
+                        )}
+                        {equip.modele && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Modèle</span>
+                            <span className="font-medium">{equip.modele}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">N° Série</span>
+                          <span className="font-mono font-medium text-xs">{equip.numero_serie}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Assigné à</span>
+                          <span className="font-medium flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {pompier.prenom} {pompier.nom}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Mise en service</span>
+                          <span className="font-medium">{formatDate(equip.date_mise_en_service)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Fin de vie</span>
+                          <span className="font-medium">{formatDate(equip.date_fin_vie)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-3 border-t">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="flex-1"
+                          onClick={() => navigate(`/equipement/${equip.id}/historique`)}
+                        >
+                          <History className="h-4 w-4 mr-1" />
+                          Historique
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
                           onClick={() => navigate(`/equipement/${equip.id}`)}
                         >
-                          Voir détails
+                          <Edit className="h-4 w-4 mr-1" />
+                          Éditer
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-red-600 hover:bg-red-700"
+                          onClick={() => navigate(`/controle/${equip.id}`)}
+                        >
+                          <ClipboardCheck className="h-4 w-4 mr-1" />
+                          Contrôler
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
