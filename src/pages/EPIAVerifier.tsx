@@ -15,8 +15,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
 
 type EPIAVerifier = {
   equipement_id: string;
@@ -145,76 +143,72 @@ export default function EPIAVerifier() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1 container mx-auto p-6">
-        <div className="mb-6">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/dashboard')}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour au tableau de bord
-          </Button>
-        </div>
+    <div className="container mx-auto p-6">
+      <div className="mb-6">
+        <Button
+          variant="outline"
+          onClick={() => navigate('/dashboard')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour au tableau de bord
+        </Button>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-6 w-6 text-yellow-600" />
-              EPI nécessitant une vérification
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Chargement...</div>
-            ) : epiList.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Aucun EPI ne nécessite de vérification pour le moment.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Numéro de série</TableHead>
-                    <TableHead>Personnel</TableHead>
-                    <TableHead>Date de vérification prévue</TableHead>
-                    <TableHead>Urgence</TableHead>
-                    <TableHead>Actions</TableHead>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-6 w-6 text-yellow-600" />
+            EPI nécessitant une vérification
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">Chargement...</div>
+          ) : epiList.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Aucun EPI ne nécessite de vérification pour le moment.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Numéro de série</TableHead>
+                  <TableHead>Personnel</TableHead>
+                  <TableHead>Date de vérification prévue</TableHead>
+                  <TableHead>Urgence</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {epiList.map((epi) => (
+                  <TableRow key={epi.equipement_id}>
+                    <TableCell className="font-medium">{epi.type}</TableCell>
+                    <TableCell>{epi.numero_serie}</TableCell>
+                    <TableCell>
+                      {epi.personnel_prenom && epi.personnel_nom
+                        ? `${epi.personnel_prenom} ${epi.personnel_nom}`
+                        : '—'}
+                    </TableCell>
+                    <TableCell>{formatDate(epi.date_prochaine_verification)}</TableCell>
+                    <TableCell>{getUrgenceBadge(epi.jours_retard)}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        onClick={() => navigate(`/controle/${epi.equipement_id}`)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Effectuer un contrôle
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {epiList.map((epi) => (
-                    <TableRow key={epi.equipement_id}>
-                      <TableCell className="font-medium">{epi.type}</TableCell>
-                      <TableCell>{epi.numero_serie}</TableCell>
-                      <TableCell>
-                        {epi.personnel_prenom && epi.personnel_nom
-                          ? `${epi.personnel_prenom} ${epi.personnel_nom}`
-                          : '—'}
-                      </TableCell>
-                      <TableCell>{formatDate(epi.date_prochaine_verification)}</TableCell>
-                      <TableCell>{getUrgenceBadge(epi.jours_retard)}</TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          onClick={() => navigate(`/controle/${epi.equipement_id}`)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Effectuer un contrôle
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      <Footer />
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
