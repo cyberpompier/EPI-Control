@@ -3,12 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { LucideIcon } from 'lucide-react';
 
 type StatCardProps = {
   title: string;
   value?: string | number;
-  icon?: LucideIcon | React.ReactNode;
+  icon?: any;
   color?: 'red' | 'green' | 'blue' | 'yellow' | 'gray';
 };
 
@@ -47,18 +46,23 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
   };
   const colorClass = color ? colorMap[color] : 'text-muted-foreground';
 
-  // Rendre l'icône correctement
+  // Rendre l'icône de manière sûre
   const renderIcon = () => {
     if (!icon) return null;
     
-    // Si c'est un composant Lucide (fonction), l'instancier
-    if (typeof icon === 'function') {
-      const Icon = icon as LucideIcon;
-      return <Icon className={`h-4 w-4 ${colorClass}`} />;
+    // Si c'est déjà un élément React valide, le retourner tel quel
+    if (React.isValidElement(icon)) {
+      return icon;
     }
     
-    // Sinon c'est déjà un ReactNode
-    return icon;
+    // Si c'est une fonction/composant, l'instancier avec les props appropriées
+    if (typeof icon === 'function') {
+      const IconComponent = icon;
+      return <IconComponent className={`h-4 w-4 ${colorClass}`} />;
+    }
+    
+    // Sinon ne rien afficher pour éviter l'erreur
+    return null;
   };
 
   return (
