@@ -1,41 +1,78 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+"use client";
 
-interface StatCardProps {
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
+type StatCardProps = {
   title: string;
-  value: string | number;
-  icon: LucideIcon;
+  value?: string | number;
+  icon?: React.ReactNode | IconComponent; // accepter soit un élément JSX, soit un composant d'icône
   color?: 'red' | 'green' | 'blue' | 'yellow' | 'gray';
+};
+
+const ConformesTotal: React.FC<{ fallback?: string | number }> = ({ fallback }) => {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { count, error } = await supabase
+        .from('controles')
+        .select('id', { count: 'exact', head: true })
+        .eq('resultat', 'conforme');
+
+      if (error) {
+        console.error('Erreur lors du comptage des contrôles conformes:', error);
+        return;
+      }
+      setCount(count ?? 0);
+    };
+
+    load();
+  }, []);
+
+  return <>{count !== null ? count : (fallback ?? '—')}</>;
+};
+
+function renderIcon(icon: StatCardProps['icon'], color?: StatCardProps['color']) {
+  if (!icon) return null;
+
+  const colorMap: Record<NonNullable<StatCardProps['color']>, string> = {
+    red: 'text-red-600',
+    green: 'text-green-600',
+    blue: 'text-blue-600',
+    yellow: 'text-yellow-600',
+    gray: 'text-gray-600',
+  };
+  const colorClass = color ? colorMap[color] : 'text-muted-foreground';
+
+  // Si on reçoit un composant (ex: Shield), on l'instancie
+  if (typeof icon === 'function') {
+    const IconComp = icon as IconComponent;
+    return <IconComp className={`h-4 w-4 ${colorClass}`} />;
+  }
+
+  // Sinon, on suppose que c'est déjà un ReactNode prêt à être rendu
+  return icon;
 }
 
-export function StatCard({ title, value, icon: Icon, color = 'gray' }: StatCardProps) {
-  const colorClasses = {
-    red: 'bg-red-50 border-red-200 text-red-900',
-    green: 'bg-green-50 border-green-200 text-green-900',
-    blue: 'bg-blue-50 border-blue-200 text-blue-900',
-    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900',
-    gray: 'bg-gray-50 border-gray-200 text-gray-800',
-  };
-
-  const iconColorClasses = {
-    red: 'text-red-600 bg-red-100',
-    green: 'text-green-600 bg-green-100',
-    blue: 'text-blue-600 bg-blue-100',
-    yellow: 'text-yellow-600 bg-yellow-100',
-    gray: 'text-gray-600 bg-gray-100',
-  };
-
+export default function StatCard({ title, value, icon, color }: StatCardProps) {
   return (
-    <Card className={`${colorClasses[color]} border shadow-sm transition-all hover:shadow-md`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className={`${iconColorClasses[color]} p-2 rounded-full`}>
-          <Icon className="h-5 w-5" />
-        </div>
+        {renderIcon(icon, color)}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">
+          <ConformesTotal fallback={value} />
+        </div>
       </CardContent>
     </Card>
   );
 }
+
+// Export nommé pour compatibilité
+export { StatCard };
