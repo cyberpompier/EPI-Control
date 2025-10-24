@@ -29,18 +29,17 @@ function isUpcoming(dateStr?: string | null) {
   const target = new Date(dateStr);
   if (isNaN(target.getTime())) return false;
 
-  // Normaliser à minuit pour comparaison en jours
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const t1 = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
 
   const diffDays = Math.ceil((t1 - t0) / (1000 * 60 * 60 * 24));
-  // Futur (>= 0) et dans les 30 prochains jours
   return diffDays >= 0 && diffDays <= 30;
 }
 
 export default function Controles() {
   const [controles, setControles] = useState<Controle[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [equipmentTypes, setEquipmentTypes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let active = true;
@@ -54,12 +53,43 @@ export default function Controles() {
       if (!active) return;
 
       if (error) {
-        // Laisser remonter l'erreur dans la console pour diagnostic
         console.error('Erreur chargement contrôles:', error);
         setControles([]);
-      } else {
-        setControles(data || []);
+        setEquipmentTypes({});
+        setLoading(false);
+        return;
       }
+
+      const controlesData = data || [];
+      setControles(controlesData);
+
+      // Récupérer les types d'équipement pour remplacer l'UUID
+      const ids = Array.from(
+        new Set(controlesData.map((c) => c.equipement_id).filter(Boolean))
+      );
+
+      if (ids.length > 0) {
+        const { data: eqs, error: eqErr } = await supabase
+          .from('equipements')
+          .select('id, type')
+          .in('id', ids as string[]);
+
+        if (!active) return;
+
+        if (eqErr) {
+          console.error('Erreur chargement équipements:', eqErr);
+          setEquipmentTypes({});
+        } else {
+          const map: Record<string, string> = {};
+          (eqs || []).forEach((e: { id: string; type: string }) => {
+            map[e.id] = e.type;
+          });
+          setEquipmentTypes(map);
+        }
+      } else {
+        setEquipmentTypes({});
+      }
+
       setLoading(false);
     };
     load();
@@ -103,7 +133,9 @@ export default function Controles() {
               <TableBody>
                 {controles.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="text-sm">{c.equipement_id}</TableCell>
+                    <TableCell className="text-sm">
+                      {equipmentTypes[c.equipement_id] ?? '—'}
+                    </TableCell>
                     <TableCell className="text-sm">{formatDate(c.date_controle)}</TableCell>
                     <TableCell className="text-sm">{formatDate(c.date_prochaine_verification)}</TableCell>
                     <TableCell className="text-sm">{c.resultat || '-'}</TableCell>
