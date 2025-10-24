@@ -1,89 +1,65 @@
-import { Shield, CheckCircle, AlertTriangle, ClipboardList } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { StatCard } from "./StatCard";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, Package, Users } from 'lucide-react';
+import { StatCard } from './StatCard';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function StatsCards() {
-  const [stats, setStats] = useState({
-    equipements: 0,
-    conformes: 0,
-    nonConformes: 0,
-    controles: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const [totalEquipements, setTotalEquipements] = useState<number>(0);
+  const [totalPersonnel, setTotalPersonnel] = useState<number>(0);
 
   useEffect(() => {
-    async function fetchStats() {
-      setLoading(true);
-      try {
-        const { count: equipementsCount } = await supabase
-          .from('equipements')
-          .select('*', { count: 'exact', head: true });
+    const loadStats = async () => {
+      const { count: equipCount } = await supabase
+        .from('equipements')
+        .select('id', { count: 'exact', head: true });
 
-        const { count: conformesCount } = await supabase
-          .from('equipements')
-          .select('*', { count: 'exact', head: true })
-          .eq('statut', 'conforme');
+      const { count: persCount } = await supabase
+        .from('personnel')
+        .select('id', { count: 'exact', head: true });
 
-        const { count: nonConformesCount } = await supabase
-          .from('equipements')
-          .select('*', { count: 'exact', head: true })
-          .eq('statut', 'non_conforme');
-        
-        const { count: controlesCount } = await supabase
-          .from('controles')
-          .select('*', { count: 'exact', head: true });
+      setTotalEquipements(equipCount ?? 0);
+      setTotalPersonnel(persCount ?? 0);
+    };
 
-        setStats({
-          equipements: equipementsCount || 0,
-          conformes: conformesCount || 0,
-          nonConformes: nonConformesCount || 0,
-          controles: controlesCount || 0,
-        });
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchStats();
+    loadStats();
   }, []);
 
   const statItems = [
-    { title: "Équipements Total", value: stats.equipements, icon: Shield, color: "blue" },
-    { title: "Conformes", value: stats.conformes, icon: CheckCircle, color: "green" },
-    { title: "Non Conformes", value: stats.nonConformes, icon: AlertTriangle, color: "red" },
-    { title: "Contrôles Réalisés", value: stats.controles, icon: ClipboardList, color: "gray" },
+    {
+      title: 'Contrôles Conformes',
+      icon: CheckCircle,
+      color: 'green' as const,
+    },
+    {
+      title: 'Contrôles Non Conformes',
+      icon: XCircle,
+      color: 'red' as const,
+    },
+    {
+      title: 'Total Équipements',
+      value: totalEquipements,
+      icon: Package,
+      color: 'blue' as const,
+    },
+    {
+      title: 'Total Personnel',
+      value: totalPersonnel,
+      icon: Users,
+      color: 'gray' as const,
+    },
   ];
-
-  if (loading) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {statItems.map((item, index) => (
         <StatCard 
           key={index} 
-          title={item.title} 
-          value={item.value} 
-          icon={item.icon} 
-          color={item.color as 'red' | 'green' | 'blue' | 'yellow' | 'gray'} 
+          title={item.title}
+          value={item.value}
+          icon={<item.icon className="h-4 w-4" />}
+          color={item.color}
         />
       ))}
     </div>

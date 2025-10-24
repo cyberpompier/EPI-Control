@@ -62,27 +62,48 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
   const shouldShowNonConformes = title.toLowerCase().includes('non') && title.toLowerCase().includes('conforme');
 
   const colorMap: Record<NonNullable<StatCardProps['color']>, string> = {
+    red: 'bg-red-50 border-red-200',
+    green: 'bg-green-50 border-green-200',
+    blue: 'bg-blue-50 border-blue-200',
+    yellow: 'bg-yellow-50 border-yellow-200',
+    gray: 'bg-gray-50 border-gray-200',
+  };
+
+  const iconColorMap: Record<NonNullable<StatCardProps['color']>, string> = {
     red: 'text-red-600',
     green: 'text-green-600',
     blue: 'text-blue-600',
     yellow: 'text-yellow-600',
     gray: 'text-gray-600',
   };
-  const colorClass = color ? colorMap[color] : 'text-muted-foreground';
+
+  const textColorMap: Record<NonNullable<StatCardProps['color']>, string> = {
+    red: 'text-red-700',
+    green: 'text-green-700',
+    blue: 'text-blue-700',
+    yellow: 'text-yellow-700',
+    gray: 'text-gray-700',
+  };
+
+  const cardClass = color ? colorMap[color] : 'bg-white';
+  const iconColorClass = color ? iconColorMap[color] : 'text-muted-foreground';
+  const textColorClass = color ? textColorMap[color] : 'text-foreground';
 
   // Rendre l'icône de manière sûre
   const renderIcon = () => {
     if (!icon) return null;
     
-    // Si c'est déjà un élément React valide, le retourner tel quel
+    // Si c'est déjà un élément React valide, le cloner avec les bonnes classes
     if (React.isValidElement(icon)) {
-      return icon;
+      return React.cloneElement(icon as React.ReactElement<any>, {
+        className: `h-5 w-5 ${iconColorClass}`,
+      });
     }
     
     // Si c'est une fonction/composant, l'instancier avec les props appropriées
     if (typeof icon === 'function') {
       const IconComponent = icon;
-      return <IconComponent className={`h-4 w-4 ${colorClass}`} />;
+      return <IconComponent className={`h-5 w-5 ${iconColorClass}`} />;
     }
     
     // Sinon ne rien afficher pour éviter l'erreur
@@ -90,13 +111,13 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
   };
 
   return (
-    <Card>
+    <Card className={`${cardClass} border-2 transition-all hover:shadow-md`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         {renderIcon()}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">
+        <div className={`text-3xl font-bold ${textColorClass}`}>
           {shouldShowConformes ? <ConformesTotal /> : 
            shouldShowNonConformes ? <NonConformesTotal /> : 
            value}
