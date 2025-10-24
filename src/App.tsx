@@ -4,6 +4,7 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Equipements from '@/pages/Equipements';
 import Personnel from '@/pages/Personnel';
+import PersonnelDetail from '@/pages/PersonnelDetail';
 import ControleForm from '@/pages/ControleForm';
 import EquipementForm from '@/pages/EquipementForm';
 import PersonnelForm from '@/pages/PersonnelForm';
@@ -41,6 +42,22 @@ function App() {
           }
         />
         <Route
+          path="/personnel/:id"
+          element={
+            <ProtectedRoute>
+              <PersonnelDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/personnel/:id/edit"
+          element={
+            <ProtectedRoute>
+              <PersonnelForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/controle/:id"
           element={
             <ProtectedRoute>
@@ -66,14 +83,6 @@ function App() {
         />
         <Route
           path="/personnel/new"
-          element={
-            <ProtectedRoute>
-              <PersonnelForm />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/personnel/:id"
           element={
             <ProtectedRoute>
               <PersonnelForm />
