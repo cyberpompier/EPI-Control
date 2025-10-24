@@ -63,7 +63,6 @@ export default function Controles() {
       const controlesData = data || [];
       setControles(controlesData);
 
-      // Récupérer les types d'équipement pour remplacer l'UUID
       const ids = Array.from(
         new Set(controlesData.map((c) => c.equipement_id).filter(Boolean))
       );
@@ -104,61 +103,75 @@ export default function Controles() {
   );
 
   return (
-    <div className="p-4 md:p-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle>Contrôles</CardTitle>
-            <div className="text-sm text-gray-500">
-              {controles.length} élément{controles.length > 1 ? 's' : ''} • {upcomingCount} contrôle{upcomingCount > 1 ? 's' : ''} à venir
-            </div>
+    <div className="min-h-screen flex flex-col bg-white">
+      <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+          <h1 className="text-lg font-semibold">Tableau de bord — Contrôles</h1>
+          <div className="text-sm text-gray-500">
+            {controles.length} élément{controles.length > 1 ? 's' : ''} • {upcomingCount} contrôle{upcomingCount > 1 ? 's' : ''} à venir
           </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="py-10 text-center text-gray-500">Chargement…</div>
-          ) : controles.length === 0 ? (
-            <div className="py-10 text-center text-gray-500">Aucun contrôle trouvé</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Équipement</TableHead>
-                  <TableHead className="whitespace-nowrap">Date contrôle</TableHead>
-                  <TableHead className="whitespace-nowrap">Prochaine vérification</TableHead>
-                  <TableHead className="whitespace-nowrap">Résultat</TableHead>
-                  <TableHead className="whitespace-nowrap">Statut</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {controles.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="text-sm">
-                      {equipmentTypes[c.equipement_id] ?? '—'}
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDate(c.date_controle)}</TableCell>
-                    <TableCell className="text-sm">{formatDate(c.date_prochaine_verification)}</TableCell>
-                    <TableCell className="text-sm">{c.resultat || '-'}</TableCell>
-                    <TableCell className="text-sm">
-                      {isUpcoming(c.date_prochaine_verification) ? (
-                        <Badge
-                          variant="secondary"
-                          className="bg-amber-100 text-amber-800 border border-amber-200"
-                          title="La prochaine vérification est dans 30 jours ou moins"
-                        >
-                          Contrôle à venir
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <div className="mx-auto max-w-6xl p-4 md:p-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contrôles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="py-10 text-center text-gray-500">Chargement…</div>
+              ) : controles.length === 0 ? (
+                <div className="py-10 text-center text-gray-500">Aucun contrôle trouvé</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Équipement</TableHead>
+                      <TableHead className="whitespace-nowrap">Date contrôle</TableHead>
+                      <TableHead className="whitespace-nowrap">Prochaine vérification</TableHead>
+                      <TableHead className="whitespace-nowrap">Résultat</TableHead>
+                      <TableHead className="whitespace-nowrap">Statut</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {controles.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="text-sm">
+                          {equipmentTypes[c.equipement_id] ?? '—'}
+                        </TableCell>
+                        <TableCell className="text-sm">{formatDate(c.date_controle)}</TableCell>
+                        <TableCell className="text-sm">{formatDate(c.date_prochaine_verification)}</TableCell>
+                        <TableCell className="text-sm">{c.resultat || '-'}</TableCell>
+                        <TableCell className="text-sm">
+                          {isUpcoming(c.date_prochaine_verification) ? (
+                            <Badge
+                              variant="secondary"
+                              className="bg-amber-100 text-amber-800 border border-amber-200"
+                              title="La prochaine vérification est dans 30 jours ou moins"
+                            >
+                              Contrôle à venir
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+      <footer className="border-t">
+        <div className="mx-auto max-w-6xl px-4 py-4 text-sm text-gray-500">
+          © {new Date().getFullYear()} — Contrôles
+        </div>
+      </footer>
     </div>
   );
 }
