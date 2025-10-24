@@ -82,6 +82,32 @@ export default function ControlesPage() {
     }
   };
 
+  const getStatusBadge = (controle: Controle) => {
+    // Priorité au résultat: non conforme = rouge
+    if (controle.resultat === 'non_conforme') {
+      return <Badge variant="destructive">Non conforme</Badge>;
+    }
+
+    const next = controle.date_prochaine_verification
+      ? new Date(controle.date_prochaine_verification)
+      : null;
+
+    if (!next || isNaN(next.getTime())) {
+      return <Badge variant="outline">N/A</Badge>;
+    }
+
+    const now = new Date();
+    const diffDays = Math.floor((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return <Badge variant="destructive" className="bg-red-600 hover:bg-red-700 text-white">En retard</Badge>;
+    }
+    if (diffDays <= 30) {
+      return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white">Bientôt</Badge>;
+    }
+    return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">À jour</Badge>;
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('fr-FR');
@@ -123,6 +149,7 @@ export default function ControlesPage() {
                 <TableHead>Contrôleur</TableHead>
                 <TableHead>Date du contrôle</TableHead>
                 <TableHead>Résultat</TableHead>
+                <TableHead>Statut</TableHead>
                 <TableHead>Prochaine vérification</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -143,6 +170,7 @@ export default function ControlesPage() {
                     </TableCell>
                     <TableCell>{formatDate(controle.date_controle)}</TableCell>
                     <TableCell>{getResultBadge(controle.resultat)}</TableCell>
+                    <TableCell>{getStatusBadge(controle)}</TableCell>
                     <TableCell>{formatDate(controle.date_prochaine_verification)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -165,7 +193,7 @@ export default function ControlesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">
+                  <TableCell colSpan={7} className="text-center h-24">
                     Aucun contrôle trouvé.
                   </TableCell>
                 </TableRow>
