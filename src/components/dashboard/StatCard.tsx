@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 type StatCardProps = {
   title: string;
@@ -88,6 +89,7 @@ const EPIAVerifierTotal: React.FC = () => {
 };
 
 export default function StatCard({ title, value, icon, color }: StatCardProps) {
+  const navigate = useNavigate();
   const shouldShowConformes = title.toLowerCase().includes('conforme') && !title.toLowerCase().includes('non');
   const shouldShowNonConformes = title.toLowerCase().includes('non') && title.toLowerCase().includes('conforme');
   const shouldShowEPIAVerifier = title.toLowerCase().includes('epi') && title.toLowerCase().includes('vérifier');
@@ -141,8 +143,19 @@ export default function StatCard({ title, value, icon, color }: StatCardProps) {
     return null;
   };
 
+  const handleClick = () => {
+    if (shouldShowEPIAVerifier) {
+      navigate('/epi-a-verifier');
+    }
+  };
+
+  const isClickable = shouldShowEPIAVerifier;
+
   return (
-    <Card className={`${cardClass} border-2 transition-all hover:shadow-md`}>
+    <Card 
+      className={`${cardClass} border-2 transition-all hover:shadow-md ${isClickable ? 'cursor-pointer hover:scale-105' : ''}`}
+      onClick={handleClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         {renderIcon()}
